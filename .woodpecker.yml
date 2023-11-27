@@ -1,0 +1,9 @@
+pipeline:
+  merge:
+    image: local/woodpecker/cpp:latest
+    commands:
+      - cmake -DCMAKE_BUILD_TYPE=Debug .
+      - make
+      - ctest
+    when:
+      event: pull_request
