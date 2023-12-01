@@ -214,7 +214,7 @@ fail:
         if(magic() != 0x2e736e64 || offset() > 256)
             goto fail;
         char buf[offset() - 23];
-        if(::read(stream_, buf, offset() - 24) != offset() - 24) // FlawFinder: no
+        if(::read(stream_, buf, offset() - 24) != static_cast<ssize_t>(offset() - 24)) // FlawFinder: no
             goto fail;
         buf[sizeof(buf) - 1] = 0;
         annotation_ = buf;
