@@ -213,7 +213,11 @@ fail:
         }
         if(magic() != 0x2e736e64 || offset() > 256)
             goto fail;
+#ifdef _MSC_VER
+        auto buf = static_cast<char *>(alloca(static_cast<size_t>(offset()) - 23));
+#else
         char buf[offset() - 23];
+#endif
         if(::read(stream_, buf, offset() - 24) != static_cast<ssize_t>(offset() - 24)) // FlawFinder: no
             goto fail;
         buf[sizeof(buf) - 1] = 0;

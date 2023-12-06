@@ -5,11 +5,13 @@
 #define SOCKET_HPP_
 
 #include <sys/types.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 
-#if defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-#if _WIN32_WINNT < 0x0600
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+#if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
 #undef  _WIN32_WINNT
 #define _WIN32_WINNT    0x0600
 #endif
@@ -86,7 +88,7 @@ public:
         return reinterpret_cast<struct sockaddr *>(&store_);
     }
 
-    inline static constexpr auto max() -> socklen_t {
+    inline static constexpr auto maxsize() -> socklen_t {
         return sizeof(struct sockaddr_storage);
     }
 
@@ -191,7 +193,7 @@ public:
     service_t(const service_t& from) = delete;
     auto operator=(const service_t& from) = delete;
 
-    inline service_t(service_t&& from) : list_(from.list_) {
+    inline service_t(service_t&& from) noexcept : list_(from.list_) {
         from.list_ = nullptr;
     }
 
@@ -203,7 +205,7 @@ public:
         release();
     }
 
-    inline auto operator=(service_t&& from) -> service_t& {
+    inline auto operator=(service_t&& from) noexcept -> service_t& {
         release();
         list_ = from.list_;
         from.list_ = nullptr;
@@ -325,11 +327,11 @@ public:
     socket(const socket& from) = delete;
     auto operator=(const socket& from) = delete;
 
-    inline socket(socket&& from) : so_(from.so_) {
+    inline socket(socket&& from) noexcept : so_(from.so_) {
         from.so_ = -1;
     }
 
-    inline socket(const service_t& list) {
+    inline socket(const service_t& list) noexcept {
         bind(list);
     }
 
@@ -433,7 +435,7 @@ public:
 
     inline auto peer() const {
         address_t addr;
-        socklen_t len = address_t::max();
+        socklen_t len = address_t::maxsize();
         memset(*addr, 0, sizeof(addr));
         if(so_ != -1)
             ::getpeername(so_, *addr, &len);
@@ -442,7 +444,7 @@ public:
 
     inline auto local() const {
         address_t addr;
-        socklen_t len = address_t::max();
+        socklen_t len = address_t::maxsize();
         memset(*addr, 0, sizeof(addr));
         if(so_ != -1)
             ::getsockname(so_, *addr, &len);
@@ -469,7 +471,7 @@ public:
     }
 
     inline auto recv(char *to, size_t size, address_t& addr, int flags = 0) const -> int {
-        auto len = address_t::max();
+        auto len = address_t::maxsize();
         if(so_ == -1)
             return 0;
 

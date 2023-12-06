@@ -12,10 +12,15 @@
 #include <string>
 
 #include <sys/types.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#else
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 #include <fcntl.h>
 
-#if defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,7 +67,7 @@ inline auto scan_directory(const fsys::path& path, std::function<bool(const fsys
 }
 
 inline auto scan_recursive(const fsys::path& path, std::function<bool(const fsys::directory_entry&)> proc) {
-    auto dir = fsys::recursive_directory_iterator(path);
+    auto dir = fsys::recursive_directory_iterator(path, fsys::directory_options::skip_permission_denied);
     return std::count_if(begin(dir), end(dir), proc);
 }
 } // end namespace

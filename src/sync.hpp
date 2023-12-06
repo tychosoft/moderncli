@@ -17,7 +17,7 @@ using sync_timepoint = std::chrono::steady_clock::time_point;
 
 inline auto local_time(const std::time_t& time) {
     std::tm local{};
-#if defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
     localtime_s(&local, &time);
 #else
     localtime_r(&time, &local);
