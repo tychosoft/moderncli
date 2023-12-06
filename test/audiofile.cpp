@@ -5,7 +5,7 @@
 #include "audiofile.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
-    audiofile au;   // NOLINT
+    [[maybe_unused]] audiofile au;   // NOLINT
 }
 
 
