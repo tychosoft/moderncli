@@ -26,12 +26,15 @@ auto print_format(std::string_view fmt, const Args&... args) {
 namespace tycho {
 template<class... Args>
 void print(std::string_view fmt, const Args&... args) {
-    std::cout << print_format(fmt, args...);
+    auto str = print_format(fmt, args...);
+    ::write(0, str.data(), str.size());
 }
 
 template<class... Args>
-void println(std::string_view fmt = "", const Args&... args) {
-    std::cout << print_format(fmt, args...) << std::endl;
+[[deprecated]] void println(std::string_view fmt = "", const Args&... args) {
+    auto str = print_format(fmt, args...);
+    ::write(0, str.data(), str.size());
+    ::write(0, "\n", 1);
 }
 
 template<class... Args>
@@ -40,7 +43,7 @@ void print(std::FILE *stream, std::string_view fmt, const Args&... args) {
 }
 
 template<class... Args>
-void println(const std::FILE *stream, std::string_view fmt = "", const Args&... args) {
+[[deprecated]] void println(const std::FILE *stream, std::string_view fmt = "", const Args&... args) {
     std::printf(stream, "%s\n", print_format(fmt, args...).c_str()); // FlawFinder: ignore
 }
 
