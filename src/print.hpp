@@ -7,6 +7,10 @@
 #include <iostream>
 #include <string_view>
 
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
+
 #if __has_include(<format>) && __cplusplus >= 202002L
 #include <format>
 namespace tycho {
