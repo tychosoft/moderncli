@@ -4,6 +4,7 @@
 #ifndef DIGEST_HPP_
 #define DIGEST_HPP_
 
+#include <string_view>
 #include <cstring>
 #include <cassert>
 #include <openssl/evp.h>
@@ -89,6 +90,10 @@ public:
         return data_;
     }
 
+    inline auto view() const {
+        return std::string_view(reinterpret_cast<const char *>(&data_), size_);
+    }
+
     inline auto c_str() const {
         return reinterpret_cast<const char *>(data_);
     }
@@ -99,6 +104,10 @@ public:
 
     inline auto update(const uint8_t *cp, size_t size) {
         return !ctx || size_ ? false : EVP_DigestUpdate(ctx, cp, size) == 1;
+    }
+
+    inline auto update(const std::string_view& view) {
+        update(view.data(), view.size());
     }
 
     inline auto finish() {

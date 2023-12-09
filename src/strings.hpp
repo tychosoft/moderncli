@@ -251,6 +251,10 @@ inline auto to_hex(const uint8_t *from, size_t size) {
     return out;
 }
 
+inline auto to_hex(std::string_view from) {
+    return to_hex(reinterpret_cast<const uint8_t *>(from.data()), from.size());
+}
+
 inline auto from_hex(std::string_view from, uint8_t *to, size_t size) {
     auto hex = from.data();
     auto max = size * 2;
