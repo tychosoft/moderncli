@@ -45,15 +45,15 @@ public:
     inline address_t(const address_t& from) = default;
     inline auto operator=(const address_t& from) -> address_t& = default;
 
-    inline address_t(const struct addrinfo *addr) {
+    explicit inline address_t(const struct addrinfo *addr) {
         set(addr);
     }
 
-    inline address_t(const struct sockaddr *addr) {
+    explicit inline address_t(const struct sockaddr *addr) {
         set(addr);
     }
 
-    inline address_t(const std::string& addr, uint16_t port = 0) {
+    explicit inline address_t(const std::string& addr, uint16_t port = 0) {
         set(addr, port);
     }
 
@@ -118,12 +118,12 @@ public:
     inline void set(const std::string& str, uint16_t in_port = 0) {
         memset(&store_, 0, sizeof(store_));
         auto cp = str.c_str();
-        if(cp && strchr(cp, ':') != nullptr) {
+        if(strchr(cp, ':') != nullptr) {
             auto ipv6 = reinterpret_cast<struct sockaddr_in6*>(&store_);
             inet_pton(AF_INET6, cp, &(ipv6->sin6_addr));
             ipv6->sin6_family = AF_INET6;
             ipv6->sin6_port = htons(in_port);
-        } else if(cp && strchr(cp, '.') != nullptr) {
+        } else if(strchr(cp, '.') != nullptr) {
             auto ipv4 = reinterpret_cast<struct sockaddr_in*>(&store_);
             inet_pton(AF_INET, cp, &(ipv4->sin_addr));
             ipv4->sin_family = AF_INET;
@@ -197,7 +197,7 @@ public:
         from.list_ = nullptr;
     }
 
-    inline service_t(const std::string& host, const std::string& service = "", int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) {
+    inline service_t(const std::string& host, const std::string& service, int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) {
         set(host, service, family, type, protocol);
     }
 
@@ -331,11 +331,11 @@ public:
         from.so_ = -1;
     }
 
-    inline socket(const service_t& list) noexcept {
+    explicit inline socket(const service_t& list) noexcept {
         bind(list);
     }
 
-    inline socket(const address_t& addr, int type = 0, int protocol = 0) {
+    explicit inline socket(const address_t& addr, int type = 0, int protocol = 0) {
         bind(addr, type, protocol);
     }
 
