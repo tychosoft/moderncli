@@ -19,11 +19,10 @@
 #define print_format std::format
 #else
 #include <fmt/format.h>
-namespace tycho {
 template<class... Args>
 auto print_format(std::string_view fmt, const Args&... args) {
     return fmt::format(fmt, args...);
-}}
+}
 #endif
 
 namespace tycho {
