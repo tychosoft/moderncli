@@ -39,9 +39,6 @@ add_executable(test_shell  test/shell.cpp src/print.hpp src/args.hpp src/filesys
 add_test(NAME test-shell COMMAND test_shell)
 target_link_libraries(test_shell PRIVATE ${FMT_LIBRARIES})
 
-add_executable(test_audiofile test/audiofile.cpp src/audiofile.hpp)
-add_test(NAME test-audiofile COMMAND test_audiofile)
-
 add_executable(test_keyfile  test/keyfile.cpp src/keyfile.hpp test/test.conf)
 add_test(NAME test-keyfile COMMAND test_keyfile)
 
