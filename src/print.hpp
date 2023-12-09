@@ -16,11 +16,7 @@
 #endif
 
 #ifdef __cpp_lib_format
-namespace tycho {
-template<class... Args>
-inline auto print_format(std::string_view fmt, const Args&... args) {
-    return std::format(fmt, args...);
-}}
+#define print_format std::format
 #else
 #include <fmt/format.h>
 namespace tycho {

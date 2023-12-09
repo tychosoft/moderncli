@@ -90,7 +90,7 @@ private:
         }
 
         inline auto exists(const std::string& id) const -> bool {
-            return sections.count(id) > 0;
+            return sections.count(id) > 0;  // NOLINT
         }
 
         inline void remove(const std::string& id) {
