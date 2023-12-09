@@ -13,6 +13,9 @@
 
 #if __has_include(<format>) && __cplusplus >= 202002L
 #include <format>
+#endif
+
+#ifdef __cpp_lib_format
 namespace tycho {
 template<class... Args>
 inline auto print_format(std::string_view fmt, const Args&... args) {
