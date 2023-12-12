@@ -11,23 +11,14 @@
 #include <unistd.h>
 #endif
 
-#if !defined(PREFER_LIBFMT) && __has_include(<format>) && __cplusplus >= 202002L
-#include <format>
-#else
-#undef  __cpp_lib_format
-#endif
-
-#ifdef  __cpp_lib_format
-#define print_format std::format
-#else
 #include <fmt/format.h>
+
+namespace tycho {
 template<class... Args>
 auto print_format(std::string_view fmt, const Args&... args) {
     return fmt::format(fmt, args...);
 }
-#endif
 
-namespace tycho {
 template<class... Args>
 void print(std::string_view fmt, const Args&... args) {
     auto str = print_format(fmt, args...);

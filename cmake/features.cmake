@@ -38,9 +38,7 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 
 find_package(Threads REQUIRED)
-if(CMAKE_CXX_STANDARD LESS 20)
-    pkg_check_modules(FMT fmt>=6.1.2 REQUIRED)
-endif()
+pkg_check_modules(FMT fmt>=6.1.2 REQUIRED)
 
 include_directories(${FMT_INCLUDE_DIRS})
 link_directories(${FMT_LIBRARY_DIRS})
