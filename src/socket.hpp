@@ -343,7 +343,7 @@ public:
         release();
     }
 
-    inline auto operator=(socket&& from) -> socket& {
+    inline auto operator=(socket&& from) noexcept -> socket& {
         release();
         so_ = from.so_;
         from.so_ = -1;
