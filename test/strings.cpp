@@ -1,10 +1,11 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#include <iostream>
-
+#undef  NDEBUG
 #include "compiler.hpp"
 #include "strings.hpp"
+
+#include <iostream>
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     const std::string text = "hi,bye,gone";

@@ -40,6 +40,7 @@ add_test(NAME test-shell COMMAND test_shell)
 target_link_libraries(test_shell PRIVATE fmt::fmt)
 
 add_executable(test_keyfile  test/keyfile.cpp src/keyfile.hpp test/test.conf)
+set_target_properties(test_keyfile PROPERTIES COMPILE_DEFINITIONS "TEST_DATA=\"${CMAKE_SOURCE_DIR}/test\"")
 add_test(NAME test-keyfile COMMAND test_keyfile)
 
 add_executable(test_strings  test/strings.cpp src/strings.hpp)
@@ -52,21 +53,17 @@ target_link_libraries(test_sync PRIVATE Threads::Threads)
 add_executable(test_endian  test/endian.cpp src/endian.hpp)
 add_test(NAME test-endian COMMAND test_endian)
 
+add_executable(test_digest  test/digest.cpp src/digest.hpp)
+target_link_libraries(test_digest PRIVATE OpenSSL::Crypto)
+add_test(NAME test-digest COMMAND test_digest)
+
+add_executable(test_random  test/random.cpp src/random.hpp)
+target_link_libraries(test_random PRIVATE OpenSSL::Crypto)
+add_test(NAME test-random COMMAND test_random)
+
 if(NOT WIN32)
 	add_executable(test_serial  test/serial.cpp src/serial.hpp)
 	add_test(NAME test-serial COMMAND test_serial)
-endif()
-
-if(OPENSSL_FOUND)
-    add_executable(test_digest  test/digest.cpp src/digest.hpp)
-    target_link_libraries(test_digest PRIVATE ${CRYPTO_LIBS})
-    target_include_directories(test_digest PRIVATE "${OPENSSL_INCLUDE_DIR}")
-    add_test(NAME test-digest COMMAND test_digest)
-
-    add_executable(test_random  test/random.cpp src/random.hpp)
-    target_link_libraries(test_random PRIVATE ${CRYPTO_LIBS})
-    target_include_directories(test_random PRIVATE "${OPENSSL_INCLUDE_DIR}")
-    add_test(NAME test-random COMMAND test_random)
 endif()
 
 # Extras...

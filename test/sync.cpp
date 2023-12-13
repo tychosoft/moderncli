@@ -1,6 +1,7 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
+#undef  NDEBUG
 #include "compiler.hpp"
 #include "sync.hpp"
 

@@ -23,7 +23,7 @@ using namespace tycho;
 #error C++17 compliant compiler required
 #endif
 
-#ifdef  OS_WINDOWS
+#ifdef  _MSC_VER
 #include <direct.h>
 #else
 #include <unistd.h>
