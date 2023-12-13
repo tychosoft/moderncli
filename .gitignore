@@ -6,6 +6,7 @@ CMakeSettings.json
 Testing/
 cmake/custom.cmake
 build/
+out/
 .vs*/
 
 compile_commands.json
