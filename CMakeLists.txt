@@ -37,7 +37,7 @@ configure_file(moderncli.pc.in moderncli.pc)
 enable_testing()
 add_executable(test_shell  test/shell.cpp src/print.hpp src/args.hpp src/filesystem.hpp)
 add_test(NAME test-shell COMMAND test_shell)
-target_link_libraries(test_shell PRIVATE ${FMT_LIBRARIES})
+target_link_libraries(test_shell PRIVATE fmt::fmt)
 
 add_executable(test_keyfile  test/keyfile.cpp src/keyfile.hpp test/test.conf)
 add_test(NAME test-keyfile COMMAND test_keyfile)
