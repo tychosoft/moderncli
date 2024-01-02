@@ -10,6 +10,7 @@
 #include <cctype>
 #include <cstring>
 #include <csignal>
+#include <climits>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -64,18 +65,7 @@ public:
         auto ioflags = fcntl(device_, F_GETFL);
         tcgetattr(device_, &current_);
         tcgetattr(device_, &original_);
-
-        current_.c_oflag = current_.c_lflag = 0;
-        current_.c_cflag = CLOCAL | CREAD | HUPCL;
-        current_.c_iflag = IGNBRK;
-
-        memset(&current_.c_cc, 0, sizeof(current_.c_cc));
-        current_.c_cc[VMIN] = 1;
-
-        current_.c_cflag |= original_.c_cflag & (CRTSCTS | CSIZE | PARENB | PARODD | CSTOPB);
-        current_.c_iflag |= original_.c_iflag & (IXON | IXANY | IXOFF);
-
-        tcsetattr(device_, TCSANOW, &current_);
+        reset();
         fcntl(device_, F_SETFL, ioflags & ~O_NDELAY);
 
 #if defined(TIOCM_RTS) && defined(TIOCMODG)
@@ -151,11 +141,74 @@ public:
         return put(msg.data(), msg.size());
     }
 
-    void reset() {
-        if(device_ > -1) {
-            current_ = original_;
-            tcsetattr(device_, TCSANOW, &current_);
+    void timed_mode(size_t size, uint8_t timer = 1) {
+        if(device_ < 0)
+            return;
+
+#ifdef  _PC_MAX_INPUT
+        auto max = fpathconf(device_, _PC_MAX_INPUT);
+#else
+        auto max = MAX_INPUT;
+#endif
+
+        if(size > (size_t)max)
+            size = max;
+
+        current_.c_cc[VEOL] = current_.c_cc[VEOL2] = 0;
+        current_.c_cc[VMIN] = (uint8_t)size;
+        current_.c_cc[VTIME] = timer;
+        current_.c_lflag &= ~ICANON;
+        tcsetattr(device_, TCSANOW, &current_);
+        bufsize_ = max;
+    }
+
+    void line_mode(const char *nl = "\r\n", uint8_t min = 1) {
+        if(device_ < 0)
+            return;
+
+        if(!nl)
+            nl = "";
+
+        char nl1{0}, nl2{0};
+
+        if(*nl) {
+            nl1 = nl[0];
+            nl2 = nl[1];
         }
+
+        current_.c_cc[VMIN] = min;
+        current_.c_cc[VTIME] = 0;
+        current_.c_cc[VEOL] = nl1;
+        current_.c_cc[VEOL2] = nl2;
+        current_.c_lflag |= ICANON;
+        tcsetattr(device_, TCSANOW, &current_);
+#ifdef  _PC_MAX_CANON
+        bufsize_ = fpathconf(device_, _PC_MAX_CANON);
+#else
+        bufsize_ = MAX_CANON
+#endif
+    }
+
+    void reset() {
+        if(device_ < 0)
+            return;
+
+        current_.c_oflag = current_.c_lflag = 0;
+        current_.c_cflag = CLOCAL | CREAD | HUPCL;
+        current_.c_iflag = IGNBRK;
+
+        memset(&current_.c_cc, 0, sizeof(current_.c_cc));
+        current_.c_cc[VMIN] = 1;
+
+        current_.c_cflag |= original_.c_cflag & (CRTSCTS | CSIZE | PARENB | PARODD | CSTOPB);
+        current_.c_iflag |= original_.c_iflag & (IXON | IXANY | IXOFF);
+
+        tcsetattr(device_, TCSANOW, &current_);
+        bufsize_ = 0;
+    }
+
+    auto size() const {
+        return bufsize_;
     }
 
     void flush() const {
@@ -163,7 +216,7 @@ public:
             tcflush(device_, TCOFLUSH);
     }
 
-    void drain() const {
+    void purge() const {
         if(device_ > -1)
             tcflush(device_, TCIFLUSH);
     }
@@ -350,6 +403,7 @@ public:
 
 private:
     int device_{-1};
+    size_t bufsize_{0};
     struct termios original_{}, current_{};
 };
 } // end namespace

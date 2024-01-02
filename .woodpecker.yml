@@ -1,4 +1,4 @@
-pipeline:
+steps:
   merge:
     image: local/woodpecker/cpp:latest
     commands:

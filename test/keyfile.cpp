@@ -5,6 +5,10 @@
 #include "compiler.hpp"
 #include "keyfile.hpp"
 
+#ifndef TEST_DATA
+#define TEST_DATA "."   // NOLINT
+#endif
+
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     keyfile test_keys;
 
