@@ -17,7 +17,7 @@ namespace tycho {
 using namespace fmt;
 
 template<class... Args>
-auto print_format(std::string_view fmt, const Args&... args) {
+[[deprecated]] auto print_format(std::string_view fmt, const Args&... args) {
     return fmt::format(fmt, args...);
 }
 

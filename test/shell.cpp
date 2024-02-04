@@ -10,7 +10,7 @@
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int { // NOLINT
     const uint16_t val = 23;
-    auto out = print_format("X{}Y", val);
+    auto out = format("X{}Y", val);
     assert(out == "X23Y");
     fsys::remove("/tmp/xyz");
 }
