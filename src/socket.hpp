@@ -481,5 +481,6 @@ public:
 protected:
     int so_{-1};
 };
+using socket_t = socket;
 } // end namespace
 #endif

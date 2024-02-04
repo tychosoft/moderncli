@@ -6,7 +6,6 @@
 #include "args.hpp"
 #include "print.hpp"
 #include "filesystem.hpp"
-#include "socket.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int { // NOLINT
     const uint16_t val = 23;

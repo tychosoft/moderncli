@@ -53,6 +53,9 @@ target_link_libraries(test_sync PRIVATE Threads::Threads)
 add_executable(test_endian  test/endian.cpp src/endian.hpp)
 add_test(NAME test-endian COMMAND test_endian)
 
+add_executable(test_socket  test/socket.cpp src/socket.hpp)
+add_test(NAME test-socket COMMAND test_socket)
+
 add_executable(test_digest  test/digest.cpp src/digest.hpp)
 target_link_libraries(test_digest PRIVATE OpenSSL::Crypto)
 add_test(NAME test-digest COMMAND test_digest)
