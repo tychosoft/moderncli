@@ -6,8 +6,10 @@
 #include "serial.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
+// This is so we can lint serial on non-termios systems without errors...
+#ifdef SERIAL_HPP_
     const serial_t serial;
     assert(is(serial) == false);
+#endif
 }
-
 

@@ -45,7 +45,8 @@ Generate random keys and data using openssl rand functions.
 ## serial.hpp
 
 Support serial I/O operations through a serial port or ptty device. Includes
-support for line buffered and timed input.
+support for line buffered and timed input. Serial support depends on posix
+termios and is disabled on non-posix platforms.
 
 ## socket.hpp
 
@@ -67,3 +68,8 @@ rust locking access and gives stronger guarantees about access safety while
 also associating the actual lock with the data being protected rather than as
 completely unrelated data structures. Sync also includes other kinds of thread
 synchronization objects such as semaphores and barriers.
+
+## linting
+
+Since this is common code extensive support exists for linting and static
+analysis.

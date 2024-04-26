@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef SERIAL_HPP_
+#if !defined(SERIAL_HPP_) && __has_include(<termios.h>)
 #define SERIAL_HPP_
 
 #include <thread>
