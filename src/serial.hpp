@@ -33,7 +33,7 @@ public:
             device_ = ::dup(from.device_);
     }
 
-    inline serial_t(serial_t&& from) :
+    inline serial_t(serial_t&& from) noexcept :
     device_(from.device_), original_(from.original_), current_(from.current_) {
         from.device_ = -1;
     }
@@ -298,6 +298,8 @@ public:
         case '8':
             current_.c_cflag |= CS8;
             break;
+        default:
+            return;
         }
 
         switch(stop) {

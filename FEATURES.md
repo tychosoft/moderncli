@@ -36,7 +36,9 @@ changed data.
 
 Uses libfmt to both format strings and to print output somewhat like C++23
 std::print.  It is also much more efficient than std::format, especially if you
-have multiple C++ applications.
+have multiple C++ applications. Finally, formatted support for system logging
+is introduced, along with serializing logging requests and the ability to
+notify logging events.
 
 ## random.hpp
 
