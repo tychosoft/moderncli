@@ -92,13 +92,13 @@ public:
     unique_lock(obj.lock), sync_(obj), ptr_(&obj.data) {}
     ~sync_ptr() = default;
 
-    inline auto operator->() {
+    auto operator->() {
         if (!owns_lock())
             throw std::runtime_error("unique lock error");
         return ptr_;
     }
 
-    inline auto operator*() -> U& {
+    auto operator*() -> U& {
         if (!owns_lock())
             throw std::runtime_error("unique lock error");
         return *ptr_;
@@ -125,11 +125,11 @@ public:
         sync_.lock.unlock();
     }
 
-    inline auto operator->() {
+    auto operator->() {
         return ptr_;
     }
 
-    inline auto operator*() -> U& {
+    auto operator*() -> U& {
         return *ptr_;
     }
 
@@ -149,13 +149,13 @@ public:
     std::shared_lock<std::shared_mutex>(obj.lock), sync_(obj), ptr_(&obj.data) {}
     ~reader_ptr() = default;
 
-    inline auto operator->() const {
+    auto operator->() const {
         if (!owns_lock())
             throw std::runtime_error("read lock error");
         return ptr_;
     }
 
-    inline auto operator*() const -> U& {
+    auto operator*() const -> U& {
         if (!owns_lock())
             throw std::runtime_error("read lock error");
         return *ptr_;
@@ -177,13 +177,13 @@ public:
     std::unique_lock<std::shared_mutex>(obj.lock), sync_(obj), ptr_(&obj.data) {}
     ~writer_ptr() = default;
 
-    inline auto operator->() {
+    auto operator->() {
         if (!owns_lock())
             throw std::runtime_error("write lock error");
         return ptr_;
     }
 
-    inline auto operator*() -> U& {
+    auto operator*() -> U& {
         if (!owns_lock())
             throw std::runtime_error("write lock error");
         return *ptr_;
@@ -212,9 +212,9 @@ public:
     semaphore_t(const semaphore_t&) = delete;
     auto operator=(const semaphore_t&) = delete;
 
-    inline explicit semaphore_t(unsigned limit = 1) : limit_(limit) {}
+    explicit semaphore_t(unsigned limit = 1) : limit_(limit) {}
 
-    inline ~semaphore_t() {
+    ~semaphore_t() {
         release();
         std::this_thread::yield();
         while(count_) {
@@ -222,26 +222,26 @@ public:
         }
     }
 
-    inline void release() {
+    void release() {
         const std::unique_lock lock(lock_);
         release_ = true;
         if(count_ > limit_)
             cond_.notify_all();
     }
 
-    inline void post() {
+    void post() {
         const std::unique_lock lock(lock_);
         if(--count_ >= limit_)
             cond_.notify_one();
     }
 
-    inline void wait() {
+    void wait() {
         std::unique_lock lock(lock_);
         while(!release_ && count_ > limit_)
             cond_.wait(lock);
     }
 
-    inline auto wait_until(sync_timepoint timepoint) {
+    auto wait_until(sync_timepoint timepoint) {
         std::unique_lock lock(lock_);
         while(!release_ && count_ > limit_) {
             if(cond_.wait_until(lock, timepoint) == std::cv_status::timeout)
@@ -250,19 +250,19 @@ public:
         return true;
     }
 
-    inline auto pending() const {
+    auto pending() const {
         const std::unique_lock lock(lock_);
         if(count_ > limit_)
             return limit_ - count_;
         return 0U;
     }
 
-    inline auto count() const {
+    auto count() const {
         const std::unique_lock lock(lock_);
         return count_;
     }
 
-    inline auto active() const {
+    auto active() const {
         const std::unique_lock lock(lock_);
         if(count_ <= limit_)
             return count_;
@@ -281,19 +281,19 @@ public:
     barrier_t(const barrier_t&) = delete;
     auto operator=(const barrier_t&) = delete;
 
-    inline explicit barrier_t(unsigned limit = 1) : limit_(limit) {}
+    explicit barrier_t(unsigned limit = 1) : limit_(limit) {}
 
-    inline ~barrier_t() {
+    ~barrier_t() {
         release();
     }
 
-    inline void release() {
+    void release() {
         const std::unique_lock lock(lock_);
         if(count_)
             cond_.notify_all();
     }
 
-    inline void wait() {
+    void wait() {
         std::unique_lock lock(lock_);
         if(++count_ >= limit_) {
             cond_.notify_all();
@@ -305,12 +305,12 @@ public:
         count_ = ending_ = 0;
     }
 
-    inline auto count() const {
+    auto count() const {
         const std::unique_lock lock(lock_);
         return count_;
     }
 
-    inline auto pending() const {
+    auto pending() const {
         const std::unique_lock lock(lock_);
         return count_ - ending_;
     }

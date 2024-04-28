@@ -21,32 +21,32 @@
 namespace tycho {
 class serial_t final {
 public:
-    inline serial_t() = default;
+    serial_t() = default;
 
-    inline explicit serial_t(const std::string& path) {
+    explicit serial_t(const std::string& path) {
         open(path); // FlawFinder: safe
     }
 
-    inline serial_t(const serial_t& from) :
+    serial_t(const serial_t& from) :
     original_(from.original_), current_(from.current_) {
         if(from.device_ > -1)
             device_ = ::dup(from.device_);
     }
 
-    inline serial_t(serial_t&& from) noexcept :
+    serial_t(serial_t&& from) noexcept :
     device_(from.device_), original_(from.original_), current_(from.current_) {
         from.device_ = -1;
     }
 
-    inline ~serial_t() {
+    ~serial_t() {
         close();
     }
 
-    inline auto operator!() const {
+    auto operator!() const {
         return device_ < 0;
     }
 
-    inline operator bool() const {
+    operator bool() const {
         return device_ > -1;
     }
 

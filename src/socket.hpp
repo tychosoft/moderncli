@@ -38,65 +38,65 @@
 namespace tycho {
 class address_t final {
 public:
-    inline address_t() {
+    address_t() {
         memset(&store_, 0, sizeof(store_));
     }
 
-    inline address_t(const address_t& from) = default;
-    inline auto operator=(const address_t& from) -> address_t& = default;
+    address_t(const address_t& from) = default;
+    auto operator=(const address_t& from) -> address_t& = default;
 
-    explicit inline address_t(const struct addrinfo *addr) {
+    explicit address_t(const struct addrinfo *addr) {
         set(addr);
     }
 
-    explicit inline address_t(const struct sockaddr *addr) {
+    explicit address_t(const struct sockaddr *addr) {
         set(addr);
     }
 
-    explicit inline address_t(const std::string& addr, uint16_t port = 0) {
+    explicit address_t(const std::string& addr, uint16_t port = 0) {
         set(addr, port);
     }
 
-    inline auto operator=(const struct addrinfo *addr) -> address_t& {
+    auto operator=(const struct addrinfo *addr) -> address_t& {
         set(addr);
         return *this;
     }
 
-    inline auto operator=(const struct sockaddr *addr) -> address_t& {
+    auto operator=(const struct sockaddr *addr) -> address_t& {
         set(addr);
         return *this;
     }
 
-    inline auto operator=(const std::string& addr) -> address_t& {
+    auto operator=(const std::string& addr) -> address_t& {
         set(addr);
         return *this;
     }
 
-    inline operator bool() const {
+    operator bool() const {
         return store_.ss_family != 0;
     }
 
-    inline auto operator!() const {
+    auto operator!() const {
         return store_.ss_family == 0;
     }
 
-    inline auto operator*() const {
+    auto operator*() const {
         return reinterpret_cast<const struct sockaddr *>(&store_);
     }
 
-    inline auto operator*() {
+    auto operator*() {
         return reinterpret_cast<struct sockaddr *>(&store_);
     }
 
-    inline static constexpr auto maxsize() -> socklen_t {
+    static constexpr auto maxsize() -> socklen_t {
         return sizeof(struct sockaddr_storage);
     }
 
-    inline auto data() const {
+    auto data() const {
         return reinterpret_cast<const struct sockaddr *>(&store_);
     }
 
-    inline auto port() const -> uint16_t {
+    auto port() const -> uint16_t {
         switch(store_.ss_family) {
         case AF_INET:
             return ntohs((reinterpret_cast<const struct sockaddr_in *>(&store_))->sin_port);
@@ -107,15 +107,15 @@ public:
         }
     }
 
-    inline auto size() const -> socklen_t {
+    auto size() const -> socklen_t {
         return size_(store_.ss_family);
     }
 
-    inline auto family() const {
+    auto family() const {
         return store_.ss_family;
     }
 
-    inline void set(const std::string& str, uint16_t in_port = 0) {
+    void set(const std::string& str, uint16_t in_port = 0) {
         memset(&store_, 0, sizeof(store_));
         auto cp = str.c_str();
         if(strchr(cp, ':') != nullptr) {
@@ -131,7 +131,7 @@ public:
         }
     }
 
-    inline auto to_string() const {
+    auto to_string() const {
         char buf[256];
         const struct sockaddr_in *ipv4{nullptr};
         const struct sockaddr_in6 *ipv6{nullptr};
@@ -152,11 +152,11 @@ public:
         return std::string();
     }
 
-    inline auto data() {
+    auto data() {
         return reinterpret_cast<struct sockaddr *>(&store_);
     }
 
-    inline void set(const struct addrinfo *addr) {
+    void set(const struct addrinfo *addr) {
         if(!addr)
             memset(&store_, 0, sizeof(store_));
         else
@@ -164,7 +164,7 @@ public:
             memcpy(&store_, addr->ai_addr, addr->ai_addrlen);
     }
 
-    inline void set(const struct sockaddr *addr) {
+    void set(const struct sockaddr *addr) {
         if(!addr || !size_(addr->sa_family))
             memset(&store_, 0, sizeof(store_));
         else
@@ -173,7 +173,7 @@ public:
    }
 
 private:
-    static inline auto size_(int family) -> socklen_t {
+    static auto size_(int family) -> socklen_t {
         switch(family) {
         case AF_INET:
             return sizeof(struct sockaddr_in);
@@ -189,42 +189,42 @@ private:
 
 class service_t final {
 public:
-    inline service_t() = default;
+    service_t() = default;
     service_t(const service_t& from) = delete;
     auto operator=(const service_t& from) = delete;
 
-    inline service_t(service_t&& from) noexcept : list_(from.list_) {
+    service_t(service_t&& from) noexcept : list_(from.list_) {
         from.list_ = nullptr;
     }
 
-    inline service_t(const std::string& host, const std::string& service, int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) {
+    service_t(const std::string& host, const std::string& service, int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) {
         set(host, service, family, type, protocol);
     }
 
-    inline ~service_t() {
+    ~service_t() {
         release();
     }
 
-    inline auto operator=(service_t&& from) noexcept -> service_t& {
+    auto operator=(service_t&& from) noexcept -> service_t& {
         release();
         list_ = from.list_;
         from.list_ = nullptr;
         return *this;
     }
 
-    inline auto operator*() const {
+    auto operator*() const {
         return list_;
     }
 
-    inline operator bool() const {
+    operator bool() const {
         return list_ != nullptr;
     }
 
-    inline auto operator!() const {
+    auto operator!() const {
         return list_ == nullptr;
     }
 
-    inline auto operator[](unsigned index) const {
+    auto operator[](unsigned index) const {
         auto size{0U};
         auto addr = list_;
         while(addr) {
@@ -236,13 +236,13 @@ public:
         return static_cast<struct addrinfo *>(nullptr);
     }
 
-    inline auto empty() const {
+    auto empty() const {
         return list_ == nullptr;
     }
 
-    inline auto count() const {
+    auto count() const {
         auto size{0U};
-        auto addr = list_;
+        const auto *addr = list_;
         while(addr) {
             ++size;
             addr = addr->ai_next;
@@ -250,14 +250,14 @@ public:
         return size;
     }
 
-    inline void release() {
+    void release() {
         if(list_) {
             ::freeaddrinfo(list_);
             list_ = nullptr;
         }
     }
 
-    inline void set(const std::string& host = "*", const std::string& service = "", int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) {
+    void set(const std::string& host = "*", const std::string& service = "", int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) {
         release();
         auto svc = service.c_str();
         if(service.empty())
@@ -288,7 +288,7 @@ public:
     auto store(unsigned index = 0) const {
         struct sockaddr_storage data{};
         auto size{0U};
-        auto addr = list_;
+        const auto *addr = list_;
         memset(&data, 0, sizeof(data));
         while(addr) {
             if(size == index) {
@@ -303,14 +303,14 @@ public:
     }
 
 private:
-    inline auto last_() const {
+    auto last_() const {
         auto addr = list_;
         while(addr && addr->ai_next)
             addr = addr->ai_next;
         return addr;
     }
 
-    inline void join_(struct addrinfo *from) {
+    void join_(struct addrinfo *from) {
         auto addr = last_();
         if(addr)
             addr->ai_next = from;
@@ -323,51 +323,51 @@ private:
 
 class socket {
 public:
-    inline socket() = default;
+    socket() = default;
     socket(const socket& from) = delete;
     auto operator=(const socket& from) = delete;
 
-    inline socket(socket&& from) noexcept : so_(from.so_) {
+    socket(socket&& from) noexcept : so_(from.so_) {
         from.so_ = -1;
     }
 
-    explicit inline socket(const service_t& list) noexcept {
+    explicit socket(const service_t& list) noexcept {
         bind(list);
     }
 
-    explicit inline socket(const address_t& addr, int type = 0, int protocol = 0) {
+    explicit socket(const address_t& addr, int type = 0, int protocol = 0) {
         bind(addr, type, protocol);
     }
 
-    inline ~socket() {
+    ~socket() {
         release();
     }
 
-    inline auto operator=(socket&& from) noexcept -> socket& {
+    auto operator=(socket&& from) noexcept -> socket& {
         release();
         so_ = from.so_;
         from.so_ = -1;
         return *this;
     }
 
-    inline auto operator=(const service_t& to) -> socket& {
+    auto operator=(const service_t& to) -> socket& {
         connect(to);
         return *this;
     }
 
-    inline operator bool() const {
+    operator bool() const {
         return so_ != -1;
     }
 
-    inline auto operator!() const {
+    auto operator!() const {
         return so_ == -1;
     }
 
-    inline auto operator*() const {
+    auto operator*() const {
         return so_;
     }
 
-    inline void release() {
+    void release() {
         if(so_ != -1) {
 #ifdef  USE_CLOSESOCKET
             closesocket(so_);
@@ -378,14 +378,14 @@ public:
         }
     }
 
-    inline void bind(const address_t& addr, int type = 0, int protocol = 0) {
+    void bind(const address_t& addr, int type = 0, int protocol = 0) {
         so_ = ::socket(addr.family(), type, protocol);
         if(so_ != -1)
             if(::bind(so_, addr.data(), addr.size()) == -1)
                 release();
     }
 
-    inline void bind(const service_t& list) {
+    void bind(const service_t& list) {
         auto addr = *list;
         release();
         while(addr) {
@@ -400,13 +400,13 @@ public:
         }
     }
 
-    inline auto connect(const address_t& addr) const {
+    auto connect(const address_t& addr) const {
         if(so_ != -1)
             return ::connect(so_, addr.data(), addr.size());
         return -1;
     }
 
-    inline void connect(const service_t& list) {
+    void connect(const service_t& list) {
         auto addr = *list;
         release();
         while(addr) {
@@ -421,19 +421,19 @@ public:
         }
     }
 
-    inline void listen(int backlog = 5) {
+    void listen(int backlog = 5) {
         if(so_ != -1 && ::listen(so_, backlog) == -1)
             release();
     }
 
-    inline auto accept() const {
+    auto accept() const {
         socket from{};
         if(so_ != -1)
             from.so_ = ::accept(so_, nullptr, nullptr);
         return from;
     }
 
-    inline auto peer() const {
+    auto peer() const {
         address_t addr;
         socklen_t len = address_t::maxsize();
         memset(*addr, 0, sizeof(addr));
@@ -442,7 +442,7 @@ public:
         return addr;
     }
 
-    inline auto local() const {
+    auto local() const {
         address_t addr;
         socklen_t len = address_t::maxsize();
         memset(*addr, 0, sizeof(addr));
@@ -451,26 +451,26 @@ public:
         return addr;
     }
 
-    inline auto send(const char *from, size_t size, int flags = 0) const -> int {
+    auto send(const char *from, size_t size, int flags = 0) const -> int {
         if(so_ == -1)
             return 0;
         return static_cast<int>(::send(so_, from, size, flags));
     }
 
-    inline auto recv(char *to, size_t size, int flags = 0) const -> int {
+    auto recv(char *to, size_t size, int flags = 0) const -> int {
         if(so_ == -1)
             return 0;
         return static_cast<int>(::recv(so_, to, size, flags));
     }
 
-    inline auto send(const char *from, size_t size, const address_t addr, int flags = 0) const -> int {
+    auto send(const char *from, size_t size, const address_t addr, int flags = 0) const -> int {
         if(so_ == -1)
             return 0;
 
         return static_cast<int>(::sendto(so_, from, size, flags, addr.data(), addr.size()));
     }
 
-    inline auto recv(char *to, size_t size, address_t& addr, int flags = 0) const -> int {
+    auto recv(char *to, size_t size, address_t& addr, int flags = 0) const -> int {
         auto len = address_t::maxsize();
         if(so_ == -1)
             return 0;

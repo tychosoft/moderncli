@@ -33,45 +33,45 @@ inline void zero(uint8_t *ptr, size_t size) {
 template <int S>
 class random_t final {
 public:
-    inline random_t() { // NOLINT
+    random_t() { // NOLINT
         rand(data_);
     }
 
-    inline random_t(const random_t& other) {    // NOLINT
+    random_t(const random_t& other) {    // NOLINT
         memcpy(&data_, &other.data_, sizeof(data_));
     }
 
-    inline ~random_t() {
+    ~random_t() {
         zero(data_);
     }
 
-    inline auto operator=(const random_t& other) -> random_t& {
+    auto operator=(const random_t& other) -> random_t& {
         if(this != &other)
             memcpy(&data_, &other.data_, S);    // FlawFinder: ignore
         return *this;
     }
 
-    inline auto operator==(const random_t& other) const {
+    auto operator==(const random_t& other) const {
         return memcmp(&data_, &other.data_, S) == 0;
     }
 
-    inline auto operator!=(const random_t& other) const {
+    auto operator!=(const random_t& other) const {
         return memcmp(&data_, &other.data_, S) != 0;
     }
 
-    inline operator key_t() const {
+    operator key_t() const {
         return std::make_pair(data(), size());
     }
 
-    inline auto key() const {
+    auto key() const {
         return std::make_pair(data(), size());
     }
 
-    inline auto data() const {
+    auto data() const {
         return &data_[0];
     }
 
-    inline auto size() const {
+    auto size() const {
         return sizeof(data_);
     }
 

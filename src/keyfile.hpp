@@ -16,53 +16,53 @@ class keyfile {
 public:
     using keys = std::unordered_map<std::string, std::string>;
 
-    explicit inline keyfile(const std::initializer_list<std::string>& paths) noexcept :
+    explicit keyfile(const std::initializer_list<std::string>& paths) noexcept :
     ptr_(std::make_shared<keyfile::data>()) {
         for(const auto& path : paths)
             ptr_->load(path);
     }
 
-    inline keyfile() noexcept :
+    keyfile() noexcept :
     ptr_(std::make_shared<keyfile::data>()) {};
 
-    inline auto operator[](const std::string& id) -> keys& {
+    auto operator[](const std::string& id) -> keys& {
         return ptr_->fetch(id);
     }
 
-    inline auto operator[](const std::string& id) const -> keys {
+    auto operator[](const std::string& id) const -> keys {
         return ptr_->fetch(id);
     }
 
-    inline auto at(const std::string& id = "_") const -> keys {
+    auto at(const std::string& id = "_") const -> keys {
         return ptr_->fetch(id);
     }
 
-    inline auto keyset(const std::string& id = "_") -> keys& {
+    auto keyset(const std::string& id = "_") -> keys& {
         return ptr_->fetch(id);
     }
 
-    inline auto exists(const std::string& id = "_") const -> bool {
+    auto exists(const std::string& id = "_") const -> bool {
         return ptr_ ? ptr_->exists(id) : false;
     }
 
-    inline auto operator!() const -> bool {
+    auto operator!() const -> bool {
         return !ptr_;
     }
 
-    inline void remove(const std::string& id) {
+    void remove(const std::string& id) {
         if(ptr_) ptr_->remove(id);
     }
 
-    inline auto load(const std::string& path) -> bool {
+    auto load(const std::string& path) -> bool {
         return ptr_ ? ptr_->load(path) : false;
     }
 
-    inline void clear() {
+    void clear() {
         if(ptr_)
             ptr_.reset();
     }
 
-    inline auto flatten(const std::string& id = "_") const {
+    auto flatten(const std::string& id = "_") const {
         std::string result;
         auto list = ptr_->fetch(id);
         for(const auto& [key, value] : list)
@@ -70,11 +70,11 @@ public:
         return result;
     }
 
-    inline auto write(const std::string& path) const -> bool {
+    auto write(const std::string& path) const -> bool {
         return ptr_ ? ptr_->save(path) : false;
     }
 
-    inline auto empty() const -> bool {
+    auto empty() const -> bool {
         return !ptr_ || ptr_->empty();
     }
 
@@ -85,23 +85,23 @@ private:
         data(data const&) = delete;
         auto operator=(const data&) -> data& = delete;
 
-        inline auto empty() const -> bool {
+        auto empty() const -> bool {
             return sections.empty();
         }
 
-        inline auto exists(const std::string& id) const -> bool {
+        auto exists(const std::string& id) const -> bool {
             return sections.count(id) > 0;  // NOLINT
         }
 
-        inline void remove(const std::string& id) {
+        void remove(const std::string& id) {
             sections.erase(id);
         }
 
-        inline auto fetch(const std::string& id) -> keys& {
+        auto fetch(const std::string& id) -> keys& {
             return sections[id];
         }
 
-        inline auto load(const std::string& path) -> bool {
+        auto load(const std::string& path) -> bool {
             const std::string_view whitespace(" \t\n\r");
             std::ifstream file(path);
             if(!file.is_open())
@@ -146,7 +146,7 @@ private:
             return true;
         }
 
-        inline auto save(const std::string& path) -> bool {
+        auto save(const std::string& path) -> bool {
             std::ofstream out(path, std::ios::binary);
             if(!out.is_open())
                 return false;

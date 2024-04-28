@@ -62,7 +62,7 @@ void println(std::ostream& out, std::string_view fmt, const Args&... args) {
 
 class system_logger final {
 public:
-    using notify_t = void (*)(const std::string&);
+    using notify_t = void (*)(const std::string&, const char *type);
 
     system_logger() = default;
     system_logger(const system_logger&) = delete;
@@ -78,11 +78,10 @@ public:
                 auto msg = format(fmt, args...);
                 const std::lock_guard lock(locking);
                 print(std::cerr, "debug: {}\n", msg);
-                notify_(msg);
+                notify_(msg, "debug");
             }
             catch(const std::exception& e) {
                 print(std::cerr, "debug: {}\n", e.what());
-                notify_(e.what());
                 return;
             }
         }
@@ -98,7 +97,7 @@ public:
 #ifdef  USE_SYSLOG
         ::syslog(LOG_INFO, "%s", msg.c_str());
 #endif
-        notify_(msg);
+        notify_(msg, "info");
         if(logging > 1)
             print(std::cerr, "info: {}\n", msg);
     }
@@ -112,7 +111,7 @@ public:
 #ifdef  USE_SYSLOG
         ::syslog(LOG_NOTICE, "%s", msg.c_str());
 #endif
-        notify_(msg);
+        notify_(msg, "notice");
         if(logging > 0)
             print(std::cerr, "notice: {}\n", msg);
     }
@@ -126,7 +125,7 @@ public:
 #ifdef  USE_SYSLOG
         ::syslog(LOG_WARNING, "%s", msg.c_str());
 #endif
-        notify_(msg);
+        notify_(msg, "warning");
         if(logging)
             print(std::cerr, "warn: {}\n", msg);
     }
@@ -140,7 +139,7 @@ public:
 #ifdef  USE_SYSLOG
         ::syslog(LOG_ERR, "%s", msg.c_str());
 #endif
-        notify_(msg);
+        notify_(msg, "error");
         if(logging)
             print(std::cerr, "error: {}\n", msg);
     }
@@ -154,14 +153,14 @@ public:
 #ifdef  USE_SYSLOG
         ::syslog(LOG_CRIT, "%s", msg.c_str());
 #endif
-        notify_(msg);
+        notify_(msg, "fatal");
         if(logging)
             print(std::cerr, "fail: {}\n", msg);
         std::cerr << std::ends;
         ::exit(excode);
     }
 
-    void set(unsigned level, notify_t notify = [](const std::string& str){}) {
+    void set(unsigned level, notify_t notify = [](const std::string& str, const char *type){}) {
         logging = level;
         notify_ = notify;
     }
@@ -184,7 +183,7 @@ public:
 private:
     std::mutex locking;
     unsigned logging{1};
-    notify_t notify_{[](const std::string& str){}};
+    notify_t notify_{[](const std::string& str, const char *type){}};
 };
 } // end namespace
 #endif
