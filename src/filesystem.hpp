@@ -74,7 +74,7 @@ inline auto scan_recursive(const fsys::path& path, std::function<bool(const fsys
 }
 
 inline auto to_string(const fsys::path& path) {
-    return std::string{path};
+    return std::string{path.u8string()};
 }
 } // end namespace
 
@@ -87,7 +87,7 @@ public:
 
     template <typename Context>
     constexpr auto format(fsys::path const& path, Context& ctx) const {
-        return format_to(ctx.out(), "{}", std::string{path});
+        return format_to(ctx.out(), "{}", std::string{path.u8string()});
     }
 };
 
