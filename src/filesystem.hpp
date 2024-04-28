@@ -11,6 +11,8 @@
 #include <fstream>
 #include <string>
 
+#include <fmt/format.h>
+
 #include <sys/types.h>
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -70,5 +72,23 @@ inline auto scan_recursive(const fsys::path& path, std::function<bool(const fsys
     auto dir = fsys::recursive_directory_iterator(path, fsys::directory_options::skip_permission_denied);
     return std::count_if(begin(dir), end(dir), proc);
 }
+
+inline auto to_string(const fsys::path& path) {
+    return std::string{path};
+}
 } // end namespace
+
+// Print file paths...
+template <> class fmt::formatter<fsys::path> {
+public:
+    static constexpr auto parse(format_parse_context& ctx) {
+        return ctx.begin();
+    }
+
+    template <typename Context>
+    constexpr auto format(fsys::path const& path, Context& ctx) const {
+        return format_to(ctx.out(), "{}", std::string{path});
+    }
+};
+
 #endif
