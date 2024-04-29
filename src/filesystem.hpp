@@ -12,7 +12,6 @@
 #include <string>
 
 #include <fmt/format.h>
-
 #include <sys/types.h>
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -90,5 +89,4 @@ public:
         return format_to(ctx.out(), "{}", std::string{path.u8string()});
     }
 };
-
 #endif

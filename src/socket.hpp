@@ -4,6 +4,10 @@
 #ifndef SOCKET_HPP_
 #define SOCKET_HPP_
 
+#include <string>
+#include <cstring>
+
+#include <fmt/format.h>
 #include <sys/types.h>
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -27,9 +31,6 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #endif
-
-#include <string>
-#include <cstring>
 
 #if __has_include(<poll.h>)
 #include <poll.h>
@@ -483,4 +484,16 @@ protected:
 };
 using socket_t = socket;
 } // end namespace
+
+template <> class fmt::formatter<tycho::address_t> {
+public:
+    static constexpr auto parse(format_parse_context& ctx) {
+        return ctx.begin();
+    }
+
+    template <typename Context>
+    constexpr auto format(tycho::address_t const& addr, Context& ctx) const {
+        return format_to(ctx.out(), "{}", addr.to_string());
+    }
+};
 #endif
