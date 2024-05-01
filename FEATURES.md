@@ -40,6 +40,10 @@ have multiple C++ applications. Finally, formatted support for system logging
 is introduced, along with serializing logging requests and the ability to
 notify logging events.
 
+## process.hpp
+
+Access process properties and execute programs.
+
 ## random.hpp
 
 Generate random keys and data using openssl rand functions.
