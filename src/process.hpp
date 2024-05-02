@@ -9,6 +9,7 @@
 #include <string>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 #if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
@@ -88,7 +89,7 @@ inline auto stop(id_t pid) {
     return CloseHandle((HANDLE)pid) == TRUE;
 }
 
-inline auto id() -> id_t {
+inline auto id() noexcept -> id_t {
     return _getpid();
 }
 
@@ -172,7 +173,7 @@ inline auto async(const std::string& path, char *const *argv, char *const *env) 
     return child;
 }
 
-inline auto id() -> id_t {
+inline auto id() noexcept -> id_t {
     return getpid();
 }
 
@@ -181,23 +182,23 @@ inline void env(const std::string& id, const std::string& value) {
 }
 #endif
 
-inline auto env(const std::string& id, size_t max = 256) {
+inline auto env(const std::string& id, size_t max = 256) noexcept -> std::optional<std::string> {
     auto buf = std::make_unique<char []>(max);
     // FlawFinder: ignore
     const char *out = getenv(id.c_str());
     if(!out)
-        throw std::invalid_argument("cannot get env");
+        return {};
 
     buf[max - 1] = 0;
     // FlawFinder: ignore
     strncpy(&buf[0], out, max);
     if(buf[max - 1] != 0)
-        throw std::invalid_argument("env too large");
+        return {};
 
     return std::string(&buf[0]);
 }
 
-inline auto shell(const std::string& cmd) {
+inline auto shell(const std::string& cmd) noexcept {
     // FlawFinder: ignore
     return system(cmd.c_str());
 }

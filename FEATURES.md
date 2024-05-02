@@ -11,6 +11,10 @@ An argument parsing library header for use in a C++ main().  It consists of
 statically configured command line parsing objects and a method to generate
 help text.
 
+## atomics.hpp
+
+Atomic / lockfree data structures and features.
+
 ## digest.hpp
 
 Uses openssl libcrypto to generate hash digests.
