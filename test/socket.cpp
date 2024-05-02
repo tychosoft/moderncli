@@ -6,10 +6,10 @@
 #include "socket.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
-    assert(socket::startup());
+    assert(tycho::socket::startup());
     const socket_t unset;
     assert(!is(unset));
-    socket::shutdown();
+    tycho::socket::shutdown();
 }
 
 
