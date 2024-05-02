@@ -483,7 +483,7 @@ public:
     }
 
 #ifdef USE_CLOSESOCKET
-    static bool startup() {
+    static auto startup() {
         WSADATA data;
         auto ver = MAKEWORD(2, 2);
         return WSAStartup(ver, &data) == 0;
@@ -493,7 +493,7 @@ public:
         static_cast<void>(WSACleanup());
     }
 #else
-    static bool startup() {
+    static auto startup() {
         return true;
     }
 
