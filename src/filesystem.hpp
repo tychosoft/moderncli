@@ -36,6 +36,27 @@ extern "C" {
 
 namespace fsys {
 using namespace std::filesystem;
+
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+inline auto native_handle(int fd) {
+    auto handle = _get_osfhandle(fd);
+    if(handle == -1)
+        return static_cast<void *>(nullptr);
+    return reinterpret_cast<void *>(handle);
+}
+
+inline auto native_handle(std::FILE *fp) {
+    return native_handle(static_cast<int>(_fileno(fp)));
+}
+#else
+inline auto native_handle(int fd) {
+    return fd;
+}
+
+inline auto native_handle(std::FILE *fp) {
+    return fileno(fp);
+}
+#endif
 } // end fsys namespace
 
 namespace tycho {
