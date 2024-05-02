@@ -9,7 +9,7 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 cmake_minimum_required(VERSION 3.16.0)
-project(ModernCLI VERSION 0.8.1 LANGUAGES CXX)
+project(ModernCLI VERSION 0.8.2 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -55,6 +55,11 @@ add_test(NAME test-endian COMMAND test_endian)
 
 add_executable(test_socket  test/socket.cpp src/socket.hpp)
 add_test(NAME test-socket COMMAND test_socket)
+if(WIN32)
+	target_link_libraries(test_socket PRIVATE Threads::Threads fmt::fmt ws2_32)
+else()
+	target_link_libraries(test_socket PRIVATE Threads::Threads fmt::fmt)
+endif()
 
 add_executable(test_process  test/process.cpp src/process.hpp)
 add_test(NAME test-process COMMAND test_process)

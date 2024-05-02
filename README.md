@@ -7,6 +7,12 @@ installed and used as a core dependency. Hence, one interpretation for this
 package is "Modern C++" Library Interfaces. Moderncli is meant to support C++
 17 or later.
 
+Most moderncli headers are meant to be usable stand-alone and provide generic
+cross-platform low level wrappers around common system features. This makes it
+easier to include just what you need without drawing in additional headers you
+may not be using. This also makes it easy to substitute other common C++
+libraries without having to include duplication functionality from moderncli.
+
 Moderncli requires CMake to build. It should build and work with GCC (9 or
 later), with Clang (14? or later), and MSVC.  Besides GNU/Linux and BSD
 systems, Moderncli is portable to and can support the MingW platform target as

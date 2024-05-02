@@ -1,7 +1,7 @@
 {
-  "builtin-baseline": "c8696863d371ab7f46e213d8f5ca923c4aef2a00",
+  "builtin-baseline": "c591ac6466a55ef0a05a3d56bb1489ca36e50102",
   "name": "moderncli",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "dependencies": [
     "fmt",
     "openssl",

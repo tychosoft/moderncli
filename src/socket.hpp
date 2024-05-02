@@ -20,8 +20,11 @@
 #define _WIN32_WINNT    0x0600
 #endif
 #define USE_CLOSESOCKET
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <atomic>
 #else
 #include <sys/socket.h>
 #include <net/if.h>
@@ -479,6 +482,24 @@ public:
         return static_cast<int>(::recvfrom(so_, to, size, flags, addr.data(), &len));
     }
 
+#ifdef USE_CLOSESOCKET
+    static bool startup() {
+        WSADATA data;
+        auto ver = MAKEWORD(2, 2);
+        return WSAStartup(ver, &data) == 0;
+    }
+
+    static void shutdown() {
+        static_cast<void>(WSACleanup());
+    }
+#else
+    static bool startup() {
+        return true;
+    }
+
+    static void shutdown() {
+    }
+#endif
 protected:
     int so_{-1};
 };

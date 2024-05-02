@@ -42,11 +42,6 @@ namespace tycho {
 using namespace fmt;
 
 template<class... Args>
-[[deprecated]] auto print_format(std::string_view fmt, const Args&... args) {
-    return fmt::format(fmt, args...);
-}
-
-template<class... Args>
 void die(int code, std::string_view fmt, const Args&... args) {
     std::cerr << fmt::format(fmt, args...);
     ::exit(code);
@@ -73,12 +68,12 @@ public:
     template<class... Args>
     void debug(unsigned level, std::string_view fmt, const Args&... args) {
 #ifndef NDEBUG
-        if(level <= logging) {
+        if(level <= logging_) {
             try {
                 if(fmt.back() == '\n')
                     fmt.remove_suffix(1);
                 auto msg = format(fmt, args...);
-                const std::lock_guard lock(locking);
+                const std::lock_guard lock(locking_);
                 print(std::cerr, "debug: {}\n", msg);
                 notify_(msg, "debug");
             }
@@ -95,12 +90,12 @@ public:
         if(fmt.back() == '\n')
             fmt.remove_suffix(1);
         auto msg = format(fmt, args...);
-        const std::lock_guard lock(locking);
+        const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
         ::syslog(LOG_INFO, "%s", msg.c_str());
 #endif
         notify_(msg, "info");
-        if(logging > 1)
+        if(logging_ > 1)
             print(std::cerr, "info: {}\n", msg);
     }
 
@@ -109,12 +104,12 @@ public:
         if(fmt.back() == '\n')
             fmt.remove_suffix(1);
         auto msg = format(fmt, args...);
-        const std::lock_guard lock(locking);
+        const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
         ::syslog(LOG_NOTICE, "%s", msg.c_str());
 #endif
         notify_(msg, "notice");
-        if(logging > 0)
+        if(logging_ > 0)
             print(std::cerr, "notice: {}\n", msg);
     }
 
@@ -123,12 +118,12 @@ public:
         if(fmt.back() == '\n')
             fmt.remove_suffix(1);
         auto msg = format(fmt, args...);
-        const std::lock_guard lock(locking);
+        const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
         ::syslog(LOG_WARNING, "%s", msg.c_str());
 #endif
         notify_(msg, "warning");
-        if(logging)
+        if(logging_)
             print(std::cerr, "warn: {}\n", msg);
     }
 
@@ -137,12 +132,12 @@ public:
         if(fmt.back() == '\n')
             fmt.remove_suffix(1);
         auto msg = format(fmt, args...);
-        const std::lock_guard lock(locking);
+        const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
         ::syslog(LOG_ERR, "%s", msg.c_str());
 #endif
         notify_(msg, "error");
-        if(logging)
+        if(logging_)
             print(std::cerr, "error: {}\n", msg);
     }
 
@@ -151,19 +146,19 @@ public:
         if(fmt.back() == '\n')
             fmt.remove_suffix(1);
         auto msg = format(fmt, args...);
-        const std::lock_guard lock(locking);
+        const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
         ::syslog(LOG_CRIT, "%s", msg.c_str());
 #endif
         notify_(msg, "fatal");
-        if(logging)
+        if(logging_)
             print(std::cerr, "fail: {}\n", msg);
         std::cerr << std::ends;
         ::exit(excode);
     }
 
     void set(unsigned level, notify_t notify = [](const std::string& str, const char *type){}) {
-        logging = level;
+        logging_ = level;
         notify_ = notify;
     }
 
@@ -183,8 +178,8 @@ public:
 #endif
 
 private:
-    std::mutex locking;
-    unsigned logging{1};
+    std::mutex locking_;
+    unsigned logging_{1};
     notify_t notify_{[](const std::string& str, const char *type){}};
 };
 

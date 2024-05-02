@@ -6,42 +6,55 @@
 
 #include <stdexcept>
 #include <memory>
+#include <string>
 #include <cstdlib>
 #include <cstring>
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+#if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
+#undef  _WIN32_WINNT
+#define _WIN32_WINNT    0x0600
+#endif
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <process.h>
+#include <handleapi.h>
 #else
+#include <csignal>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#endif
+
+#ifdef __FreeBSD__
+#define execvpe(p,a,e)  exect(p,a,e)
 #endif
 
 namespace process {
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 using id_t = intptr_t;
 
-inline auto spawn(const std::string& path, const char **argv) {
+inline auto spawn(const std::string& path, char *const *argv) {
     return _spawnvp(_P_WAIT, path.c_str(), argv);
 }
 
-inline auto spawn(const std::string& path, const char **argv, const char **env) {
+inline auto spawn(const std::string& path, char *const *argv, char *const *env) {
     return _spawnvpe(_P_WAIT, path.c_str(), argv, env);
 }
 
-inline auto exec(const std::string& path, const char **argv) {
+inline auto exec(const std::string& path, char *const *argv) {
     return _spawnvp(_P_OVERLAY, path.c_str(), argv);
 }
 
-inline auto exec(const std::string& path, const char **argv, const char **env) {
+inline auto exec(const std::string& path, char *const *argv, char *const *env) {
     return _spawnvpe(_P_OVERLAY, path.c_str(), argv, env);
 }
 
-inline auto async(const std::string& path, const char **argv) -> id_t {
+inline auto async(const std::string& path, char *const *argv) -> id_t {
     return _spawnvp(_P_NOWAIT, path.c_str(), argv);
 }
 
-inline auto async(const std::string& path, const char **argv, const char **env) -> id_t {
+inline auto async(const std::string& path, char *const *argv, char *const *env) -> id_t {
     return _spawnvpe(_P_NOWAIT, path.c_str(), argv, env);
 }
 
@@ -53,11 +66,11 @@ inline auto output(const std::string& cmd) {
     return _popen(cmd.c_str(), "wb");
 }
 
-inline auto detach(const std::string& path, const char **argv) {
+inline auto detach(const std::string& path, char *const *argv) {
     return _spawnvp(_P_DETACH, path.c_str(), argv);
 }
 
-inline auto detach(const std::string& path, const char **argv, const char **env) {
+inline auto detach(const std::string& path, char *const *argv, char *const *env) {
     return _spawnvpe(_P_DETACH, path.c_str(), argv, env);
 }
 
@@ -71,12 +84,16 @@ inline auto wait(std::FILE *fp) {
     return _pclose(fp);
 }
 
+inline auto stop(id_t pid) {
+    return CloseHandle((HANDLE)pid) == TRUE;
+}
+
 inline auto id() -> id_t {
     return _getpid();
 }
 
 inline void env(const std::string& id, const std::string& value) {
-    _putenv((id + "=" + value).c_str());
+    static_cast<void>(_putenv((id + "=" + value).c_str()));
 }
 #else
 using id_t = pid_t;
@@ -98,7 +115,11 @@ inline auto wait(id_t pid) {
 }
 
 inline auto wait(std::FILE *fp) {
-    return WEXITSTATUS(pclose(fp));
+    return pclose(fp);
+}
+
+inline auto stop(id_t pid) {
+    return !kill(pid, SIGTERM);
 }
 
 inline auto spawn(const std::string& path, char *const *argv) {
