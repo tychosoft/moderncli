@@ -7,10 +7,8 @@
 #include <iostream>
 #include <string_view>
 #include <mutex>
-#include <sstream>
-#include <iomanip>
-#include <ctime>
 
+#include <fmt/format.h>
 #include <fmt/ranges.h>
 
 #ifndef _MSC_VER
@@ -182,49 +180,5 @@ private:
     unsigned logging_{1};
     notify_t notify_{[](const std::string& str, const char *type){}};
 };
-
-inline auto iso_string(const std::tm& current) {
-    std::stringstream text;
-    text <<  std::put_time(&current, "%Y-%m-%d %X");
-    return text.str();
-}
-
-inline auto iso_string(const std::time_t& current) {
-    std::tm local{};
-#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-    localtime_s(&local, &current);
-#else
-    localtime_r(&current, &local);
-#endif
-    return iso_string(local);
-}
-
-inline auto iso_date(const std::tm& current) {
-    return iso_string(current).substr(0, 10);
-}
-
-inline auto iso_date(const std::time_t& current) {
-    return iso_string(current).substr(0, 10);
-}
-
-inline auto iso_time(const std::tm& current) {
-    return iso_string(current).substr(11, 8);
-}
-
-inline auto iso_time(const std::time_t& current) {
-    return iso_string(current).substr(11, 8);
-}
 } // end namespace
-
-template <> class fmt::formatter<std::tm> {
-public:
-    static constexpr auto parse(format_parse_context& ctx) {
-        return ctx.begin();
-    }
-
-    template <typename Context>
-    constexpr auto format(const std::tm& current, Context& ctx) const {
-        return format_to(ctx.out(), "{}", tycho::iso_string(current));
-    }
-};
 #endif

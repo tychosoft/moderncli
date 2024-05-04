@@ -43,8 +43,9 @@ add_executable(test_keyfile  test/keyfile.cpp src/keyfile.hpp test/test.conf)
 set_target_properties(test_keyfile PROPERTIES COMPILE_DEFINITIONS "TEST_DATA=\"${CMAKE_SOURCE_DIR}/test\"")
 add_test(NAME test-keyfile COMMAND test_keyfile)
 
-add_executable(test_strings  test/strings.cpp src/strings.hpp)
+add_executable(test_strings  test/strings.cpp src/strings.hpp src/datetime.hpp)
 add_test(NAME test-strings COMMAND test_strings)
+target_link_libraries(test_strings PRIVATE fmt::fmt)
 
 add_executable(test_sync  test/sync.cpp src/sync.hpp)
 add_test(NAME test-sync COMMAND test_sync)
@@ -56,6 +57,9 @@ target_link_libraries(test_atomics PRIVATE Threads::Threads)
 
 add_executable(test_endian  test/endian.cpp src/endian.hpp)
 add_test(NAME test-endian COMMAND test_endian)
+
+add_executable(test_output  test/output.cpp src/output.hpp)
+add_test(NAME test-output COMMAND test_output)
 
 add_executable(test_socket  test/socket.cpp src/socket.hpp)
 add_test(NAME test-socket COMMAND test_socket)

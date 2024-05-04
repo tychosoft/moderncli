@@ -3,7 +3,9 @@
 
 #undef  NDEBUG
 #include "compiler.hpp"
+#include "print.hpp"
 #include "strings.hpp"
+#include "datetime.hpp"
 
 #include <iostream>
 

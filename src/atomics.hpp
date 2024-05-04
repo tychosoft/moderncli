@@ -97,12 +97,8 @@ public:
         return pop();
     }
 
-    auto operator<<(const T& item) noexcept {
+    auto operator<=(const T& item) {
         return push(item);
-    }
-
-    auto operator>>(const T& item) noexcept {
-        return pull(item);
     }
 
     auto size() const noexcept -> size_t {
@@ -173,12 +169,8 @@ public:
         return pop();
     }
 
-    auto operator<<(const T& item) noexcept {
+    auto operator<=(const T& item) noexcept {
         return push(item);
-    }
-
-    auto operator>>(const T& item) noexcept {
-        return pull(item);
     }
 
     auto push(const T& item) noexcept {

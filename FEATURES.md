@@ -15,6 +15,10 @@ help text.
 
 Atomic / lockfree data structures and features.
 
+## datetime.hpp
+
+Basic date / time processing and formatting functions.
+
 ## digest.hpp
 
 Uses openssl libcrypto to generate hash digests.
@@ -35,6 +39,11 @@ have key=value key pairs in each section.  It allows for instanciating a
 section as a collection of keys as well as iterating over named sections and
 key collections. It can also be used to modify and re-write the key file with
 changed data.
+
+## output.hpp
+
+Older stream based output that pre-dates print. By not requiring format() it
+produces smaller binaries, and is desirable for making tiny cli utilities.
 
 ## print.hpp
 

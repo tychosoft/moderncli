@@ -3,14 +3,14 @@
 
 #undef  NDEBUG
 #include "compiler.hpp"
-#include "print.hpp"
-#include "socket.hpp"
+#include "output.hpp"
+#include "datetime.hpp"
+
+using namespace tycho;
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
-    assert(tycho::socket::startup());
-    const socket_t unset;
-    assert(!is(unset));
-    tycho::socket::shutdown();
+    auto now = gmt_time(time(nullptr));
+    output() << "hello " << "world, " << to_string(now, GENERIC_DATETIME);
 }
 
 

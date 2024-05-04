@@ -11,15 +11,15 @@
 #include <fstream>
 #include <string>
 
-#include <fmt/format.h>
 #include <sys/types.h>
+#include <fcntl.h>
+
 #ifndef _MSC_VER
 #include <unistd.h>
 #else
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #endif
-#include <fcntl.h>
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 extern "C" {
@@ -98,7 +98,7 @@ inline auto to_string(const fsys::path& path) {
 }
 } // end namespace
 
-// Print file paths...
+#ifdef  PRINT_HPP_
 template <> class fmt::formatter<fsys::path> {
 public:
     static constexpr auto parse(format_parse_context& ctx) {
@@ -110,4 +110,10 @@ public:
         return format_to(ctx.out(), "{}", std::string{path.u8string()});
     }
 };
+#endif
+
+inline auto operator<<(std::ostream& out, const fsys::path& path) -> std::ostream& {
+    out << path.u8string();
+    return out;
+}
 #endif
