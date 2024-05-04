@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.8.3
+- Modernize streams, time, and print plugin support
+- Add atomics / lockfree types
+- Native file handle support
+- Socket test fix for netbsd
+- Introduced init\_t for golang-like init() lambda.
+
 ## v0.8.2
 - Iso date and time output
 - Print socket address

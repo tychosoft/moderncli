@@ -9,6 +9,15 @@
 #include "filesystem.hpp"
 #include "output.hpp"
 
+// Test of init trick, a "kind of" atinit() function or golang init().
+namespace {
+    int value = 0;
+
+    init_t init([]{
+        ++value;
+    });
+} // end anon namespace
+
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     const uint16_t val = 23;
     auto out = format("X{}Y", val);
@@ -16,6 +25,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     fsys::remove("/tmp/xyz");
     fsys::path path = "/here";
     assert(format("!{}!", path) == "!/here!");
+    assert(value == 1);
 }
 
 

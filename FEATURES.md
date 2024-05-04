@@ -9,7 +9,7 @@ to be used directly inline. These currently include:
 
 An argument parsing library header for use in a C++ main().  It consists of
 statically configured command line parsing objects and a method to generate
-help text.
+help text. Support for a kind of golang init() thru init\_t also introduced.
 
 ## atomics.hpp
 

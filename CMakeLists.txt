@@ -9,7 +9,7 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 cmake_minimum_required(VERSION 3.16.0)
-project(ModernCLI VERSION 0.8.2 LANGUAGES CXX)
+project(ModernCLI VERSION 0.8.3 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -43,7 +43,7 @@ add_executable(test_keyfile  test/keyfile.cpp src/keyfile.hpp test/test.conf)
 set_target_properties(test_keyfile PROPERTIES COMPILE_DEFINITIONS "TEST_DATA=\"${CMAKE_SOURCE_DIR}/test\"")
 add_test(NAME test-keyfile COMMAND test_keyfile)
 
-add_executable(test_strings  test/strings.cpp src/strings.hpp src/datetime.hpp)
+add_executable(test_strings  test/strings.cpp src/strings.hpp src/datetime.hpp src/print.hpp)
 add_test(NAME test-strings COMMAND test_strings)
 target_link_libraries(test_strings PRIVATE fmt::fmt)
 
