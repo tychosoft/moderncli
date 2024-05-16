@@ -128,7 +128,7 @@ inline auto spawn(const std::string& path, char *const *argv) {
     if(!child) {
         // FlawFinder: ignore
         execvp(path.c_str(), argv);
-        ::exit(-1);
+        ::_exit(-1);
     }
     return wait(child);
 }
@@ -138,7 +138,7 @@ inline auto spawn(const std::string& path, char *const *argv, char *const *env) 
     if(!child) {
         // FlawFinder: ignore
         execvpe(path.c_str(), argv, env);
-        ::exit(-1);
+        ::_exit(-1);
     }
     return wait(child);
 }
@@ -158,7 +158,7 @@ inline auto async(const std::string& path, char *const *argv) -> id_t {
     if(!child) {
         // FlawFinder: ignore
         execvp(path.c_str(), argv);
-        ::exit(-1);
+        ::_exit(-1);
     }
     return child;
 }
@@ -168,7 +168,7 @@ inline auto async(const std::string& path, char *const *argv, char *const *env) 
     if(!child) {
         // FlawFinder: ignore
         execvpe(path.c_str(), argv, env);
-        ::exit(-1);
+        ::_exit(-1);
     }
     return child;
 }
