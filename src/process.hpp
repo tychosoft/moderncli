@@ -182,6 +182,15 @@ inline void env(const std::string& id, const std::string& value) {
 }
 #endif
 
+inline auto exit(int code) {
+    std::quick_exit(code);
+}
+
+// cppcheck-suppress constParameterPointer
+inline auto on_exit(void(*handler)()) {
+    return std::at_quick_exit(handler) == 0;
+}
+
 inline auto env(const std::string& id, size_t max = 256) noexcept -> std::optional<std::string> {
     auto buf = std::make_unique<char []>(max);
     // FlawFinder: ignore

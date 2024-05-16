@@ -46,6 +46,12 @@ void die(int code, std::string_view fmt, const Args&... args) {
 }
 
 template<class... Args>
+void crit(int code, std::string_view fmt, const Args&... args) {
+    std::cerr << fmt::format(fmt, args...);
+    std::quick_exit(code);
+}
+
+template<class... Args>
 void print(std::ostream& out, std::string_view fmt, const Args&... args) {
     out << fmt::format(fmt, args...);
 }
@@ -153,6 +159,22 @@ public:
             print(std::cerr, "fail: {}\n", msg);
         std::cerr << std::ends;
         ::exit(excode);
+    }
+
+    template<class... Args>
+    void crit(int excode, std::string_view fmt, const Args&... args) {
+        if(fmt.back() == '\n')
+            fmt.remove_suffix(1);
+        auto msg = format(fmt, args...);
+        const std::lock_guard lock(locking_);
+#ifdef  USE_SYSLOG
+        ::syslog(LOG_CRIT, "%s", msg.c_str());
+#endif
+        notify_(msg, "fatal");
+        if(logging_)
+            print(std::cerr, "crit: {}\n", msg);
+        std::cerr << std::ends;
+        std::quick_exit(excode);
     }
 
     void set(unsigned level, notify_t notify = [](const std::string& str, const char *type){}) {
