@@ -20,6 +20,10 @@
 #include <windows.h>
 #include <process.h>
 #include <handleapi.h>
+#ifndef quick_exit
+#define quick_exit(x) ::exit(x)
+#define at_quick_exit(x) ::atexit(x)
+#endif
 #else
 #include <csignal>
 #include <unistd.h>
@@ -182,13 +186,13 @@ inline void env(const std::string& id, const std::string& value) {
 }
 #endif
 
-inline auto exit(int code) {
-    std::quick_exit(code);
+[[noreturn]] inline auto exit(int code) {
+    quick_exit(code);
 }
 
 // cppcheck-suppress constParameterPointer
 inline auto on_exit(void(*handler)()) {
-    return std::at_quick_exit(handler) == 0;
+    return at_quick_exit(handler) == 0;
 }
 
 inline auto env(const std::string& id, size_t max = 256) noexcept -> std::optional<std::string> {

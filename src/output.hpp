@@ -7,6 +7,14 @@
 #include <sstream>
 #include <iostream>
 #include <string_view>
+#include <cstdlib>
+
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+#ifndef quick_exit
+#define quick_exit(x) ::exit(x)
+#define at_quick_exit(x) ::atexit(x)
+#endif
+#endif
 
 namespace tycho {
 class die final : public std::ostringstream {
@@ -34,7 +42,7 @@ public:
     [[noreturn]] ~crit() final {
         std::cerr << str() << std::endl;
         std::cerr.flush();
-        std::quick_exit(excode_);
+        quick_exit(excode_);
     }
 
 private:

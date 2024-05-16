@@ -7,12 +7,20 @@
 #include <iostream>
 #include <string_view>
 #include <mutex>
+#include <cstdlib>
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+#ifndef quick_exit
+#define quick_exit(x) ::exit(x)
+#define at_quick_exit(x) ::atexit(x)
+#endif
 #endif
 
 #if __has_include(<syslog.h>)
@@ -40,15 +48,15 @@ namespace tycho {
 using namespace fmt;
 
 template<class... Args>
-void die(int code, std::string_view fmt, const Args&... args) {
+[[noreturn]] void die(int code, std::string_view fmt, const Args&... args) {
     std::cerr << fmt::format(fmt, args...);
     ::exit(code);
 }
 
 template<class... Args>
-void crit(int code, std::string_view fmt, const Args&... args) {
+[[noreturn]] void crit(int code, std::string_view fmt, const Args&... args) {
     std::cerr << fmt::format(fmt, args...);
-    std::quick_exit(code);
+    quick_exit(code);
 }
 
 template<class... Args>
@@ -146,7 +154,7 @@ public:
     }
 
     template<class... Args>
-    void fail(int excode, std::string_view fmt, const Args&... args) {
+    [[noreturn]] void fail(int excode, std::string_view fmt, const Args&... args) {
         if(fmt.back() == '\n')
             fmt.remove_suffix(1);
         auto msg = format(fmt, args...);
@@ -162,7 +170,7 @@ public:
     }
 
     template<class... Args>
-    void crit(int excode, std::string_view fmt, const Args&... args) {
+    [[noreturn]] void crit(int excode, std::string_view fmt, const Args&... args) {
         if(fmt.back() == '\n')
             fmt.remove_suffix(1);
         auto msg = format(fmt, args...);
@@ -174,7 +182,7 @@ public:
         if(logging_)
             print(std::cerr, "crit: {}\n", msg);
         std::cerr << std::ends;
-        std::quick_exit(excode);
+        quick_exit(excode);
     }
 
     void set(unsigned level, notify_t notify = [](const std::string& str, const char *type){}) {
