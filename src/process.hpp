@@ -27,8 +27,10 @@
 #else
 #include <csignal>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/ioctl.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -170,6 +172,79 @@ inline auto async(const std::string& path, char *const *argv) -> id_t {
 inline auto async(const std::string& path, char *const *argv, char *const *env) -> id_t {
     const id_t child = fork();
     if(!child) {
+        // FlawFinder: ignore
+        execvpe(path.c_str(), argv, env);
+        ::_exit(-1);
+    }
+    return child;
+}
+
+inline auto detach(const std::string& path, char *const *argv) -> id_t {
+    const id_t child = fork();
+    if(!child) {
+#if defined(SIGTSTP) && defined(TIOCNOTTY)
+        if(setpgid(0, getpid()) == -1)
+            ::_exit(-1);
+
+        // FlawFinder: ignore
+        auto fd = open("/dev/tty", O_RDWR);
+        if(fd >= 0) {
+            ::ioctl(fd, TIOCNOTTY, NULL);
+            ::close(fd);
+        }
+#else
+#if defined(__linux__)
+        if(setpgid(0, getpid()) == -1)
+            ::_exit(-1);
+#else
+        if(setpgrp() == -1)
+            ::_exit(-1);
+#endif
+        if(getppid() != 1) {
+            auto pid = fork();
+            if(pid < 0)
+                ::_exit(-1);
+            else if(pid > 0)
+                ::_exit(0);
+        }
+#endif
+        // FlawFinder: ignore
+        execvp(path.c_str(), argv);
+        ::_exit(-1);
+    }
+    return child;
+}
+
+inline auto detach(const std::string& path, char *const *argv, char *const *env) -> id_t {
+    const id_t child = fork();
+    if(!child) {
+#if defined(SIGTSTP) && defined(TIOCNOTTY)
+        if(setpgid(0, getpid()) == -1)
+            ::_exit(-1);
+
+        // FlawFinder: ignore
+        auto fd = open("/dev/tty", O_RDWR);
+        if(fd >= 0) {
+            ::ioctl(fd, TIOCNOTTY, NULL);
+            ::close(fd);
+        }
+#else
+#if defined(__linux__)
+        if(setpgid(0, getpid()) == -1)
+            ::_exit(-1);
+#else
+        if(setpgrp() == -1)
+            ::_exit(-1);
+#endif
+        if(getppid() != 1) {
+            auto pid = fork();
+            if(pid < 0)
+                ::_exit(-1);
+            else if(pid > 0)
+                ::_exit(0);
+        }
+#endif
+
         // FlawFinder: ignore
         execvpe(path.c_str(), argv, env);
         ::_exit(-1);
