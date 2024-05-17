@@ -36,16 +36,4 @@ template<typename T>
 inline auto is(const T& object) {
     return object.operator bool();
 }
-
-/*!
- * \mainpage ModernCLI
- * A portable set of stand-alone command line utilities and header-only
- * libraries I may vendor in other projects. Some may use openssl.
- * \author David Sugar <tychosoft@gmail.com>
- */
-
-/*!
- * Compiler and platform specific definitions.
- * \file compiler.hpp
- */
 #endif

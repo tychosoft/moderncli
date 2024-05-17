@@ -72,6 +72,9 @@ endif()
 add_executable(test_process  test/process.cpp src/process.hpp)
 add_test(NAME test-process COMMAND test_process)
 
+add_executable(test_expected    test/expected.cpp src/expected.hpp)
+add_test(NAME test-expected COMMAND test_expected)
+
 add_executable(test_digest  test/digest.cpp src/digest.hpp)
 target_link_libraries(test_digest PRIVATE OpenSSL::Crypto)
 add_test(NAME test-digest COMMAND test_digest)

@@ -27,6 +27,10 @@ Uses openssl libcrypto to generate hash digests.
 
 Functions to store into and access memory pointer data by endian order.
 
+## expected.hpp
+
+A C++17 simplified emulation of C++23 std::expected using std::variant.
+
 ## filesystem.hpp
 
 Support for filesystem, posix file functions, and file scanning closures. This
