@@ -4,6 +4,7 @@
 #ifndef RANDOM_HPP_
 #define RANDOM_HPP_
 
+#include <type_traits>
 #include <random>
 #include <utility>
 #include <cstring>
@@ -13,6 +14,8 @@ namespace crypto {
 using key_t = std::pair<const uint8_t *, size_t>;
 template <typename T>
 inline void rand(T& data) {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
     auto ptr = reinterpret_cast<uint8_t *>(&data);
     ::RAND_bytes(ptr, static_cast<int>(sizeof(data)));
 }
@@ -23,6 +26,8 @@ inline void rand(uint8_t *ptr, size_t size) {
 
 template <typename T>
 inline void zero(T& data) {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
     auto ptr = reinterpret_cast<uint8_t *>(&data);
     memset(ptr, 0, sizeof(data));
 }
@@ -31,7 +36,7 @@ inline void zero(uint8_t *ptr, size_t size) {
     memset(ptr, 0, size);
 }
 
-template <int S>
+template <size_t S>
 class random_t final {
 public:
     random_t() { // NOLINT

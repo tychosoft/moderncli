@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.8.4
+- Added expected header
+- Add process detach for posix
+- Introduce crit with newer quick\_exit
+- Fix exit on spawn failure
+
 ## v0.8.3
 - Modernize streams, time, and print plugin support
 - Add atomics / lockfree types
