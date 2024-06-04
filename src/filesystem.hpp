@@ -83,6 +83,20 @@ inline auto scan_file(const fsys::path& path, std::function<bool(const std::stri
     return count;
 }
 
+inline auto make_input(const fsys::path& path, std::ios::openmode mode = std::ios::binary) {
+    std::ifstream file;
+    file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    file.open(path, mode);  // FlawFinder: ignore
+    return file;
+}
+
+inline auto make_output(const fsys::path& path, std::ios::openmode mode = std::ios::binary) {
+    std::ofstream file;
+    file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    file.open(path, mode);  // FlawFinder: ignore
+    return file;
+}
+
 inline auto scan_directory(const fsys::path& path, std::function<bool(const fsys::directory_entry&)> proc) {
     auto dir = fsys::directory_iterator(path);
     return std::count_if(begin(dir), end(dir), proc);

@@ -4,5 +4,3 @@ includedir=${CMAKE_INSTALL_FULL_INCLUDEDIR}/moderncli
 Name: moderncli
 Description: A common set of portable C++ header libraries
 Version: ${PROJECT_VERSION}
-Requires: fmt >= 6.1.2
-

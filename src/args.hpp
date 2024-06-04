@@ -190,7 +190,7 @@ public:
         inline static option *last_ = nullptr;
     };
 
-    static auto argv0() {
+    static auto argv0() -> const auto& {
         return argv0_;
     }
 
@@ -198,7 +198,7 @@ public:
         return argv_.size();
     }
 
-    static auto list() {
+    static auto list() -> const auto& {
         return argv_;
     }
 
