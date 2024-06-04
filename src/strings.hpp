@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <cstdint>
+#include <array>
 #include <vector>
 #include <algorithm>
 #include <set>
@@ -18,12 +19,12 @@
 
 namespace tycho {
 template<typename S = std::string>
-auto begins_with(const S& s, const std::string_view &b) -> bool {
+constexpr auto begins_with(const S& s, const std::string_view &b) -> bool {
     return s.find(b) == 0;
 }
 
 template<typename S = std::string>
-auto ends_with(const S& s, const std::string_view &e) -> bool {
+constexpr auto ends_with(const S& s, const std::string_view &e) -> bool {
     if(s.size() < e.size())
         return false;
     auto pos = s.rfind(e);
@@ -33,21 +34,21 @@ auto ends_with(const S& s, const std::string_view &e) -> bool {
 }
 
 template<typename S = std::string>
-auto upper_case(const S& s) -> S {
+constexpr auto upper_case(const S& s) -> S {
     S out = s;
     std::transform(out.begin(), out.end(), out.begin(), ::toupper);
     return out;
 }
 
 template<typename S = std::string>
-auto lower_case(const S& s) -> S {
+constexpr auto lower_case(const S& s) -> S {
     S out = s;
     std::transform(out.begin(), out.end(), out.begin(), ::tolower);
     return out;
 }
 
 template<typename S = std::string>
-auto trim(const S& str) -> S {
+constexpr auto trim(const S& str) -> S {
     auto last = str.find_last_not_of(" \t\f\v\n\r");
     if(last == S::npos)
         return "";
@@ -55,7 +56,7 @@ auto trim(const S& str) -> S {
 }
 
 template<typename S = std::string>
-auto strip(const S& str) -> S {
+constexpr auto strip(const S& str) -> S {
     const size_t first = str.find_first_not_of(" \t\f\v\n\r");
     const size_t last = str.find_last_not_of(" \t\f\v\n\r");
     if(last == S::npos)
@@ -64,7 +65,7 @@ auto strip(const S& str) -> S {
 }
 
 template<typename S = std::string>
-auto unquote(const S& str, std::string_view pairs = R"(""''{})") -> S {
+constexpr auto unquote(const S& str, std::string_view pairs = R"(""''{})") -> S {
     if(str.empty())
         return "";
     auto pos = pairs.find_first_of(str[0]);
@@ -79,7 +80,7 @@ auto unquote(const S& str, std::string_view pairs = R"(""''{})") -> S {
 }
 
 template<typename S = std::string>
-auto join(const std::vector<S>& list, const std::string_view& delim = ",") -> S {
+constexpr auto join(const std::vector<S>& list, const std::string_view& delim = ",") -> S {
     S separator, result;
     for(const auto& str : list) {
         result = result + separator + str;
@@ -89,7 +90,7 @@ auto join(const std::vector<S>& list, const std::string_view& delim = ",") -> S 
 }
 
 template<typename S = std::string>
-auto split(const S& str, std::string_view delim = " ", unsigned max = 0)
+inline auto split(const S& str, std::string_view delim = " ", unsigned max = 0)
 {
     std::vector<S> result;
     std::size_t current{}, prev{};
@@ -105,7 +106,7 @@ auto split(const S& str, std::string_view delim = " ", unsigned max = 0)
 }
 
 template<typename T>
-auto join(const std::set<T>& list, const std::string_view& delim = ",") {
+inline auto join(const std::set<T>& list, const std::string_view& delim = ",") {
     std::string sep;
     std::stringstream buf;
     for(auto const& value : list) {
@@ -116,7 +117,7 @@ auto join(const std::set<T>& list, const std::string_view& delim = ",") {
 }
 
 template<typename S=std::string>
-auto tokenize(const S& str, std::string_view delim = " ", std::string_view quotes = R"(""''{})") {
+inline auto tokenize(const S& str, std::string_view delim = " ", std::string_view quotes = R"(""''{})") {
     std::vector<S> result;
     auto current = str.find_first_of(delim);
     auto prev = str.find_first_not_of(delim);
@@ -145,6 +146,32 @@ finish:
     return result;
 }
 
+constexpr std::array<char, 64> base64_chars = {
+    'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
+    'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
+    'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
+    'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'
+};
+
+constexpr auto base64_index(char c) {
+    if (c >= 'A' && c <= 'Z')
+        return c - 'A';
+
+    if (c >= 'a' && c <= 'z')
+        return c - 'a' + 26;
+
+    if (c >= '0' && c <= '9')
+        return c - '0' + 52;
+
+    if (c == '+')
+        return 62;
+
+    if (c == '/')
+        return 63;
+
+    return -1;
+}
+
 // convenience function for string conversions if not explicit for template
 
 inline auto upper_case(const char *s) {
@@ -163,15 +190,15 @@ inline auto unquote(const char *s, const char *p = R"(""''{})") {
     return unquote(std::string(s), std::string(p));
 }
 
-inline auto begins_with(const char *s, const char *b) {
+constexpr auto begins_with(const char *s, const char *b) {
     return begins_with<std::string_view>(s, b);
 }
 
-inline auto ends_with(const char *s, const char *e) {
+constexpr auto ends_with(const char *s, const char *e) {
     return ends_with<std::string_view>(s, e);
 }
 
-inline auto eq(const char *p1, const char *p2) -> bool {
+constexpr auto eq(const char *p1, const char *p2) -> bool {
     if(!p1 && !p2)
         return true;
 
@@ -181,7 +208,7 @@ inline auto eq(const char *p1, const char *p2) -> bool {
     return !strcmp(p1, p2);
 }
 
-inline auto eq(const char *p1, const char *p2, size_t len) -> bool {
+constexpr auto eq(const char *p1, const char *p2, size_t len) -> bool {
     if(!p1 && !p2)
         return true;
 
@@ -191,7 +218,7 @@ inline auto eq(const char *p1, const char *p2, size_t len) -> bool {
     return !strncmp(p1, p2, len);
 }
 
-inline auto str_size(const char *cp, size_t max = 256) -> size_t {
+constexpr auto str_size(const char *cp, size_t max = 256) -> size_t {
     size_t count = 0;
     while(cp && *cp && count < max) {
         ++count;
@@ -251,8 +278,70 @@ inline auto to_hex(const uint8_t *from, size_t size) {
     return out;
 }
 
-inline auto to_hex(std::string_view from) {
-    return to_hex(reinterpret_cast<const uint8_t *>(from.data()), from.size());
+inline auto to_b64(const uint8_t *data, size_t size) {
+    std::string out;
+
+    for (size_t i = 0; i < size; i += 3) {
+        uint32_t c = 0;
+        for (size_t j = 0; j < 3; ++j) {
+            c <<= 8;
+            c |= static_cast<uint8_t>(data[i + j]);
+        }
+
+        out += base64_chars[(c >> 18) & 0x3F];
+        out += base64_chars[(c >> 12) & 0x3F];
+        out += base64_chars[(c >> 6) & 0x3F];
+        out += base64_chars[c & 0x3F];
+    }
+
+    if (size % 3 == 1) {
+        out.back() = '=';
+        out.push_back('=');
+    }
+    else if (size % 3 == 2)
+        out.push_back('=');
+    return out;
+}
+
+inline auto to_hex(const std::string_view str) {
+    return to_hex(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+}
+
+inline auto to_b64(const std::string_view str) {
+    return to_b64(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+}
+
+inline auto from_b64(std::string_view from, uint8_t *to, size_t max) {
+    size_t size = from.size(), pad = 0;
+    while(size > 0) {
+        if(from[size - 1] == '=') {
+            ++pad;
+            --size;
+        }
+        else
+            break;
+    }
+
+    const size_t out = ((size * 6) / 8) - pad;
+    if(out > max)
+        return size_t(0);
+
+    uint32_t val = 0;
+    size_t bits = 0, count = 0;
+
+    for (const auto &ch : from) {
+        auto index = base64_index(ch);
+        if (index >= 0) {
+            val = (val << 6) | static_cast<uint32_t>(index);
+            bits += 6;
+            if (bits >= 8) {
+                *(to++) = (val >> (bits - 8));
+                ++count;
+                bits -= 8;
+            }
+        }
+    }
+    return count;
 }
 
 inline auto from_hex(std::string_view from, uint8_t *to, size_t size) {
@@ -279,7 +368,7 @@ inline void clobber(std::string& str, char fill = '*') {
 constexpr auto u8verify(const std::string_view& u8) noexcept {
     auto str = u8.data();
     auto len = u8.size();
-    while (len) {
+    while (len && *str) {
         if ((*str & 0b10000000) != 0) {
             if ((*str & 0b01000000) == 0)
                 return false;

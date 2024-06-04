@@ -25,7 +25,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(lower_case<std::string>("Hi There") == "hi there");
     assert(strip("   testing ") == "testing");
     assert(begins_with<std::string>("belong", "be"));
-    assert(ends_with("belong", "ong"));
+    static_assert(ends_with("belong", "ong"));
 
     assert(unquote("'able '") == "able ");
     assert(unquote("'able ") == "'able ");
@@ -35,6 +35,9 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(to_hex(tmp, sizeof(tmp)) == "03ff");
     hex[2] = 'z';
     assert(from_hex(hex, tmp, sizeof(tmp)) == 1);
+
+    static_assert(u8verify("\xc3\xb1"));
+    static_assert(!u8verify("\xa0\xa1"));
 }
 
 
