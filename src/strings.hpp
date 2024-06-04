@@ -275,5 +275,31 @@ inline void clobber(std::string& str, char fill = '*') {
         str[pos] = fill;
     }
 }
+
+constexpr auto u8verify(const std::string_view& u8) noexcept {
+    auto str = u8.data();
+    auto len = u8.size();
+    while (len) {
+        if ((*str & 0b10000000) != 0) {
+            if ((*str & 0b01000000) == 0)
+                return false;
+            if ((*str & 0b00100000) != 0) {
+                if ((*str & 0b00010000) != 0) {
+                    if ((*str & 0b00001000) != 0)
+                        return false;
+                    if (!--len || ((*++str & 0b11000000) != 0b10000000))
+                        return false;
+                }
+                if (!--len || ((*++str & 0b11000000) != 0b10000000))
+                    return false;
+            }
+            if (!--len || ((*++str & 0b11000000) != 0b10000000))
+                return false;
+        }
+        --len;
+        ++str;
+    }
+    return true;
+}
 } // end namespace
 #endif
