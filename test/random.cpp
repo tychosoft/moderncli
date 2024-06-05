@@ -6,8 +6,9 @@
 #include "random.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
-    const crypto::random_t<128> key1, key2;
-    assert(key1.size() == 128);
+    const crypto::random_t<crypto::sha512_key> key1, key2;
+    assert(key1.bits() == 512);
+    assert(key1.size() == 64);
     assert(key1 != key2);
 }
 

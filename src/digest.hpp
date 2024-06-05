@@ -8,66 +8,65 @@
 #include <cstring>
 #include <cassert>
 #include <openssl/evp.h>
+#include <openssl/hmac.h>
 
 namespace crypto {
 class digest_t final {
 public:
-    explicit digest_t(const EVP_MD *md = EVP_sha256()) : ctx(EVP_MD_CTX_create()) {
+    explicit digest_t(const EVP_MD *md = EVP_sha256()) : ctx_(EVP_MD_CTX_create()) {
         assert(md != nullptr);
-        if(ctx && EVP_DigestInit_ex(ctx, md, nullptr) != 1) {
-            EVP_MD_CTX_destroy(ctx);
-            ctx = nullptr;
+        if(ctx_ && EVP_DigestInit_ex(ctx_, md, nullptr) != 1) {
+            EVP_MD_CTX_destroy(ctx_);
+            ctx_ = nullptr;
         }
     }
 
-    explicit digest_t(const char *cp) : ctx(EVP_MD_CTX_create()) {
-        if(ctx && EVP_DigestInit_ex(ctx, EVP_get_digestbyname(cp), nullptr) != 1) {
-            EVP_MD_CTX_destroy(ctx);
-            ctx = nullptr;
+    explicit digest_t(const char *cp) : ctx_(EVP_MD_CTX_create()) {
+        if(ctx_ && EVP_DigestInit_ex(ctx_, EVP_get_digestbyname(cp), nullptr) != 1) {
+            EVP_MD_CTX_destroy(ctx_);
+            ctx_ = nullptr;
         }
     }
 
     digest_t(const digest_t& from) {
-        if(from.ctx)
-            ctx = EVP_MD_CTX_create();
-        else
-            ctx = nullptr;
-        if(ctx && EVP_MD_CTX_copy_ex(ctx, from.ctx) != 1) {
-            EVP_MD_CTX_destroy(ctx);
-            ctx = nullptr;
+        if(from.ctx_)
+            ctx_ = EVP_MD_CTX_create();
+        if(ctx_ && EVP_MD_CTX_copy_ex(ctx_, from.ctx_) != 1) {
+            EVP_MD_CTX_destroy(ctx_);
+            ctx_ = nullptr;
         }
-        if(ctx)
+        if(ctx_)
             size_ = from.size_;
         if(size_)
             memcpy(data_, from.data_, size_);   // FlawFinder: size valid
     }
 
-    digest_t(digest_t&& from) noexcept : ctx(from.ctx), size_(from.size_) {
+    digest_t(digest_t&& from) noexcept : ctx_(from.ctx_), size_(from.size_) {
         if(size_)
             memcpy(data_, from.data_, size_);   // FlawFinder: size valid
-        from.ctx = nullptr;
+        from.ctx_ = nullptr;
         from.size_ = 0;
     }
 
     ~digest_t() {
-        if(ctx)
-            EVP_MD_CTX_destroy(ctx);
+        if(ctx_)
+            EVP_MD_CTX_destroy(ctx_);
     }
 
     auto operator=(const digest_t& from) -> digest_t& {
         if(this == &from)
             return *this;
-        if(ctx) {
-            EVP_MD_CTX_destroy(ctx);
-            ctx = nullptr;
+        if(ctx_) {
+            EVP_MD_CTX_destroy(ctx_);
+            ctx_ = nullptr;
         }
-        if(from.ctx)
-            ctx = EVP_MD_CTX_create();
-        if(ctx && EVP_MD_CTX_copy_ex(ctx, from.ctx) != 1) {
-            EVP_MD_CTX_destroy(ctx);
-            ctx = nullptr;
+        if(from.ctx_)
+            ctx_ = EVP_MD_CTX_create();
+        if(ctx_ && EVP_MD_CTX_copy_ex(ctx_, from.ctx_) != 1) {
+            EVP_MD_CTX_destroy(ctx_);
+            ctx_ = nullptr;
         }
-        if(ctx)
+        if(ctx_)
             size_ = from.size_;
         if(size_)
             memcpy(data_, from.data_, size_);   // FlawFinder: size valid
@@ -75,11 +74,11 @@ public:
     }
 
     operator bool() const {
-        return ctx != nullptr;
+        return ctx_ != nullptr;
     }
 
     auto operator!() const {
-        return ctx == nullptr;
+        return ctx_ == nullptr;
     }
 
     auto size() const {
@@ -99,11 +98,11 @@ public:
     }
 
     auto update(const char *cp, size_t size) {
-        return !ctx || size_ ? false : EVP_DigestUpdate(ctx, reinterpret_cast<uint8_t *>(const_cast<char *>(cp)), size) == 1;
+        return !ctx_ || size_ ? false : EVP_DigestUpdate(ctx_, reinterpret_cast<uint8_t *>(const_cast<char *>(cp)), size) == 1;
     }
 
     auto update(const uint8_t *cp, size_t size) {
-        return !ctx || size_ ? false : EVP_DigestUpdate(ctx, cp, size) == 1;
+        return !ctx_ || size_ ? false : EVP_DigestUpdate(ctx_, cp, size) == 1;
     }
 
     auto update(const std::string_view& view) {
@@ -111,21 +110,87 @@ public:
     }
 
     auto finish() {
-        if(!ctx || size_)
+        if(!ctx_ || size_)
             return false;
-        return EVP_DigestFinal_ex(ctx, data_, &size_) == 1;
+        return EVP_DigestFinal_ex(ctx_, data_, &size_) == 1;
     }
 
     void reinit() {
-        if(ctx)
-            EVP_DigestInit_ex(ctx, nullptr, nullptr);
+        if(ctx_)
+            EVP_DigestInit_ex(ctx_, nullptr, nullptr);
         size_ = 0;
     }
 
 private:
-    EVP_MD_CTX *ctx;
+    EVP_MD_CTX *ctx_{nullptr};
     unsigned size_{0};
-    unsigned char data_[EVP_MAX_MD_SIZE]{0};
+    uint8_t data_[EVP_MAX_MD_SIZE]{0};
 };
+
+#if OPENSSL_API_LEVEL >= 30000
+inline auto hmac(const std::string_view& key, const uint8_t *msg, size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
+    unsigned olen{0};
+    if(!HMAC(md, key.data(), key.size(), msg, size, out, &olen))
+        olen = 0;
+    return static_cast<size_t>(olen);
+}
+#else
+inline auto hmac(const std::string_view& key, const uint8_t *msg, size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
+    unsigned olen{0};
+    auto ctx = HMAC_CTX_new();
+    if(!ctx)
+        return size_t(0);
+
+    if(!HMAC_Init_ex(ctx, key.data(), key.size(), md, nullptr)) {
+        HMAC_CTX_free(ctx);
+        return size_t(0);
+    }
+
+    HMAC_Update(ctx, msg, size);
+    HMAC_Final(ctx, out, &olen);
+    HMAC_CTX_free(ctx);
+    return static_cast<size_t>(olen);
+}
+#endif
+
+inline auto hmac(const std::string_view& key, const std::string_view& msg, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
+    return hmac(key, reinterpret_cast<const uint8_t *>(msg.data()), msg.size(), out, md);
+}
+
+inline auto digest(const uint8_t *msg, size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
+    unsigned olen{0};
+    auto ctx = EVP_MD_CTX_create();
+    if(!ctx)
+        return size_t(0);
+
+    if(!EVP_DigestInit_ex(ctx, md, nullptr)) {
+        EVP_MD_CTX_destroy(ctx);
+        return size_t(0);
+    }
+
+    EVP_DigestUpdate(ctx, msg, size);
+    EVP_DigestFinal_ex(ctx, out, &olen);
+    EVP_MD_CTX_destroy(ctx);
+    return static_cast<size_t>(olen);
+}
+
+inline auto digest(const std::string_view& msg, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
+    return digest(reinterpret_cast<const uint8_t *>(msg.data()), msg.size(), out, md);
+}
+
+inline auto digest_size(const EVP_MD *md = EVP_sha256()) {
+    auto sz = EVP_MD_get_size(md);
+    if(sz < 1)
+        return size_t(0);
+    return static_cast<size_t>(sz);
+}
+
+inline auto digest_id(const char *name) {
+    return EVP_get_digestbyname(name);
+}
+
+inline auto digest_name(const EVP_MD *md = EVP_sha256()) {
+    return EVP_MD_get0_name(md);
+}
 } // end namespace
 #endif

@@ -198,7 +198,7 @@ constexpr auto ends_with(const char *s, const char *e) {
     return ends_with<std::string_view>(s, e);
 }
 
-constexpr auto eq(const char *p1, const char *p2) -> bool {
+inline auto eq(const char *p1, const char *p2) -> bool {
     if(!p1 && !p2)
         return true;
 
@@ -208,7 +208,7 @@ constexpr auto eq(const char *p1, const char *p2) -> bool {
     return !strcmp(p1, p2);
 }
 
-constexpr auto eq(const char *p1, const char *p2, size_t len) -> bool {
+inline auto eq(const char *p1, const char *p2, size_t len) -> bool {
     if(!p1 && !p2)
         return true;
 

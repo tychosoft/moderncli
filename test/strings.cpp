@@ -35,6 +35,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(to_hex(tmp, sizeof(tmp)) == "03ff");
     hex[2] = 'z';
     assert(from_hex(hex, tmp, sizeof(tmp)) == 1);
+    assert(to_b64(buf, sizeof(buf)) == "A/8D=");
+
+    assert(!eq("yes", "no"));
+    assert(eq("yes", "yes"));
 
     static_assert(u8verify("\xc3\xb1"));
     static_assert(!u8verify("\xa0\xa1"));

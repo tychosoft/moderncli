@@ -12,6 +12,13 @@
 
 namespace crypto {
 using key_t = std::pair<const uint8_t *, size_t>;
+
+inline constexpr auto md5_key = 128UL;
+inline constexpr auto sha1_key = 160UL;
+inline constexpr auto sha256_key = 256UL;
+inline constexpr auto sha384_key = 384UL;
+inline constexpr auto sha512_key = 512UL;
+
 template <typename T>
 inline void rand(T& data) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
@@ -53,16 +60,16 @@ public:
 
     auto operator=(const random_t& other) -> random_t& {
         if(this != &other)
-            memcpy(&data_, &other.data_, S);    // FlawFinder: ignore
+            memcpy(&data_, &other.data_, S / 8);    // FlawFinder: ignore
         return *this;
     }
 
     auto operator==(const random_t& other) const {
-        return memcmp(&data_, &other.data_, S) == 0;
+        return memcmp(&data_, &other.data_, S / 8) == 0;
     }
 
     auto operator!=(const random_t& other) const {
-        return memcmp(&data_, &other.data_, S) != 0;
+        return memcmp(&data_, &other.data_, S / 8) != 0;
     }
 
     operator key_t() const {
@@ -77,12 +84,18 @@ public:
         return &data_[0];
     }
 
+    auto bits() const {
+        return S;
+    }
+
     auto size() const {
         return sizeof(data_);
     }
 
 private:
-    uint8_t data_[S];
+    static_assert(!(S % 8));
+
+    uint8_t data_[S / 8];
 };
 } // end namespace
 #endif
