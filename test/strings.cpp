@@ -12,6 +12,10 @@
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     const std::string text = "hi,bye,gone";
     const uint8_t buf[2] = {0x03, 0xff};
+    const uint8_t txt[7] = {'A', 'B', 'C', 'D', 'Z', '1', '2'};
+    uint8_t msg[8];
+    msg[7] = 0;
+
     uint8_t tmp[2];
     auto list = split(text, ",");
     auto hex = to_hex(buf, sizeof(buf));
@@ -35,7 +39,9 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(to_hex(tmp, sizeof(tmp)) == "03ff");
     hex[2] = 'z';
     assert(from_hex(hex, tmp, sizeof(tmp)) == 1);
-    assert(to_b64(buf, sizeof(buf)) == "A/8D=");
+    assert(to_b64(txt, sizeof(txt)) == "QUJDRFoxMg==");
+    from_b64("QUJDRFoxMg==", msg, sizeof(msg));
+    assert(eq("ABCDZ12", reinterpret_cast<const char *>(msg)));
 
     assert(!eq("yes", "no"));
     assert(eq("yes", "yes"));

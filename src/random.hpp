@@ -5,6 +5,7 @@
 #define RANDOM_HPP_
 
 #include <type_traits>
+#include <memory>
 #include <random>
 #include <utility>
 #include <cstring>
@@ -46,12 +47,16 @@ inline void zero(uint8_t *ptr, size_t size) {
 template <size_t S>
 class random_t final {
 public:
-    random_t() { // NOLINT
-        rand(data_);
+    explicit random_t(const uint8_t *raw = nullptr) {
+        if(raw)
+            memcpy(&data_, raw, sizeof(data_)); // FlawFinder: ignore
+        else
+            rand(data_);
     }
 
-    random_t(const random_t& other) {    // NOLINT
-        memcpy(&data_, &other.data_, sizeof(data_));
+    random_t(const random_t& other) {
+        static_assert(other.size() == size());
+        memcpy(&data_, &other.data_, sizeof(data_));    // FlawFinder: ignore
     }
 
     ~random_t() {
@@ -59,16 +64,28 @@ public:
     }
 
     auto operator=(const random_t& other) -> random_t& {
+        static_assert(other.size() == size());
         if(this != &other)
-            memcpy(&data_, &other.data_, S / 8);    // FlawFinder: ignore
+            memcpy(&data_, &other.data_, sizeof(data_));    // FlawFinder: ignore
+        return *this;
+    }
+
+    auto operator=(const uint8_t *raw) -> random_t& {
+        if(raw)
+            memcpy(&data_, raw, sizeof(data_));     // FlawFinder: ignore
         return *this;
     }
 
     auto operator==(const random_t& other) const {
+        if(other.size() != size())
+            return false;
+        static_assert(other.size() == size());
         return memcmp(&data_, &other.data_, S / 8) == 0;
     }
 
     auto operator!=(const random_t& other) const {
+        if(other.size() != size())
+            return true;
         return memcmp(&data_, &other.data_, S / 8) != 0;
     }
 
@@ -92,10 +109,24 @@ public:
         return sizeof(data_);
     }
 
+    auto data() {
+        return &data_[0];
+    }
+
 private:
     static_assert(!(S % 8));
 
-    uint8_t data_[S / 8];
+    uint8_t data_[S / 8]{0};
 };
+
+template <size_t S>
+inline auto shared_key() {
+    return std::make_shared<random_t<S>>();
+}
+
+template <size_t S>
+inline auto unique_key() {
+    return std::make_unique<random_t<S>>();
+}
 } // end namespace
 #endif

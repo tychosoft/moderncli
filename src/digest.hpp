@@ -130,7 +130,7 @@ private:
 #if OPENSSL_API_LEVEL >= 30000
 inline auto hmac(const std::string_view& key, const uint8_t *msg, size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
     unsigned olen{0};
-    if(!HMAC(md, key.data(), key.size(), msg, size, out, &olen))
+    if(!HMAC(md, key.data(), static_cast<int>(key.size()), msg, size, out, &olen))
         olen = 0;
     return static_cast<size_t>(olen);
 }
@@ -141,7 +141,7 @@ inline auto hmac(const std::string_view& key, const uint8_t *msg, size_t size, u
     if(!ctx)
         return size_t(0);
 
-    if(!HMAC_Init_ex(ctx, key.data(), key.size(), md, nullptr)) {
+    if(!HMAC_Init_ex(ctx, key.data(), static_cast<int>(key.size()), md, nullptr)) {
         HMAC_CTX_free(ctx);
         return size_t(0);
     }

@@ -285,21 +285,21 @@ inline auto to_b64(const uint8_t *data, size_t size) {
         uint32_t c = 0;
         for (size_t j = 0; j < 3; ++j) {
             c <<= 8;
-            c |= static_cast<uint8_t>(data[i + j]);
+            if(i + j < size)
+                c |= static_cast<uint32_t>(data[i + j]);
         }
-
         out += base64_chars[(c >> 18) & 0x3F];
         out += base64_chars[(c >> 12) & 0x3F];
-        out += base64_chars[(c >> 6) & 0x3F];
-        out += base64_chars[c & 0x3F];
+        if(i < (size - 1))
+            out += base64_chars[(c >> 6) & 0x3F];
+        if(i < (size - 2))
+            out += base64_chars[c & 0x3F];
     }
 
-    if (size % 3 == 1) {
-        out.back() = '=';
-        out.push_back('=');
-    }
+    if (size % 3 == 1)
+        out += "==";
     else if (size % 3 == 2)
-        out.push_back('=');
+        out += '=';
     return out;
 }
 
