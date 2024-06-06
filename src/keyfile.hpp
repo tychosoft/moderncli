@@ -25,27 +25,27 @@ public:
     keyfile() noexcept :
     ptr_(std::make_shared<keyfile::data>()) {};
 
-    auto operator[](const std::string& id) -> keys& {
+    auto operator[](const std::string& id) -> auto& {
         return ptr_->fetch(id);
     }
 
-    auto operator[](const std::string& id) const -> keys {
+    auto operator[](const std::string& id) const {
         return ptr_->fetch(id);
     }
 
-    auto at(const std::string& id = "_") const -> keys {
+    auto at(const std::string& id = "_") const {
         return ptr_->fetch(id);
     }
 
-    auto keyset(const std::string& id = "_") -> keys& {
+    auto keyset(const std::string& id = "_") -> auto& {
         return ptr_->fetch(id);
     }
 
-    auto exists(const std::string& id = "_") const -> bool {
+    auto exists(const std::string& id = "_") const {
         return ptr_ ? ptr_->exists(id) : false;
     }
 
-    auto operator!() const -> bool {
+    auto operator!() const {
         return !ptr_;
     }
 
@@ -53,7 +53,7 @@ public:
         if(ptr_) ptr_->remove(id);
     }
 
-    auto load(const std::string& path) -> bool {
+    auto load(const std::string& path) {
         return ptr_ ? ptr_->load(path) : false;
     }
 
@@ -70,11 +70,11 @@ public:
         return result;
     }
 
-    auto write(const std::string& path) const -> bool {
+    auto write(const std::string& path) const {
         return ptr_ ? ptr_->save(path) : false;
     }
 
-    auto empty() const -> bool {
+    auto empty() const {
         return !ptr_ || ptr_->empty();
     }
 
@@ -83,14 +83,14 @@ private:
     public:
         data() = default;
         data(data const&) = delete;
-        auto operator=(const data&) -> data& = delete;
+        auto operator=(const data&) -> auto& = delete;
 
         auto empty() const -> bool {
             return sections.empty();
         }
 
         auto exists(const std::string& id) const -> bool {
-            return sections.count(id) > 0;  // NOLINT
+            return sections.count(id) > 0;
         }
 
         void remove(const std::string& id) {

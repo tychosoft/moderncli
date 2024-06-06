@@ -44,22 +44,57 @@ inline void zero(uint8_t *ptr, size_t size) {
     memset(ptr, 0, size);
 }
 
-template <size_t S>
-class random_t final {
+class Key {
 public:
-    explicit random_t(const uint8_t *raw = nullptr) {
+    virtual ~Key() = default;
+
+    virtual auto data() const -> const uint8_t * = 0;
+    virtual auto size() const -> size_t = 0;
+
+    auto bits() const {
+        return size() * 8;
+    }
+
+    auto operator==(const Key& other) const {
+        if(other.size() != size())
+            return false;
+        return memcmp(data(), other.data(), size()) == 0;
+    }
+
+    auto operator!=(const Key& other) const {
+        if(other.size() != size())
+            return true;
+        return memcmp(data(), other.data(), size()) != 0;
+    }
+
+    operator key_t() const {
+        return std::make_pair(data(), size());
+    }
+
+    auto key() const {
+        return std::make_pair(data(), size());
+    }
+
+protected:
+    Key() = default;
+};
+
+template <size_t S>
+class random_t final : public Key {
+public:
+    explicit random_t(const uint8_t *raw = nullptr) : Key() {
         if(raw)
             memcpy(&data_, raw, sizeof(data_)); // FlawFinder: ignore
         else
             rand(data_);
     }
 
-    random_t(const random_t& other) {
+    random_t(const random_t& other) : Key() {
         static_assert(other.size() == size());
         memcpy(&data_, &other.data_, sizeof(data_));    // FlawFinder: ignore
     }
 
-    ~random_t() {
+    ~random_t() final {
         zero(data_);
     }
 
@@ -76,41 +111,12 @@ public:
         return *this;
     }
 
-    auto operator==(const random_t& other) const {
-        if(other.size() != size())
-            return false;
-        static_assert(other.size() == size());
-        return memcmp(&data_, &other.data_, S / 8) == 0;
-    }
-
-    auto operator!=(const random_t& other) const {
-        if(other.size() != size())
-            return true;
-        return memcmp(&data_, &other.data_, S / 8) != 0;
-    }
-
-    operator key_t() const {
-        return std::make_pair(data(), size());
-    }
-
-    auto key() const {
-        return std::make_pair(data(), size());
-    }
-
-    auto data() const {
+    auto data() const -> const uint8_t * final {
         return &data_[0];
     }
 
-    auto bits() const {
-        return S;
-    }
-
-    auto size() const {
+    auto size() const -> size_t final {
         return sizeof(data_);
-    }
-
-    auto data() {
-        return &data_[0];
     }
 
 private:
@@ -120,13 +126,13 @@ private:
 };
 
 template <size_t S>
-inline auto shared_key() {
-    return std::make_shared<random_t<S>>();
+inline auto shared_key(const uint8_t *raw = nullptr) {
+    return std::make_shared<random_t<S>>(raw);
 }
 
 template <size_t S>
-inline auto unique_key() {
-    return std::make_unique<random_t<S>>();
+inline auto unique_key(const uint8_t *raw = nullptr) {
+    return std::make_unique<random_t<S>>(raw);
 }
 } // end namespace
 #endif

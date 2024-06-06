@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.8.5
+- Improve key management
+- Add hmac support to digest
+- Make endian constexpr
+- Added b64 support
+- Add u8verify function
+
 ## v0.8.4
 - Added expected header
 - Add process detach for posix

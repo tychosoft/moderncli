@@ -6,7 +6,6 @@
 
 #include <string_view>
 #include <cstring>
-#include <cassert>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 
@@ -14,7 +13,6 @@ namespace crypto {
 class digest_t final {
 public:
     explicit digest_t(const EVP_MD *md = EVP_sha256()) : ctx_(EVP_MD_CTX_create()) {
-        assert(md != nullptr);
         if(ctx_ && EVP_DigestInit_ex(ctx_, md, nullptr) != 1) {
             EVP_MD_CTX_destroy(ctx_);
             ctx_ = nullptr;
@@ -53,7 +51,7 @@ public:
             EVP_MD_CTX_destroy(ctx_);
     }
 
-    auto operator=(const digest_t& from) -> digest_t& {
+    auto operator=(const digest_t& from) -> auto& {
         if(this == &from)
             return *this;
         if(ctx_) {

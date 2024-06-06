@@ -20,7 +20,7 @@ namespace tycho {
 class die final : public std::ostringstream {
 public:
     die(const die&) = delete;
-    auto operator=(const die&) -> die& = delete;
+    auto operator=(const die&) -> auto& = delete;
 
     explicit die(int code) noexcept : excode_(code) {}
     [[noreturn]] ~die() final {
@@ -36,7 +36,7 @@ private:
 class crit final : public std::ostringstream {
 public:
     crit(const crit&) = delete;
-    auto operator=(const crit&) -> crit& = delete;
+    auto operator=(const crit&) -> auto& = delete;
 
     explicit crit(int code) noexcept : excode_(code) {}
     [[noreturn]] ~crit() final {
@@ -54,7 +54,7 @@ public:
     class debug final : public std::ostringstream {
     public:
         debug(const debug&) = delete;
-        auto operator=(const debug&) -> debug& = delete;
+        auto operator=(const debug&) -> auto& = delete;
 
         debug() = default;
         ~debug() final {
@@ -68,7 +68,7 @@ public:
     class error final : public std::ostringstream {
     public:
         error(const error&) = delete;
-        auto operator=(const error&) -> error& = delete;
+        auto operator=(const error&) -> auto& = delete;
 
         error() = default;
         ~error() final {
@@ -80,7 +80,7 @@ public:
     output() = default;
     output(const output&) = delete;
     explicit output(unsigned nl) : nl_(nl) {}
-    auto operator=(const output&) -> output& = delete;
+    auto operator=(const output&) -> auto& = delete;
 
     ~output() final {
         std::cout << str();

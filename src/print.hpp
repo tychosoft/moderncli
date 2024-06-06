@@ -75,7 +75,7 @@ public:
 
     system_logger() = default;
     system_logger(const system_logger&) = delete;
-    auto operator=(const system_logger&) -> system_logger& = delete;
+    auto operator=(const system_logger&) -> auto& = delete;
 
     template<class... Args>
     void debug(unsigned level, std::string_view fmt, const Args&... args) {

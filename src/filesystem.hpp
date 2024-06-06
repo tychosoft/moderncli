@@ -126,7 +126,7 @@ public:
 };
 #endif
 
-inline auto operator<<(std::ostream& out, const fsys::path& path) -> std::ostream& {
+inline auto operator<<(std::ostream& out, const fsys::path& path) -> auto& {
     out << path.u8string();
     return out;
 }

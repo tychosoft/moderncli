@@ -19,12 +19,12 @@
 
 namespace tycho {
 template<typename S = std::string>
-constexpr auto begins_with(const S& s, const std::string_view &b) -> bool {
+constexpr auto begins_with(const S& s, const std::string_view &b) {
     return s.find(b) == 0;
 }
 
 template<typename S = std::string>
-constexpr auto ends_with(const S& s, const std::string_view &e) -> bool {
+constexpr auto ends_with(const S& s, const std::string_view &e) {
     if(s.size() < e.size())
         return false;
     auto pos = s.rfind(e);
@@ -34,14 +34,14 @@ constexpr auto ends_with(const S& s, const std::string_view &e) -> bool {
 }
 
 template<typename S = std::string>
-constexpr auto upper_case(const S& s) -> S {
+constexpr auto upper_case(const S& s) {
     S out = s;
     std::transform(out.begin(), out.end(), out.begin(), ::toupper);
     return out;
 }
 
 template<typename S = std::string>
-constexpr auto lower_case(const S& s) -> S {
+constexpr auto lower_case(const S& s) {
     S out = s;
     std::transform(out.begin(), out.end(), out.begin(), ::tolower);
     return out;
@@ -146,7 +146,7 @@ finish:
     return result;
 }
 
-constexpr std::array<char, 64> base64_chars = {
+inline constexpr std::array<char, 64> base64_chars = {
     'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
     'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
     'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
@@ -198,24 +198,24 @@ constexpr auto ends_with(const char *s, const char *e) {
     return ends_with<std::string_view>(s, e);
 }
 
-inline auto eq(const char *p1, const char *p2) -> bool {
+inline auto eq(const char *p1, const char *p2) {
     if(!p1 && !p2)
         return true;
 
     if(!p1 || !p2)
         return false;
 
-    return !strcmp(p1, p2);
+    return strcmp(p1, p2) == 0;
 }
 
-inline auto eq(const char *p1, const char *p2, size_t len) -> bool {
+inline auto eq(const char *p1, const char *p2, size_t len) {
     if(!p1 && !p2)
         return true;
 
     if(!p1 || !p2)
         return false;
 
-    return !strncmp(p1, p2, len);
+    return strncmp(p1, p2, len) == 0;
 }
 
 constexpr auto str_size(const char *cp, size_t max = 256) -> size_t {

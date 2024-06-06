@@ -82,21 +82,21 @@ public:
         explicit value_t(unsigned n) : index(1), num(n) {}
         explicit value_t(const char *s) : index(2), str(s) {}
 
-        auto operator=(const value_t&) -> value_t& = delete;
+        auto operator=(const value_t&) -> auto& = delete;
 
-        auto operator=(bool f) -> value_t& {
+        auto operator=(bool f) -> auto& {
             index = 0;
             flag = f;
             return *this;
         }
 
-        auto operator=(unsigned n) -> value_t& {
+        auto operator=(unsigned n) -> auto& {
             index = 1;
             num = n;
             return *this;
         }
 
-        auto operator=(const char *s) -> value_t& {
+        auto operator=(const char *s) -> auto& {
             index = 2;
             str = s;
             return *this;
@@ -126,7 +126,7 @@ public:
         }
 
         option(const option&) = delete;
-        auto operator=(const option&) -> option& = delete;
+        auto operator=(const option&) -> auto& = delete;
 
         operator bool() const {
             return value_.index > 0 || value_.flag;
@@ -408,7 +408,7 @@ public:
     using run_t = void (*)();
 
     init_t(const init_t&) = delete;
-    auto operator=(const init_t&) -> init_t& = delete;
+    auto operator=(const init_t&) -> auto& = delete;
 
     explicit init_t(run_t start, run_t stop = {[](){}}) : exit_(stop) {
         (start)();

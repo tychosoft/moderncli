@@ -90,7 +90,7 @@ public:
 };
 #endif
 
-inline auto operator<<(std::ostream& out, const std::tm& current) -> std::ostream& {
+inline auto operator<<(std::ostream& out, const std::tm& current) -> auto& {
     out << std::put_time(&current, tycho::ISO_DATETIME);
     return out;
 }

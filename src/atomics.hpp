@@ -22,7 +22,7 @@ public:
         seq_.store(from.seq_.load(std::memory_order_relaxed), std::memory_order_release);
     }
 
-    auto operator=(const sequence_t& from) noexcept -> sequence_t& {
+    auto operator=(const sequence_t& from) noexcept -> auto& {
         if(&from != this)
             seq_.store(from.seq_.load(std::memory_order_relaxed), std::memory_order_release);
         return *this;
@@ -32,7 +32,7 @@ public:
         return seq_.fetch_add(1);
     }
 
-    auto operator=(const T v) noexcept -> sequence_t& {
+    auto operator=(const T v) noexcept -> auto& {
         seq_.store(v, std::memory_order_relaxed);
         return *this;
     }
@@ -81,7 +81,7 @@ class stack_t final {
 public:
     stack_t() = default;
     stack_t(const stack_t&) = delete;
-    auto operator=(const stack_t&) -> stack_t& = delete;
+    auto operator=(const stack_t&) -> auto& = delete;
 
     operator bool() const noexcept {
         const auto count = count_.load();
@@ -151,7 +151,7 @@ class buffer_t final {
 public:
     buffer_t() = default;
     buffer_t(const buffer_t&) = delete;
-    auto operator=(const buffer_t&) -> buffer_t& = delete;
+    auto operator=(const buffer_t&) -> auto& = delete;
 
     operator bool() const noexcept {
         const auto head = head_.load(std::memory_order_relaxed);

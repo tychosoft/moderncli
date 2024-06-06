@@ -62,17 +62,17 @@ public:
         set(addr, port);
     }
 
-    auto operator=(const struct addrinfo *addr) -> address_t& {
+    auto operator=(const struct addrinfo *addr) -> auto& {
         set(addr);
         return *this;
     }
 
-    auto operator=(const struct sockaddr *addr) -> address_t& {
+    auto operator=(const struct sockaddr *addr) -> auto& {
         set(addr);
         return *this;
     }
 
-    auto operator=(const std::string& addr) -> address_t& {
+    auto operator=(const std::string& addr) -> auto& {
         set(addr);
         return *this;
     }
@@ -210,7 +210,7 @@ public:
         release();
     }
 
-    auto operator=(service_t&& from) noexcept -> service_t& {
+    auto operator=(service_t&& from) noexcept -> auto& {
         release();
         list_ = from.list_;
         from.list_ = nullptr;
@@ -348,14 +348,14 @@ public:
         release();
     }
 
-    auto operator=(socket&& from) noexcept -> socket& {
+    auto operator=(socket&& from) noexcept -> auto& {
         release();
         so_ = from.so_;
         from.so_ = -1;
         return *this;
     }
 
-    auto operator=(const service_t& to) -> socket& {
+    auto operator=(const service_t& to) -> auto& {
         connect(to);
         return *this;
     }
@@ -521,7 +521,7 @@ public:
 };
 #endif
 
-inline auto operator<<(std::ostream& out, const tycho::address_t& addr) -> std::ostream& {
+inline auto operator<<(std::ostream& out, const tycho::address_t& addr) -> auto& {
     out << addr.to_string();
     return out;
 }
