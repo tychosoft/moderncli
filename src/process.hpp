@@ -46,10 +46,26 @@ namespace process {
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 using id_t = intptr_t;
 using addr_t = FARPROC;
+using handle_t = HANDLE;
 constexpr auto dso_suffix = ".dll";
 
+inline auto is_tty(HANDLE handle) {
+    if(handle == INVALID_HANDLE_VALUE)
+        return false;
+    auto type = GetFileType(handle);
+    if(type == FILE_TYPE_CHAR)
+        return true;
+    return false;
+}
+
+inline auto is_tty(int fd) {
+    if(fd < 0)
+        return false;
+    return is_tty(reinterpret_cast<HANDLE>(_get_osfhandle(fd)));
+}
+
 inline auto load(const std::string& path) {
-    return LoadLibrary(path.c_str());
+    return LoadLibrary(path.c_str());   // FlawFinder: ignore
 }
 
 inline auto find(HINSTANCE dso, const std::string& sym) -> addr_t {
@@ -124,7 +140,18 @@ inline void env(const std::string& id, const std::string& value) {
 #else
 using id_t = pid_t;
 using addr_t = void *;
+using handle_t = int;
 constexpr auto dso_suffix = ".so";
+
+inline auto is_tty(int fd) {
+    if(fd < 0)
+        return false;
+
+    if(isatty(fd))
+        return true;
+
+    return false;
+}
 
 inline auto load(const std::string& path) {
     return dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);

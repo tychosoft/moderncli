@@ -49,6 +49,8 @@ inline auto native_handle(std::FILE *fp) {
     return native_handle(static_cast<int>(_fileno(fp)));
 }
 #else
+using handle_t = int;
+
 inline auto native_handle(int fd) {
     return fd;
 }

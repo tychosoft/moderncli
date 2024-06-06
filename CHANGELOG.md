@@ -1,6 +1,7 @@
 # Release Notes
 
 ## v0.8.5
+- Add is\_tty function
 - Introduce dso plugin loader
 - Improve key management
 - Add hmac support to digest
