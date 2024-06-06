@@ -4,7 +4,7 @@
 - Improve key management
 - Add hmac support to digest
 - Make endian constexpr
-- Added b64 support
+- Added b64 support to crypto
 - Add u8verify function
 
 ## v0.8.4

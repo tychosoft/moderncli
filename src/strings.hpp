@@ -11,7 +11,6 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <cstdint>
-#include <array>
 #include <vector>
 #include <algorithm>
 #include <set>
@@ -146,32 +145,6 @@ finish:
     return result;
 }
 
-inline constexpr std::array<char, 64> base64_chars = {
-    'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
-    'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
-    'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
-    'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'
-};
-
-constexpr auto base64_index(char c) {
-    if (c >= 'A' && c <= 'Z')
-        return c - 'A';
-
-    if (c >= 'a' && c <= 'z')
-        return c - 'a' + 26;
-
-    if (c >= '0' && c <= '9')
-        return c - '0' + 52;
-
-    if (c == '+')
-        return 62;
-
-    if (c == '/')
-        return 63;
-
-    return -1;
-}
-
 // convenience function for string conversions if not explicit for template
 
 inline auto upper_case(const char *s) {
@@ -278,70 +251,8 @@ inline auto to_hex(const uint8_t *from, size_t size) {
     return out;
 }
 
-inline auto to_b64(const uint8_t *data, size_t size) {
-    std::string out;
-
-    for (size_t i = 0; i < size; i += 3) {
-        uint32_t c = 0;
-        for (size_t j = 0; j < 3; ++j) {
-            c <<= 8;
-            if(i + j < size)
-                c |= static_cast<uint32_t>(data[i + j]);
-        }
-        out += base64_chars[(c >> 18) & 0x3F];
-        out += base64_chars[(c >> 12) & 0x3F];
-        if(i < (size - 1))
-            out += base64_chars[(c >> 6) & 0x3F];
-        if(i < (size - 2))
-            out += base64_chars[c & 0x3F];
-    }
-
-    if (size % 3 == 1)
-        out += "==";
-    else if (size % 3 == 2)
-        out += '=';
-    return out;
-}
-
 inline auto to_hex(const std::string_view str) {
     return to_hex(reinterpret_cast<const uint8_t *>(str.data()), str.size());
-}
-
-inline auto to_b64(const std::string_view str) {
-    return to_b64(reinterpret_cast<const uint8_t *>(str.data()), str.size());
-}
-
-inline auto from_b64(std::string_view from, uint8_t *to, size_t max) {
-    size_t size = from.size(), pad = 0;
-    while(size > 0) {
-        if(from[size - 1] == '=') {
-            ++pad;
-            --size;
-        }
-        else
-            break;
-    }
-
-    const size_t out = ((size * 6) / 8) - pad;
-    if(out > max)
-        return size_t(0);
-
-    uint32_t val = 0;
-    size_t bits = 0, count = 0;
-
-    for (const auto &ch : from) {
-        auto index = base64_index(ch);
-        if (index >= 0) {
-            val = (val << 6) | static_cast<uint32_t>(index);
-            bits += 6;
-            if (bits >= 8) {
-                *(to++) = (val >> (bits - 8));
-                ++count;
-                bits -= 8;
-            }
-        }
-    }
-    return count;
 }
 
 inline auto from_hex(std::string_view from, uint8_t *to, size_t size) {
