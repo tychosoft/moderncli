@@ -20,6 +20,7 @@
 #include <windows.h>
 #include <process.h>
 #include <handleapi.h>
+#include <io.h>
 #ifndef quick_exit
 #define quick_exit(x) ::exit(x)
 #define at_quick_exit(x) ::atexit(x)
