@@ -59,7 +59,8 @@ notify logging events.
 
 ## process.hpp
 
-Access process properties and execute programs.
+Access process properties and execute programs. This includes dso plugin load
+support.
 
 ## random.hpp
 

@@ -1,6 +1,7 @@
 # Release Notes
 
 ## v0.8.5
+- Introduce dso plugin loader
 - Improve key management
 - Add hmac support to digest
 - Make endian constexpr

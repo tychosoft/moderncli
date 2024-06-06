@@ -15,6 +15,12 @@
 namespace crypto {
 using key_t = std::pair<const uint8_t *, size_t>;
 
+inline constexpr auto md5_key = 128UL;
+inline constexpr auto sha1_key = 160UL;
+inline constexpr auto sha256_key = 256UL;
+inline constexpr auto sha384_key = 384UL;
+inline constexpr auto sha512_key = 512UL;
+
 inline auto to_b64(const uint8_t *data, size_t size) {
     constexpr std::array<char, 64> base64_chars = {
         'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
@@ -99,12 +105,6 @@ inline auto from_b64(std::string_view from, uint8_t *to, size_t max) {
     return count;
 }
 
-inline constexpr auto md5_key = 128UL;
-inline constexpr auto sha1_key = 160UL;
-inline constexpr auto sha256_key = 256UL;
-inline constexpr auto sha384_key = 384UL;
-inline constexpr auto sha512_key = 512UL;
-
 template <typename T>
 inline void rand(T& data) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
@@ -135,8 +135,7 @@ public:
 
     virtual auto data() const -> const uint8_t * = 0;
     virtual auto size() const -> size_t = 0;
-
-    auto bits() const {
+    virtual auto bits() const -> size_t {
         return size() * 8;
     }
 
@@ -153,6 +152,10 @@ public:
     }
 
     operator key_t() const {
+        return std::make_pair(data(), size());
+    }
+
+    auto operator*() const {
         return std::make_pair(data(), size());
     }
 
