@@ -46,57 +46,19 @@ namespace process {
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 using id_t = intptr_t;
 using addr_t = FARPROC;
+constexpr auto dso_suffix = ".dll";
 
-class dso_t final {
-public:
-    dso_t() = default;
+inline auto load(const std::string& path) {
+    return LoadLibrary(path.c_str());
+}
 
-    explicit dso_t(const std::string& path) :
-    ptr_(LoadLibrary(path.c_str())) {}  // FlawFinder: ignore
+inline auto find(HINSTANCE dso, const std::string& sym) -> addr_t {
+    return GetProcAddress(dso, sym.c_str());
+}
 
-    dso_t(const dso_t&) = delete;
-    auto operator=(const dso_t&) -> auto& = delete;
-
-    ~dso_t() {
-        release();
-    }
-
-    auto operator[](const char *symbol) const {
-        return find(symbol);
-    }
-
-    auto operator()(const char *symbol) const {
-        return find(symbol);
-    }
-
-    operator bool() const {
-        return ptr_ != nullptr;
-    }
-
-    auto operator!() const {
-        return ptr_ == nullptr;
-    }
-
-    auto load(const std::string& path) {
-        release();
-        ptr_ = LoadLibrary(path.c_str());   // FlawFinder: ignore
-        return ptr_ != nullptr;
-    }
-
-    void release() {
-        if(ptr_) {
-            FreeLibrary(ptr_);
-            ptr_ = nullptr;
-        }
-    }
-
-    auto find(const std::string& sym) const -> addr_t {
-        return ptr_ ? GetProcAddress(ptr_, sym.c_str()) : nullptr;
-    }
-
-private:
-    HINSTANCE   ptr_{nullptr};
-};
+inline void unload(HINSTANCE dso) {
+    FreeLibrary(dso);
+}
 
 inline auto spawn(const std::string& path, char *const *argv) {
     return _spawnvp(_P_WAIT, path.c_str(), argv);
@@ -162,58 +124,19 @@ inline void env(const std::string& id, const std::string& value) {
 #else
 using id_t = pid_t;
 using addr_t = void *;
+constexpr auto dso_suffix = ".so";
 
-class dso_t final {
-public:
-    dso_t() = default;
+inline auto load(const std::string& path) {
+    return dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+}
 
-    explicit dso_t(const std::string& path) :
-    ptr_(dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL)) {}
+inline auto find(void *dso, const std::string& sym) -> addr_t {
+    return dlsym(dso, sym.c_str());
+}
 
-    dso_t(const dso_t&) = delete;
-    auto operator=(const dso_t&) -> auto& = delete;
-
-    ~dso_t() {
-        release();
-    }
-
-    auto operator[](const char *symbol) const {
-        return find(symbol);
-    }
-
-    auto operator()(const char *symbol) const {
-        return find(symbol);
-    }
-
-    operator bool() const {
-        return ptr_ != nullptr;
-    }
-
-    auto operator!() const {
-        return ptr_ == nullptr;
-    }
-
-    auto load(const std::string& path) {
-        release();
-        ptr_ = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
-        return ptr_ != nullptr;
-    }
-
-    void release() {
-        if(ptr_) {
-            dlclose(ptr_);
-            ptr_ = nullptr;
-        }
-    }
-
-    auto find(const std::string& sym) const -> addr_t {
-        return ptr_ ? dlsym(ptr_, sym.c_str()) : nullptr;
-    }
-
-private:
-    void *ptr_{nullptr};
-};
-
+inline void unload(void *dso) {
+    dlclose(dso);
+}
 
 inline auto input(const std::string& cmd) {
     // FlawFinder: ignore
