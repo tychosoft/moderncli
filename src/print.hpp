@@ -210,5 +210,10 @@ private:
     unsigned logging_{1};
     notify_t notify_{[](const std::string& str, const char *type){}};
 };
+
+// cppcheck-suppress constParameterPointer
+inline auto on_crit(void(*handler)()) {
+    return at_quick_exit(handler) == 0;
+}
 } // end namespace
 #endif
