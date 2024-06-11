@@ -521,7 +521,7 @@ public:
 };
 #endif
 
-inline auto operator<<(std::ostream& out, const tycho::address_t& addr) -> auto& {
+inline auto operator<<(std::ostream& out, const tycho::address_t& addr) -> std::ostream& {
     out << addr.to_string();
     return out;
 }

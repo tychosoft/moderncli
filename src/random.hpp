@@ -133,22 +133,31 @@ class Key {
 public:
     virtual ~Key() = default;
 
-    virtual auto data() const -> const uint8_t * = 0;
-    virtual auto size() const -> size_t = 0;
-    virtual auto bits() const -> size_t {
+    virtual auto data() const noexcept -> const uint8_t * = 0;
+    virtual auto size() const noexcept -> size_t = 0;
+
+    virtual auto bits() const noexcept -> size_t {
         return size() * 8;
     }
 
-    auto operator==(const Key& other) const {
+    auto operator==(const Key& other) const noexcept {
         if(other.size() != size())
             return false;
         return memcmp(data(), other.data(), size()) == 0;
     }
 
-    auto operator!=(const Key& other) const {
+    auto operator!=(const Key& other) const noexcept {
         if(other.size() != size())
             return true;
         return memcmp(data(), other.data(), size()) != 0;
+    }
+
+    operator bool() const noexcept {
+        return size() > 0;
+    }
+
+    auto operator!() const noexcept {
+        return size() == 0;
     }
 
     operator key_t() const {
@@ -191,24 +200,24 @@ public:
         zero(data_);
     }
 
-    auto operator=(const random_t& other) -> random_t& {
+    auto operator=(const random_t& other) -> auto& {
         static_assert(other.size() == size());
         if(this != &other)
             memcpy(&data_, &other.data_, sizeof(data_));    // FlawFinder: ignore
         return *this;
     }
 
-    auto operator=(const std::string_view& b64) -> random_t& {
+    auto operator=(const std::string_view& b64) -> auto& {
         zero(data_);
         from_b64(b64, data_, sizeof(data_));
         return *this;
     }
 
-    auto data() const -> const uint8_t * final {
+    auto data() const noexcept -> const uint8_t * final {
         return &data_[0];
     }
 
-    auto size() const -> size_t final {
+    auto size() const noexcept -> size_t final {
         return sizeof(data_);
     }
 
@@ -248,7 +257,7 @@ public:
 };
 #endif
 
-inline auto operator<<(std::ostream& out, const crypto::Key& key) -> auto& {
+inline auto operator<<(std::ostream& out, const crypto::Key& key) -> std::ostream& {
     out << key.to_string();
     return out;
 }

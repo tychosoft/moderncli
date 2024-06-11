@@ -83,6 +83,10 @@ add_executable(test_random  test/random.cpp src/random.hpp)
 target_link_libraries(test_random PRIVATE OpenSSL::Crypto)
 add_test(NAME test-random COMMAND test_random)
 
+add_executable(test_cipher  test/cipher.cpp src/cipher.hpp src/random.hpp)
+target_link_libraries(test_cipher PRIVATE OpenSSL::Crypto)
+add_test(NAME test-cipher COMMAND test_cipher)
+
 if(NOT WIN32)
 	add_executable(test_serial  test/serial.cpp src/serial.hpp)
 	add_test(NAME test-serial COMMAND test_serial)

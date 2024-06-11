@@ -12,21 +12,21 @@
 namespace crypto {
 class digest_t final {
 public:
-    explicit digest_t(const EVP_MD *md = EVP_sha256()) : ctx_(EVP_MD_CTX_create()) {
+    explicit digest_t(const EVP_MD *md = EVP_sha256()) noexcept : ctx_(EVP_MD_CTX_create()) {
         if(ctx_ && EVP_DigestInit_ex(ctx_, md, nullptr) != 1) {
             EVP_MD_CTX_destroy(ctx_);
             ctx_ = nullptr;
         }
     }
 
-    explicit digest_t(const char *cp) : ctx_(EVP_MD_CTX_create()) {
+    explicit digest_t(const char *cp) noexcept : ctx_(EVP_MD_CTX_create()) {
         if(ctx_ && EVP_DigestInit_ex(ctx_, EVP_get_digestbyname(cp), nullptr) != 1) {
             EVP_MD_CTX_destroy(ctx_);
             ctx_ = nullptr;
         }
     }
 
-    digest_t(const digest_t& from) {
+    digest_t(const digest_t& from) noexcept {
         if(from.ctx_)
             ctx_ = EVP_MD_CTX_create();
         if(ctx_ && EVP_MD_CTX_copy_ex(ctx_, from.ctx_) != 1) {
@@ -51,7 +51,7 @@ public:
             EVP_MD_CTX_destroy(ctx_);
     }
 
-    auto operator=(const digest_t& from) -> auto& {
+    auto operator=(const digest_t& from) noexcept -> auto& {
         if(this == &from)
             return *this;
         if(ctx_) {
@@ -71,19 +71,19 @@ public:
         return *this;
     }
 
-    operator bool() const {
+    operator bool() const noexcept {
         return ctx_ != nullptr;
     }
 
-    auto operator!() const {
+    auto operator!() const noexcept {
         return ctx_ == nullptr;
     }
 
-    auto size() const {
+    auto size() const noexcept {
         return size_;
     }
 
-    auto data() const {
+    auto data() const noexcept {
         return data_;
     }
 
@@ -91,15 +91,15 @@ public:
         return std::string_view(reinterpret_cast<const char *>(&data_), size_);
     }
 
-    auto c_str() const {
+    auto c_str() const noexcept {
         return reinterpret_cast<const char *>(data_);
     }
 
-    auto update(const char *cp, size_t size) {
+    auto update(const char *cp, size_t size) noexcept {
         return !ctx_ || size_ ? false : EVP_DigestUpdate(ctx_, reinterpret_cast<uint8_t *>(const_cast<char *>(cp)), size) == 1;
     }
 
-    auto update(const uint8_t *cp, size_t size) {
+    auto update(const uint8_t *cp, size_t size) noexcept {
         return !ctx_ || size_ ? false : EVP_DigestUpdate(ctx_, cp, size) == 1;
     }
 
@@ -107,13 +107,13 @@ public:
         update(view.data(), view.size());
     }
 
-    auto finish() {
+    auto finish() noexcept {
         if(!ctx_ || size_)
             return false;
         return EVP_DigestFinal_ex(ctx_, data_, &size_) == 1;
     }
 
-    void reinit() {
+    void reinit() noexcept {
         if(ctx_)
             EVP_DigestInit_ex(ctx_, nullptr, nullptr);
         size_ = 0;

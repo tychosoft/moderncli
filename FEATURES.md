@@ -15,6 +15,11 @@ help text. Support for a kind of golang init() thru init\_t also introduced.
 
 Atomic / lockfree data structures and features.
 
+## cipher.hpp
+
+Encode and decode encrypted data. Create cipher keys from passphrases using
+a specified digest and cipher. Manage salt.
+
 ## datetime.hpp
 
 Basic date / time processing and formatting functions.
