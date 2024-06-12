@@ -84,13 +84,11 @@ public:
     auto operator=(const stack_t&) -> auto& = delete;
 
     operator bool() const noexcept {
-        const auto count = count_.load();
-        return count > 0;
+        return count_.load() > 0;
     }
 
     auto operator!() const noexcept {
-        const auto count = count_.load();
-        return count < 1;
+        return count_.load() < 1;
     }
 
     auto operator*() noexcept {
@@ -108,6 +106,14 @@ public:
         if(count > S)
             return S;
         return count;
+    }
+
+    auto empty() const noexcept {
+        return count_.load() < 1;
+    }
+
+    auto full() const noexcept {
+        return count_.load() >= S;
     }
 
     auto push(const T& item) noexcept {
@@ -171,6 +177,19 @@ public:
 
     auto operator<=(const T& item) noexcept {
         return push(item);
+    }
+
+    auto empty() const noexcept {
+        return head_.load(std::memory_order_relaxed) == tail_.load(std::memory_order_relaxed);
+    }
+
+    auto full(const T& item) noexcept {
+        const auto tail = tail_.load(std::memory_order_relaxed);
+        auto next = tail;
+        if(++next >= S)
+            next -= S;
+
+        return next == head_.load(std::memory_order_acquire);
     }
 
     auto push(const T& item) noexcept {
