@@ -10,6 +10,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstdio>
+#include <cstdlib>
 
 #include <sys/types.h>
 #include <fcntl.h>
@@ -23,8 +25,6 @@ typedef SSIZE_T ssize_t;
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 extern "C" {
-#include <stdio.h>
-#include <stdlib.h>
 #include <io.h>
 }
 #endif
@@ -83,9 +83,10 @@ inline auto scan_file(const fsys::path& path, std::function<bool(const std::stri
     return count;
 }
 
-inline auto scan_file(std::FILE *file, size_t size, std::function<bool(const std::string_view&)> proc) {
-    char *buf = nullptr;
-    size_t count{0};
+#if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__) && !defined(WIN32)
+inline auto scan_file(std::FILE *file, std::function<bool(const std::string_view&)> proc) {
+    char *buf{nullptr};
+    size_t count{0}, size{0};
     while(!feof(file)) {
         auto len = getline(&buf, &size, file);
         if(len < 0 || !proc({buf, static_cast<size_t>(len)}))
@@ -96,6 +97,18 @@ inline auto scan_file(std::FILE *file, size_t size, std::function<bool(const std
         free(buf);  // NOLINT
     return count;
 }
+
+inline auto scan_command(const std::string& cmd, std::function<bool(const std::string_view&)> proc) {
+    auto file = popen(cmd.c_str(), "r");    // FlawFinder: ignore
+
+    if(!file)
+        return size_t(0);
+
+    auto count = scan_file(file, proc);
+    pclose(file);
+    return count;
+}
+#endif
 
 inline auto make_input(const fsys::path& path, std::ios::openmode mode = std::ios::binary) {
     std::ifstream file;

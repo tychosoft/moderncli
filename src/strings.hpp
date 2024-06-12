@@ -145,6 +145,18 @@ finish:
     return result;
 }
 
+template<typename S = std::string_view>
+inline auto is_line(const S& str) {
+    if(str.size() < 1)
+        return false;
+
+    if(str[str.size() - 1] == '\n')
+        return true;
+
+    return false;
+}
+
+
 // convenience function for string conversions if not explicit for template
 
 inline auto upper_case(const char *s) {
