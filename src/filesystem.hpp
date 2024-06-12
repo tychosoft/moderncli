@@ -60,7 +60,7 @@ inline auto native_handle(std::FILE *fp) {
 } // end fsys namespace
 
 namespace tycho {
-inline auto scan_stream(std::istream& input, std::function<bool(const std::string&)> proc) {
+inline auto scan_stream(std::istream& input, std::function<bool(const std::string_view&)> proc) {
     std::string line;
     size_t count{0};
     while(std::getline(input, line)) {
@@ -71,7 +71,7 @@ inline auto scan_stream(std::istream& input, std::function<bool(const std::strin
     return count;
 }
 
-inline auto scan_file(const fsys::path& path, std::function<bool(const std::string&)> proc) {
+inline auto scan_file(const fsys::path& path, std::function<bool(const std::string_view&)> proc) {
     std::fstream input(path);
     std::string line;
     size_t count{0};
@@ -80,6 +80,20 @@ inline auto scan_file(const fsys::path& path, std::function<bool(const std::stri
             break;
         ++count;
     }
+    return count;
+}
+
+inline auto scan_file(std::FILE *file, size_t size, std::function<bool(const std::string_view&)> proc) {
+    char *buf = nullptr;
+    size_t count{0};
+    while(!feof(file)) {
+        auto len = getline(&buf, &size, file);
+        if(len < 0 || !proc({buf, static_cast<size_t>(len)}))
+            break;
+        ++count;
+    }
+    if(buf)
+        free(buf);  // NOLINT
     return count;
 }
 
