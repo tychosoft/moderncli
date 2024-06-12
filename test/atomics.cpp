@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"
 #include "atomics.hpp"
+#include "templates.hpp"
 #include <cstdint>
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {

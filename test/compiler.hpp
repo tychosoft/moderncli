@@ -31,9 +31,4 @@ using namespace tycho;
 
 #include <cassert>
 #include <cstdint>
-
-template<typename T>
-inline auto is(const T& object) {
-    return object.operator bool();
-}
 #endif

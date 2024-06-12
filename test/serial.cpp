@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"
 #include "serial.hpp"
+#include "templates.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 // This is so we can lint serial on non-termios systems without errors...

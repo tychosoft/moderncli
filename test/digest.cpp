@@ -5,6 +5,7 @@
 #include "compiler.hpp"
 #include "digest.hpp"
 #include "strings.hpp"
+#include "templates.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     crypto::digest_t digest(EVP_sha256());

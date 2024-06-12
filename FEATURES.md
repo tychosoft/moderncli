@@ -98,6 +98,10 @@ also associating the actual lock with the data being protected rather than as
 completely unrelated data structures. Sync also includes other kinds of thread
 synchronization objects such as semaphores and barriers.
 
+## templates.hpp
+
+Some very generic, universal, and miscellanous templates and functions.
+
 ## linting
 
 Since this is common code extensive support exists for linting and static
