@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <optional>
+#include <utility>
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 #if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
@@ -25,6 +26,7 @@
 #define quick_exit(x) ::exit(x)
 #define at_quick_exit(x) ::atexit(x)
 #endif
+#define MAP_FAILED  nullptr
 #else
 #include <csignal>
 #include <unistd.h>
@@ -33,6 +35,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 
 #ifndef RTLD_GLOBAL
 #define RTLD_GLOBAL 0
@@ -44,25 +47,92 @@
 #endif
 
 namespace process {
+using map_t = std::pair<void *, size_t>;
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 using id_t = intptr_t;
 using addr_t = FARPROC;
 using handle_t = HANDLE;
 constexpr auto dso_suffix = ".dll";
 
-inline auto is_tty(HANDLE handle) {
+inline auto map(handle_t h, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4293)
+#endif
+    const DWORD dwFileOffsetLow = (sizeof(off_t) <= sizeof(DWORD)) ?
+                    (DWORD)offset : (DWORD)(offset & 0xFFFFFFFFL);
+    const DWORD dwFileOffsetHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
+                    (DWORD)0 : (DWORD)((offset >> 32) & 0xFFFFFFFFL);
+
+    const DWORD protectAccess = (rw) ? PAGE_READWRITE : PAGE_READONLY;
+    const DWORD desiredAccess = (rw) ? FILE_MAP_READ | FILE_MAP_WRITE : FILE_MAP_READ;
+
+    const auto max = offset + static_cast<off_t>(size);
+    const DWORD dwMaxSizeLow = (sizeof(off_t) <= sizeof(DWORD)) ? (DWORD)max : (DWORD)(max & 0xFFFFFFFFL);
+    const DWORD dwMaxSizeHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
+                    (DWORD)0 : (DWORD)((max >> 32) & 0xFFFFFFFFL);
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+    auto fm = CreateFileMapping(h, nullptr, protectAccess, dwMaxSizeHigh, dwMaxSizeLow, nullptr);
+
+    if(fm == nullptr)
+        return {MAP_FAILED, size};
+
+    auto mv = MapViewOfFile(fm, desiredAccess, dwFileOffsetHigh, dwFileOffsetLow, size);
+    CloseHandle(fm);
+
+    if(mv == nullptr)
+        return {MAP_FAILED, size};
+
+    return {mv, size};
+}
+
+inline auto map(const std::string& path, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
+    auto fh = CreateFile(path.c_str(), (rw) ? GENERIC_READ | GENERIC_WRITE : GENERIC_READ, (rw) ? 0 : FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if(fh == INVALID_HANDLE_VALUE)
+        return {nullptr, 0};
+
+    auto ref = map(fh, size, rw, priv, offset);
+    CloseHandle(fh);
+    return ref;
+}
+
+inline auto sync(const map_t& ref, [[maybe_unused]]bool wait = false) {
+    if(FlushViewOfFile(ref.first, ref.second))
+        return true;
+
+    return false;
+}
+
+inline auto lock(const map_t& ref) {
+    if(VirtualLock((LPVOID)ref.first, ref.second))
+        return true;
+
+    return false;
+}
+
+inline auto unlock(const map_t& ref) {
+    if(VirtualUnlock((LPVOID)ref.first, ref.second))
+        return true;
+
+    return false;
+}
+
+inline auto unmap(const map_t& ref) {
+    if(UnmapViewOfFile(ref.first))
+        return true;
+
+    return false;
+}
+
+inline auto is_tty(handle_t handle) {
     if(handle == INVALID_HANDLE_VALUE)
         return false;
     auto type = GetFileType(handle);
     if(type == FILE_TYPE_CHAR)
         return true;
     return false;
-}
-
-inline auto is_tty(int fd) {
-    if(fd < 0)
-        return false;
-    return is_tty(reinterpret_cast<HANDLE>(_get_osfhandle(fd)));
 }
 
 inline auto load(const std::string& path) {
@@ -102,11 +172,11 @@ inline auto async(const std::string& path, char *const *argv, char *const *env) 
 }
 
 inline auto input(const std::string& cmd) {
-    return _popen(cmd.c_str(), "rb");
+    return _popen(cmd.c_str(), "rt");
 }
 
 inline auto output(const std::string& cmd) {
-    return _popen(cmd.c_str(), "wb");
+    return _popen(cmd.c_str(), "wt");
 }
 
 inline auto detach(const std::string& path, char *const *argv) {
@@ -144,7 +214,46 @@ using addr_t = void *;
 using handle_t = int;
 constexpr auto dso_suffix = ".so";
 
-inline auto is_tty(int fd) {
+inline auto map(handle_t fd, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
+    return {::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset), size};
+}
+
+inline auto map(const std::string& path, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
+    auto fd = ::open(path.c_str(), rw ? O_RDWR : O_RDONLY, 0);
+    if(fd < 0)
+        return {MAP_FAILED, size_t(0)};
+
+    auto mapped = map(fd, size, rw, priv, offset);
+    ::close(fd);
+    return mapped;
+}
+
+inline auto sync(const map_t& ref, bool wait = false) {
+    if(!::msync(ref.first, ref.second, (wait)? MS_SYNC : MS_ASYNC))
+        return true;
+
+    return false;
+}
+
+inline auto lock(const map_t& ref) {
+    if(!::mlock(ref.first, ref.second))
+        return true;
+
+    return false;
+}
+
+inline auto unlock(const map_t& ref) {
+    if(!::munlock(ref.first, ref.second))
+        return true;
+
+    return false;
+}
+
+inline auto unmap(const map_t& ref) {
+    ::munmap(ref.first, ref.second);
+}
+
+inline auto is_tty(handle_t fd) {
     if(fd < 0)
         return false;
 
@@ -321,6 +430,14 @@ inline void env(const std::string& id, const std::string& value) {
     setenv(id.c_str(), value.c_str(), 1);
 }
 #endif
+
+inline auto map(const map_t& ref) {
+    return ref.first;
+}
+
+inline auto size(const map_t& ref) {
+    return ref.second;
+}
 
 [[noreturn]] inline auto exit(int code) {
     quick_exit(code);
