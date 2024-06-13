@@ -89,7 +89,7 @@ inline auto map(handle_t h, size_t size, bool rw = true, bool priv = false, off_
 }
 
 inline auto map(const std::string& path, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
-    auto fh = CreateFile(path.c_str(), (rw) ? GENERIC_READ | GENERIC_WRITE : GENERIC_READ, (rw) ? 0 : FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    auto fh = CreateFile(path.c_str(), (rw) ? GENERIC_READ | GENERIC_WRITE : GENERIC_READ, (priv) ? 0 : ((rw) ? FILE_SHARE_READ | FILE_SHARE_WRITE : FILE_SHARE_READ), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if(fh == INVALID_HANDLE_VALUE)
         return {nullptr, 0};
 
