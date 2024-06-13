@@ -219,7 +219,7 @@ inline auto map(handle_t fd, size_t size, bool rw = true, bool priv = false, off
 }
 
 inline auto map(const std::string& path, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
-    auto fd = ::open(path.c_str(), rw ? O_RDWR : O_RDONLY, 0);
+    auto fd = ::open(path.c_str(), rw ? O_RDWR : O_RDONLY, 0);  // FlawFinder: ignore
     if(fd < 0)
         return {MAP_FAILED, size_t(0)};
 
@@ -229,28 +229,19 @@ inline auto map(const std::string& path, size_t size, bool rw = true, bool priv 
 }
 
 inline auto sync(const map_t& ref, bool wait = false) {
-    if(!::msync(ref.first, ref.second, (wait)? MS_SYNC : MS_ASYNC))
-        return true;
-
-    return false;
+    return ::msync(ref.first, ref.second, (wait)? MS_SYNC : MS_ASYNC) == 0;
 }
 
 inline auto lock(const map_t& ref) {
-    if(!::mlock(ref.first, ref.second))
-        return true;
-
-    return false;
+    return ::mlock(ref.first, ref.second) == 0;
 }
 
 inline auto unlock(const map_t& ref) {
-    if(!::munlock(ref.first, ref.second))
-        return true;
-
-    return false;
+    return ::munlock(ref.first, ref.second) == 0;
 }
 
 inline auto unmap(const map_t& ref) {
-    ::munmap(ref.first, ref.second);
+    return ::munmap(ref.first, ref.second) == 0;
 }
 
 inline auto is_tty(handle_t fd) {

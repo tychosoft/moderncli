@@ -11,17 +11,17 @@ namespace crypto {
 class salt_t final : public Key {
 public:
     salt_t() noexcept {
-        rand(&data_[0], 8);
+        rand(data_, 8);
     }
 
     salt_t(const salt_t& other) noexcept : valid_(other.valid_) {
         if(valid_)
-            memcpy(&data_[0], &other.data_[0], 8); // FlawFinder: ignore
+            memcpy(data_, other.data_, 8); // FlawFinder: ignore
     }
 
     explicit salt_t(const uint8_t *salt) noexcept {
         if(salt)
-            memcpy(&data_[0], salt, 8); // FlawFinder: ignore
+            memcpy(data_, salt, 8); // FlawFinder: ignore
         else
             valid_ = false;
     }
@@ -30,7 +30,7 @@ public:
         if(key.second != 8)
             valid_ = false;
         else
-            memcpy(&data_[0], key.first, 8); // FlawFinder: ignore
+            memcpy(data_, key.first, 8); // FlawFinder: ignore
     }
 
     ~salt_t() final {
@@ -39,7 +39,7 @@ public:
 
     auto operator=(const key_t& key) noexcept -> salt_t& {
         if(key.second == 8) {
-            memcpy(&data_[0], key.first, 8); // FlawFinder: ignore
+            memcpy(data_, key.first, 8); // FlawFinder: ignore
             valid_ = true;
         }
         else
@@ -48,15 +48,11 @@ public:
     }
 
     auto data() const noexcept -> const uint8_t * final {
-        if(valid_)
-            return &data_[0];
-        return nullptr;
+        return (valid_) ? data_ : nullptr;
     }
 
     auto size() const noexcept -> size_t final {
-        if(valid_)
-            return 8;
-        return 0;
+        return (valid_) ? 8 : 0;
     }
 
 private:
@@ -87,8 +83,8 @@ public:
 
     keyphrase_t(const keyphrase_t& other) noexcept : size_(other.size_) {
         if(size_) {
-            memcpy(&data_, &other.data_, size_);    // FlawFinder: ignore
-            memcpy(&iv_, &other.iv_, size_);        // FlawFinder: ignore
+            memcpy(data_, other.data_, size_);    // FlawFinder: ignore
+            memcpy(iv_, other.iv_, size_);        // FlawFinder: ignore
         }
     }
 
@@ -103,8 +99,8 @@ public:
 
         size_ = other.size_;
         if(size_) {
-            memcpy(&data_, &other.data_, size_);    // FlawFinder: ignore
-            memcpy(&iv_, &other.iv_, size_);        // FlawFinder: ignore
+            memcpy(data_, other.data_, size_);          // FlawFinder: ignore
+            memcpy(iv_, other.iv_, size_);              // FlawFinder: ignore
         }
         return *this;
     }
@@ -129,12 +125,11 @@ public:
     }
 
     auto iv() const noexcept -> const uint8_t *{
-        return &iv_[0];
+        return iv_;
     }
 
-
     auto data() const noexcept -> const uint8_t * final {
-        return &data_[0];
+        return data_;
     }
 
     auto size() const noexcept -> size_t final {

@@ -34,6 +34,50 @@ extern "C" {
 #define fstat64 fstat   // NOLINT
 #endif
 
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+auto _getline(char **lp, size_t *size, FILE *fp) -> ssize_t {
+    size_t pos;
+    int c;
+
+    if(lp == nullptr || fp == nullptr || size == nullptr)
+        return -1;
+
+    c = getc(fp);   // FlawFinder: ignore
+    if(c == EOF)
+        return -1;
+
+    if(*lp == nullptr) {
+        *lp = static_cast<char *>(malloc(128));
+        if(*lp == nullptr) {
+            return -1;
+        }
+        *size = 128;
+    }
+
+    pos = 0;
+    while(c != EOF) {
+        if (pos + 1 >= *size) {
+            auto new_size = *size + (*size >> 2);
+            if(new_size < 128) {
+                new_size = 128;
+            }
+            auto new_ptr = static_cast<char *>(realloc(*lp, new_size));
+            if(new_ptr == nullptr)
+                return -1;
+            *size = new_size;
+            *lp = new_ptr;
+        }
+
+        (reinterpret_cast<unsigned char *>(*lp))[pos ++] = c;
+        if(c == '\n')
+            break;
+        c = getc(fp);   // FlawFinder: ignore
+    }
+    (*lp)[pos] = '\0';
+    return pos;
+}
+#endif
+
 namespace fsys {
 using namespace std::filesystem;
 
@@ -84,9 +128,11 @@ inline auto scan_file(const fsys::path& path, std::function<bool(const std::stri
 }
 
 #if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__) && !defined(WIN32)
-inline auto scan_file(std::FILE *file, std::function<bool(const std::string_view&)> proc) {
+inline auto scan_file(std::FILE *file, std::function<bool(const std::string_view&)> proc, size_t size = 0) {
     char *buf{nullptr};
-    size_t count{0}, size{0};
+    size_t count{0};
+    if(size)
+        buf = static_cast<char *>(malloc(size));    // NOLINT
     while(!feof(file)) {
         auto len = getline(&buf, &size, file);
         if(len < 0 || !proc({buf, static_cast<size_t>(len)}))
@@ -98,14 +144,41 @@ inline auto scan_file(std::FILE *file, std::function<bool(const std::string_view
     return count;
 }
 
-inline auto scan_command(const std::string& cmd, std::function<bool(const std::string_view&)> proc) {
+inline auto scan_command(const std::string& cmd, std::function<bool(const std::string_view&)> proc, size_t size = 0) {
     auto file = popen(cmd.c_str(), "r");    // FlawFinder: ignore
 
     if(!file)
         return size_t(0);
 
-    auto count = scan_file(file, proc);
+    auto count = scan_file(file, proc, size);
     pclose(file);
+    return count;
+}
+#else
+inline auto scan_file(std::FILE *file, std::function<bool(const std::string_view&)> proc, size_t size = 0) {
+    char *buf{nullptr};
+    size_t count{0};
+    if(size)
+        buf = static_cast<char *>(malloc(size));
+    while(!feof(file)) {
+        auto len = _getline(&buf, &size, file);
+        if(len < 0 || !proc({buf, static_cast<size_t>(len)}))
+            break;
+        ++count;
+    }
+    if(buf)
+        free(buf);  // NOLINT
+    return count;
+}
+
+inline auto scan_command(const std::string& cmd, std::function<bool(const std::string_view&)> proc, size_t size = 0) {
+    auto file = _popen(cmd.c_str(), "r");    // FlawFinder: ignore
+
+    if(!file)
+        return size_t(0);
+
+    auto count = scan_file(file, proc, size);
+    _pclose(file);
     return count;
 }
 #endif

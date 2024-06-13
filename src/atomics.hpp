@@ -183,7 +183,7 @@ public:
         return head_.load(std::memory_order_relaxed) == tail_.load(std::memory_order_relaxed);
     }
 
-    auto full(const T& item) noexcept {
+    auto full() noexcept {
         const auto tail = tail_.load(std::memory_order_relaxed);
         auto next = tail;
         if(++next >= S)

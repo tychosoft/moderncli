@@ -214,7 +214,7 @@ public:
     }
 
     auto data() const noexcept -> const uint8_t * final {
-        return &data_[0];
+        return data_;
     }
 
     auto size() const noexcept -> size_t final {
