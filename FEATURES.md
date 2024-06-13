@@ -101,7 +101,8 @@ synchronization objects such as semaphores and barriers.
 
 ## templates.hpp
 
-Some very generic, universal, and miscellanous templates and functions.
+Some very generic, universal, and miscellanous templates and functions. This
+also is used to introduce new language "features" like init and defer.
 
 ## linting
 

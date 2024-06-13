@@ -9,7 +9,6 @@
 #include <thread>
 #include <shared_mutex>
 #include <condition_variable>
-#include <functional>
 #include <stdexcept>
 
 namespace tycho {
@@ -182,19 +181,6 @@ public:
 private:
     shared_sync<U> &sync_;  // NOLINT
     U* ptr_;
-};
-
-class defer final {
-public:
-    defer() = delete;
-    defer(const defer&) = delete;
-    auto operator=(const defer&) = delete;
-
-    explicit defer(std::function<void()> func) : action_(std::move(func)) {}
-    ~defer() {action_();}
-
-private:
-    std::function<void()> action_;
 };
 
 class semaphore_t final {

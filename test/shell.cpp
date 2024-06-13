@@ -4,7 +4,6 @@
 #undef  NDEBUG
 #include "compiler.hpp"
 #include "args.hpp"
-#include "sync.hpp"
 #include "print.hpp"
 #include "filesystem.hpp"
 #include "templates.hpp"
@@ -12,11 +11,17 @@
 
 // Test of init trick, a "kind of" atinit() function or golang init().
 namespace {
-    int value = 0;
+int value = 0;
 
-    init_t init([]{
+const init _init([]{
+    ++value;
+});
+
+void caller() {
+    const defer stack([]{
         ++value;
     });
+}
 } // end anon namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
@@ -33,6 +38,11 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(const_copy(value) == 1);
     assert(const_copy(p) == 1);
     assert(const_max(value, mv) == 2);
-}
 
+    auto tv = temporary<int>(3);
+    assert(*tv == 3);
+
+    caller();
+    assert(value == 2);
+}
 

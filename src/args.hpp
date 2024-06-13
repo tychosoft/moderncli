@@ -402,24 +402,5 @@ private:
     inline static std::vector<std::string_view> argv_;
     inline static std::string_view argv0_;
 };
-
-class init_t final {
-public:
-    using run_t = void (*)();
-
-    init_t(const init_t&) = delete;
-    auto operator=(const init_t&) -> auto& = delete;
-
-    explicit init_t(run_t start, run_t stop = {[](){}}) : exit_(stop) {
-        (start)();
-    }
-
-    ~init_t() {
-        (exit_)();
-    }
-
-private:
-    run_t exit_{[](){}};
-};
 } // end namespace
 #endif
