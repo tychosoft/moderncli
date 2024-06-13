@@ -19,6 +19,7 @@
 #endif
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <winsock2.h>
 #include <process.h>
 #include <handleapi.h>
 #include <io.h>
@@ -36,6 +37,7 @@
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 
 #ifndef RTLD_GLOBAL
 #define RTLD_GLOBAL 0
@@ -53,6 +55,21 @@ using id_t = intptr_t;
 using addr_t = FARPROC;
 using handle_t = HANDLE;
 constexpr auto dso_suffix = ".dll";
+
+inline void time(struct timeval *tp) {
+    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
+    SYSTEMTIME  system_time;
+    FILETIME    file_time;
+    uint64_t    time;
+
+    GetSystemTime(&system_time);
+    SystemTimeToFileTime(&system_time, &file_time);
+    time =  (static_cast<uint64_t>(file_time.dwLowDateTime));
+    time += (static_cast<uint64_t>(file_time.dwHighDateTime)) << 32;
+
+    tp->tv_sec  = static_cast<long>((time - EPOCH) / 10000000L);
+    tp->tv_usec = static_cast<long>(system_time.wMilliseconds * 1000L);
+}
 
 inline auto map(handle_t h, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
 #ifdef _MSC_VER
@@ -171,6 +188,18 @@ inline auto async(const std::string& path, char *const *argv, char *const *env) 
     return _spawnvpe(_P_NOWAIT, path.c_str(), argv, env);
 }
 
+inline auto input() {
+    return GetStdHandle(STD_INPUT_HANDLE);
+}
+
+inline auto output() {
+    return GetStdHandle(STD_OUTPUT_HANDLE);
+}
+
+inline auto error() {
+    return GetStdHandle(STD_ERROR_HANDLE);
+}
+
 inline auto input(const std::string& cmd) {
     return _popen(cmd.c_str(), "rt");
 }
@@ -213,6 +242,10 @@ using id_t = pid_t;
 using addr_t = void *;
 using handle_t = int;
 constexpr auto dso_suffix = ".so";
+
+inline void time(struct timeval *tp) {
+    gettimeofday(tp, nullptr);
+}
 
 inline auto map(handle_t fd, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
     return {::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset), size};
@@ -264,6 +297,18 @@ inline auto find(void *dso, const std::string& sym) -> addr_t {
 
 inline void unload(void *dso) {
     dlclose(dso);
+}
+
+inline auto input() {
+    return 0;
+}
+
+inline auto output() {
+    return 1;
+}
+
+inline auto error() {
+    return 2;
 }
 
 inline auto input(const std::string& cmd) {
