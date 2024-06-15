@@ -124,7 +124,6 @@ private:
 // some commonly forwarded classes...
 
 class keyfile;
-class Key;
 } // end namespace
 
 #endif
