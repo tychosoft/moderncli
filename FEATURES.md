@@ -64,9 +64,10 @@ notify logging events.
 
 ## process.hpp
 
-Access process properties and execute programs. This includes dso plugin load
-support and some generic posix features that may require deep platform support
-to effectively emulate on some targets.
+Access process properties and execute programs. Automatic management of system
+descriptors and mapping is offered. This also includes dso plugin load support
+and some generic posix features that may require deep platform support to
+effectively emulate on some targets.
 
 ## random.hpp
 

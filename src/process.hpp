@@ -49,12 +49,230 @@
 #endif
 
 namespace process {
-using map_t = std::pair<void *, size_t>;
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 using id_t = intptr_t;
 using addr_t = FARPROC;
 using handle_t = HANDLE;
-constexpr auto dso_suffix = ".dll";
+
+inline constexpr auto dso_suffix = ".dll";
+
+constexpr auto invalid_handle() -> handle_t {
+    return INVALID_HANDLE_VALUE;
+}
+
+class ref_t final {
+public:
+    ref_t() noexcept = default;
+    explicit ref_t(handle_t handle) noexcept : handle_(handle) {}
+
+    explicit ref_t(const ref_t& other) noexcept {
+        auto pid = GetCurrentProcess();
+        DuplicateHandle(pid, other.handle_, pid, &handle_, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    }
+
+    ref_t(ref_t&& other) noexcept : handle_(other.handle_) {
+        other.handle_ = invalid_handle();
+    }
+
+    ~ref_t() {
+        if(handle_ != invalid_handle())
+            CloseHandle(handle_);
+    }
+
+    auto operator=(const ref_t& other) noexcept -> ref_t& {
+        if(&other == this)
+            return *this;
+
+        if(handle_ != invalid_handle())
+            CloseHandle(handle_);
+
+        auto pid = GetCurrentProcess();
+        DuplicateHandle(pid, other.handle_, pid, &handle_, 0, FALSE, DUPLICATE_SAME_ACCESS);
+        return *this;
+    }
+
+    auto operator=(ref_t&& other) noexcept -> ref_t& {
+        if(handle_ != invalid_handle())
+            CloseHandle(handle_);
+        handle_ = other.handle_;
+        other.handle_ = invalid_handle();
+        return *this;
+    }
+
+    auto operator=(handle_t handle) noexcept -> ref_t& {
+        if(handle_ != invalid_handle())
+            CloseHandle(handle_);
+        handle_ = handle;
+        return *this;
+    }
+
+    operator bool() const noexcept {
+        return handle_ != invalid_handle();
+    }
+
+    auto operator!() const noexcept {
+        return handle_ == invalid_handle();
+    }
+
+    operator HANDLE() const noexcept {
+        return handle_;
+    }
+
+    auto operator*() const noexcept {
+        return handle_;
+    }
+
+    auto operator==(const ref_t& other) const noexcept {
+        return handle_ == other.handle_;
+    }
+
+    auto operator!=(const ref_t& other) const noexcept {
+        return handle_ == other.handle_;
+    }
+
+    void release() noexcept {
+        if(handle_ != invalid_handle())
+            CloseHandle(handle_);
+        handle_ = invalid_handle();
+    }
+
+private:
+    handle_t handle_{invalid_handle()};
+};
+
+class map_t final {
+public:
+    map_t() = default;
+    map_t(const map_t&) = delete;
+    auto operator=(const map_t&) -> auto& = delete;
+
+    map_t(handle_t h, size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept : size_(size) {
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4293)
+#endif
+        const DWORD dwFileOffsetLow = (sizeof(off_t) <= sizeof(DWORD)) ?
+                        (DWORD)offset : (DWORD)(offset & 0xFFFFFFFFL);
+        const DWORD dwFileOffsetHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
+                        (DWORD)0 : (DWORD)((offset >> 32) & 0xFFFFFFFFL);
+
+        const DWORD protectAccess = (rw) ? PAGE_READWRITE : PAGE_READONLY;
+        const DWORD desiredAccess = (rw) ? FILE_MAP_READ | FILE_MAP_WRITE : FILE_MAP_READ;
+
+        const auto max = offset + static_cast<off_t>(size);
+        const DWORD dwMaxSizeLow = (sizeof(off_t) <= sizeof(DWORD)) ? (DWORD)max : (DWORD)(max & 0xFFFFFFFFL);
+        const DWORD dwMaxSizeHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
+                        (DWORD)0 : (DWORD)((max >> 32) & 0xFFFFFFFFL);
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+        auto fm = CreateFileMapping(h, nullptr, protectAccess, dwMaxSizeHigh, dwMaxSizeLow, nullptr);
+
+        if(fm == nullptr) {
+            addr_ = MAP_FAILED;
+            return;
+        }
+
+        addr_ = MapViewOfFile(fm, desiredAccess, dwFileOffsetHigh, dwFileOffsetLow, size);
+        CloseHandle(fm);
+    }
+
+    ~map_t() {
+        if(addr_ != MAP_FAILED)
+            UnmapViewOfFile(addr_);
+    }
+
+    operator bool() const noexcept {
+        return addr_ != MAP_FAILED;
+    };
+
+    auto operator!() const noexcept {
+        return addr_ == MAP_FAILED;
+    }
+
+    auto data() const noexcept {
+        return addr_;
+    }
+
+    auto size() const noexcept {
+        return size_;
+    }
+
+    auto sync(bool wait = false) noexcept {
+        if(addr_ == MAP_FAILED)
+            return false;
+
+        if(FlushViewOfFile(addr_, size_))
+            return true;
+        return false;
+    }
+
+    auto lock() {
+        if(addr_ == MAP_FAILED)
+            return false;
+
+        if(VirtualLock((LPVOID)addr_, size_))
+            return true;
+
+        return false;
+    }
+
+    auto unlock() {
+        if(addr_ == MAP_FAILED)
+            return false;
+
+        if(VirtualUnlock((LPVOID)addr_, size_))
+            return true;
+
+        return false;
+    }
+
+    auto set(handle_t h, size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept -> void *{
+        if(addr_ != MAP_FAILED)
+            UnmapViewOfFile(addr_);
+        addr_ = MAP_FAILED;
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4293)
+#endif
+        const DWORD dwFileOffsetLow = (sizeof(off_t) <= sizeof(DWORD)) ?
+                        (DWORD)offset : (DWORD)(offset & 0xFFFFFFFFL);
+        const DWORD dwFileOffsetHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
+                        (DWORD)0 : (DWORD)((offset >> 32) & 0xFFFFFFFFL);
+
+        const DWORD protectAccess = (rw) ? PAGE_READWRITE : PAGE_READONLY;
+        const DWORD desiredAccess = (rw) ? FILE_MAP_READ | FILE_MAP_WRITE : FILE_MAP_READ;
+
+        const auto max = offset + static_cast<off_t>(size);
+        const DWORD dwMaxSizeLow = (sizeof(off_t) <= sizeof(DWORD)) ? (DWORD)max : (DWORD)(max & 0xFFFFFFFFL);
+        const DWORD dwMaxSizeHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
+                        (DWORD)0 : (DWORD)((max >> 32) & 0xFFFFFFFFL);
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+        auto fm = CreateFileMapping(h, nullptr, protectAccess, dwMaxSizeHigh, dwMaxSizeLow, nullptr);
+
+        if(fm == nullptr) {
+            addr_ = MAP_FAILED;
+            return MAP_FAILED;
+        }
+
+        addr_ = MapViewOfFile(fm, desiredAccess, dwFileOffsetHigh, dwFileOffsetLow, size);
+        CloseHandle(fm);
+        size_ = size;
+        return addr_;
+    }
+
+private:
+    void *addr_{MAP_FAILED};
+    size_t size_{0};
+};
+
+inline auto page_size() -> off_t {
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    return si.dwPageSize;
+}
 
 inline void time(struct timeval *tp) {
     static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
@@ -69,78 +287,6 @@ inline void time(struct timeval *tp) {
 
     tp->tv_sec  = static_cast<long>((time - EPOCH) / 10000000L);
     tp->tv_usec = static_cast<long>(system_time.wMilliseconds * 1000L);
-}
-
-inline auto map(handle_t h, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 4293)
-#endif
-    const DWORD dwFileOffsetLow = (sizeof(off_t) <= sizeof(DWORD)) ?
-                    (DWORD)offset : (DWORD)(offset & 0xFFFFFFFFL);
-    const DWORD dwFileOffsetHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
-                    (DWORD)0 : (DWORD)((offset >> 32) & 0xFFFFFFFFL);
-
-    const DWORD protectAccess = (rw) ? PAGE_READWRITE : PAGE_READONLY;
-    const DWORD desiredAccess = (rw) ? FILE_MAP_READ | FILE_MAP_WRITE : FILE_MAP_READ;
-
-    const auto max = offset + static_cast<off_t>(size);
-    const DWORD dwMaxSizeLow = (sizeof(off_t) <= sizeof(DWORD)) ? (DWORD)max : (DWORD)(max & 0xFFFFFFFFL);
-    const DWORD dwMaxSizeHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
-                    (DWORD)0 : (DWORD)((max >> 32) & 0xFFFFFFFFL);
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-    auto fm = CreateFileMapping(h, nullptr, protectAccess, dwMaxSizeHigh, dwMaxSizeLow, nullptr);
-
-    if(fm == nullptr)
-        return {MAP_FAILED, size};
-
-    auto mv = MapViewOfFile(fm, desiredAccess, dwFileOffsetHigh, dwFileOffsetLow, size);
-    CloseHandle(fm);
-
-    if(mv == nullptr)
-        return {MAP_FAILED, size};
-
-    return {mv, size};
-}
-
-inline auto map(const std::string& path, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
-    auto fh = CreateFile(path.c_str(), (rw) ? GENERIC_READ | GENERIC_WRITE : GENERIC_READ, (priv) ? 0 : ((rw) ? FILE_SHARE_READ | FILE_SHARE_WRITE : FILE_SHARE_READ), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if(fh == INVALID_HANDLE_VALUE)
-        return {nullptr, 0};
-
-    auto ref = map(fh, size, rw, priv, offset);
-    CloseHandle(fh);
-    return ref;
-}
-
-inline auto sync(const map_t& ref, [[maybe_unused]]bool wait = false) {
-    if(FlushViewOfFile(ref.first, ref.second))
-        return true;
-
-    return false;
-}
-
-inline auto lock(const map_t& ref) {
-    if(VirtualLock((LPVOID)ref.first, ref.second))
-        return true;
-
-    return false;
-}
-
-inline auto unlock(const map_t& ref) {
-    if(VirtualUnlock((LPVOID)ref.first, ref.second))
-        return true;
-
-    return false;
-}
-
-inline auto unmap(const map_t& ref) {
-    if(UnmapViewOfFile(ref.first))
-        return true;
-
-    return false;
 }
 
 inline auto is_tty(handle_t handle) {
@@ -241,40 +387,148 @@ inline void env(const std::string& id, const std::string& value) {
 using id_t = pid_t;
 using addr_t = void *;
 using handle_t = int;
-constexpr auto dso_suffix = ".so";
+
+inline constexpr auto dso_suffix = ".so";
+
+constexpr auto invalid_handle() -> handle_t {
+    return -1;
+}
+
+class ref_t final {
+public:
+    ref_t() noexcept = default;
+    explicit ref_t(handle_t handle) noexcept : handle_(handle) {}
+    explicit ref_t(const ref_t& other) noexcept : handle_(dup(other.handle_)) {}
+
+    ref_t(ref_t&& other) noexcept : handle_(other.handle_) {
+        other.handle_ = invalid_handle();
+    }
+
+    ~ref_t() {
+        if(handle_ != invalid_handle())
+            ::close(handle_);
+    }
+
+    auto operator=(const ref_t& other) noexcept -> ref_t& {
+        if(&other == this)
+            return *this;
+
+        if(handle_ != invalid_handle())
+            ::close(handle_);
+        handle_ = dup(other.handle_);
+        return *this;
+    }
+
+    auto operator=(ref_t&& other) noexcept -> ref_t& {
+        if(handle_ != invalid_handle())
+            ::close(handle_);
+        handle_ = other.handle_;
+        other.handle_ = invalid_handle();
+        return *this;
+    }
+
+    auto operator=(handle_t handle) noexcept -> ref_t& {
+        if(handle_ != invalid_handle())
+            ::close(handle_);
+        handle_ = handle;
+        return *this;
+    }
+
+    operator bool() const noexcept {
+        return handle_ != invalid_handle();
+    }
+
+    auto operator!() const noexcept {
+        return handle_ == invalid_handle();
+    }
+
+    operator int() const noexcept {
+        return handle_;
+    }
+
+    auto operator*() const noexcept {
+        return handle_;
+    }
+
+    auto operator==(const ref_t& other) const noexcept {
+        return handle_ == other.handle_;
+    }
+
+    auto operator!=(const ref_t& other) const noexcept {
+        return handle_ == other.handle_;
+    }
+
+    void release() noexcept {
+        if(handle_ != invalid_handle())
+            ::close(handle_);
+        handle_ = invalid_handle();
+    }
+
+private:
+    handle_t handle_{invalid_handle()};
+};
+
+class map_t final {
+public:
+    map_t() = default;
+    map_t(const map_t&) = delete;
+    auto operator=(const map_t&) -> auto& = delete;
+
+    map_t(handle_t fd, size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept : addr_(::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset)), size_(size) {}
+
+    ~map_t() {
+        if(addr_ != MAP_FAILED)
+            munmap(addr_, size_);
+    }
+
+    operator bool() const noexcept {
+        return addr_ != MAP_FAILED;
+    };
+
+    auto operator!() const noexcept {
+        return addr_ == MAP_FAILED;
+    }
+
+    auto size() const noexcept {
+        return size_;
+    }
+
+    auto data() const noexcept {
+        return addr_;
+    }
+
+    auto sync(bool wait = false) noexcept {
+        return (addr_ == MAP_FAILED) ? false : ::msync(addr_, size_, (wait)? MS_SYNC : MS_ASYNC) == 0;
+    }
+
+    auto lock() noexcept {
+        return (addr_ == MAP_FAILED) ? false : ::mlock(addr_, size_) == 0;
+    }
+
+    auto unlock() noexcept {
+        return (addr_ == MAP_FAILED) ? false : ::munlock(addr_, size_) == 0;
+    }
+
+    auto set(handle_t fd, size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept {
+        if(addr_ != MAP_FAILED)
+            munmap(addr_, size_);
+
+        addr_ = ::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset);
+        size_ = size;
+        return addr_;
+    }
+
+private:
+    void *addr_{MAP_FAILED};
+    size_t size_{0};
+};
+
+inline auto page_size() -> off_t {
+    return sysconf(_SC_PAGESIZE);
+}
 
 inline void time(struct timeval *tp) {
     gettimeofday(tp, nullptr);
-}
-
-inline auto map(handle_t fd, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
-    return {::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset), size};
-}
-
-inline auto map(const std::string& path, size_t size, bool rw = true, bool priv = false, off_t offset = 0) -> map_t {
-    auto fd = ::open(path.c_str(), rw ? O_RDWR : O_RDONLY, 0);  // FlawFinder: ignore
-    if(fd < 0)
-        return {MAP_FAILED, size_t(0)};
-
-    auto mapped = map(fd, size, rw, priv, offset);
-    ::close(fd);
-    return mapped;
-}
-
-inline auto sync(const map_t& ref, bool wait = false) {
-    return ::msync(ref.first, ref.second, (wait)? MS_SYNC : MS_ASYNC) == 0;
-}
-
-inline auto lock(const map_t& ref) {
-    return ::mlock(ref.first, ref.second) == 0;
-}
-
-inline auto unlock(const map_t& ref) {
-    return ::munlock(ref.first, ref.second) == 0;
-}
-
-inline auto unmap(const map_t& ref) {
-    return ::munmap(ref.first, ref.second) == 0;
 }
 
 inline auto is_tty(handle_t fd) {
@@ -466,14 +720,6 @@ inline void env(const std::string& id, const std::string& value) {
     setenv(id.c_str(), value.c_str(), 1);
 }
 #endif
-
-inline auto map(const map_t& ref) {
-    return ref.first;
-}
-
-inline auto size(const map_t& ref) {
-    return ref.second;
-}
 
 [[noreturn]] inline auto exit(int code) {
     quick_exit(code);

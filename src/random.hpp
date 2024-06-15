@@ -5,6 +5,7 @@
 #define RANDOM_HPP_
 
 #include <type_traits>
+#include <iostream>
 #include <memory>
 #include <random>
 #include <array>
@@ -222,7 +223,7 @@ public:
     }
 
 private:
-    static_assert(!(S % 8));
+    static_assert(S != 0 && !(S % 8), "S must be byte aligned non-zero");
 
     uint8_t data_[S / 8]{0};
 };

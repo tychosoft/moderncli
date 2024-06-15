@@ -50,7 +50,7 @@ public:
     }
 
 private:
-    static_assert(std::is_integral_v<T>, "Type must be numeric");
+    static_assert(std::is_unsigned_v<T>, "T must be unsigned numeric");
 
     mutable std::atomic<T> seq_{0};
 };

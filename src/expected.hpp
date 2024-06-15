@@ -9,7 +9,7 @@
 
 namespace tycho {
 template <typename T, typename E>
-struct expected {
+class expected {
 public:
     expected() = default;
     expected(const expected&) = default;

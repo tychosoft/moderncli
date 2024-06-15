@@ -39,8 +39,9 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(const_copy(p) == 1);
     assert(const_max(value, mv) == 2);
 
-    auto tv = temporary<int>(3);
-    assert(*tv == 3);
+    auto tv = tmparray<int>(3);
+    tv[2] = 3;
+    assert(tv[2] == 3);
 
     caller();
     assert(value == 2);

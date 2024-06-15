@@ -18,6 +18,7 @@
 namespace tycho {
 inline constexpr auto GENERIC_DATETIME = "%c";
 inline constexpr auto LOCAL_DATETIME = "%x %X";
+inline constexpr auto ZULU_TIMESTAMP = "%Y-%m-%dT%H:%M:%SZ";
 inline constexpr auto ISO_TIMESTAMP = "%Y-%m-%d %H:%M:%S %z";
 inline constexpr auto ISO_DATETIME = "%Y-%m-%d %H:%M:%S";
 inline constexpr auto ISO_DATE = "%Y-%m-%d";
@@ -46,6 +47,13 @@ inline auto gmt_time(const std::time_t& time) {
 inline auto to_string(const std::tm& current, const char *fmt = ISO_DATETIME) {
     std::stringstream text;
     text <<  std::put_time(&current, fmt);
+    return text.str();
+}
+
+inline auto gmt_string(const std::time_t& gmt) {
+    std::stringstream text;
+    auto current = gmt_time(gmt);
+    text <<  std::put_time(&current, ZULU_TIMESTAMP);
     return text.str();
 }
 

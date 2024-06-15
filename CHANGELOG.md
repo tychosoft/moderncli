@@ -1,5 +1,15 @@
 # Release Notes
 
+## v0.9.0
+- Standardize templates.hpp for language features
+- Get process posix time value
+- Basic memory map support
+- Improved lockfree containers
+- Added generic abstract templates header
+- Added scan shell command from popen
+- Added scan for c file pointers
+- Introduced cipher support
+
 ## v0.8.5
 - Add is\_tty function
 - Introduce dso plugin loader

@@ -15,11 +15,11 @@ constexpr auto is(const T& object) {
 }
 
 template<typename T>
-constexpr auto is_null(const T ptr) {
+constexpr auto is_null(const T& ptr) {
     if constexpr (std::is_pointer_v<T>)
         return ptr == nullptr;
     else
-        return false;
+        return ptr.operator bool();
 }
 
 template<typename T>
@@ -59,9 +59,29 @@ constexpr auto const_clamp(const T& value, const T& min, const T& max) {
     return (value < min) ? min : ((value > max) ? max : value); // NOLINT
 }
 
-template<typename T, class... Args>
-inline auto temporary(const Args&... args) {
-    return std::make_unique<T>(args...);
+template<typename T>
+constexpr auto abs(T value) {
+    static_assert(std::is_integral_v<T> && !std::is_unsigned_v<T>, "T must be signed number");
+
+    return (value < 0) ? -value : value;
+}
+
+template<typename T>
+constexpr auto multiple_of(T value, T mult) {
+    static_assert(std::is_integral_v<T>, "T must be integral");
+
+    if constexpr (!std::is_unsigned_v<T>) {
+        if(value < 0)
+            return value;
+
+        mult = abs(mult);
+    }
+
+    if(!mult)
+        return value;
+
+    auto adjust = value % mult;
+    return (adjust)? value + mult - adjust : value;
 }
 
 template<typename T>

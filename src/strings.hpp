@@ -4,6 +4,7 @@
 #ifndef STRINGS_HPP_
 #define STRINGS_HPP_
 
+#include <type_traits>
 #include <string>
 #include <string_view>
 #include <cctype>
@@ -17,13 +18,20 @@
 #include <sstream>
 
 namespace tycho {
+template <typename T>
+inline constexpr bool is_string_type_v = std::is_convertible_v<T, std::string_view>;
+
 template<typename S = std::string>
 constexpr auto begins_with(const S& s, const std::string_view &b) {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
     return s.find(b) == 0;
 }
 
 template<typename S = std::string>
 constexpr auto ends_with(const S& s, const std::string_view &e) {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
     if(s.size() < e.size())
         return false;
     auto pos = s.rfind(e);
@@ -34,6 +42,8 @@ constexpr auto ends_with(const S& s, const std::string_view &e) {
 
 template<typename S = std::string>
 constexpr auto upper_case(const S& s) {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
     S out = s;
     std::transform(out.begin(), out.end(), out.begin(), ::toupper);
     return out;
@@ -41,6 +51,8 @@ constexpr auto upper_case(const S& s) {
 
 template<typename S = std::string>
 constexpr auto lower_case(const S& s) {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
     S out = s;
     std::transform(out.begin(), out.end(), out.begin(), ::tolower);
     return out;
@@ -48,6 +60,8 @@ constexpr auto lower_case(const S& s) {
 
 template<typename S = std::string>
 constexpr auto trim(const S& str) -> S {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
     auto last = str.find_last_not_of(" \t\f\v\n\r");
     if(last == S::npos)
         return "";
@@ -56,6 +70,8 @@ constexpr auto trim(const S& str) -> S {
 
 template<typename S = std::string>
 constexpr auto strip(const S& str) -> S {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
     const size_t first = str.find_first_not_of(" \t\f\v\n\r");
     const size_t last = str.find_last_not_of(" \t\f\v\n\r");
     if(last == S::npos)
@@ -65,6 +81,8 @@ constexpr auto strip(const S& str) -> S {
 
 template<typename S = std::string>
 constexpr auto unquote(const S& str, std::string_view pairs = R"(""''{})") -> S {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
     if(str.empty())
         return "";
     auto pos = pairs.find_first_of(str[0]);
@@ -80,6 +98,8 @@ constexpr auto unquote(const S& str, std::string_view pairs = R"(""''{})") -> S 
 
 template<typename S = std::string>
 constexpr auto join(const std::vector<S>& list, const std::string_view& delim = ",") -> S {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
     S separator, result;
     for(const auto& str : list) {
         result = result + separator + str;
@@ -91,6 +111,8 @@ constexpr auto join(const std::vector<S>& list, const std::string_view& delim = 
 template<typename S = std::string>
 inline auto split(const S& str, std::string_view delim = " ", unsigned max = 0)
 {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
     std::vector<S> result;
     std::size_t current{}, prev{};
     unsigned count = 0;
@@ -117,6 +139,8 @@ inline auto join(const std::set<T>& list, const std::string_view& delim = ",") {
 
 template<typename S=std::string>
 inline auto tokenize(const S& str, std::string_view delim = " ", std::string_view quotes = R"(""''{})") {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
     std::vector<S> result;
     auto current = str.find_first_of(delim);
     auto prev = str.find_first_not_of(delim);
@@ -147,6 +171,8 @@ finish:
 
 template<typename S = std::string_view>
 inline auto is_line(const S& str) {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
     if(str.size() < 1)
         return false;
 
@@ -155,7 +181,6 @@ inline auto is_line(const S& str) {
 
     return false;
 }
-
 
 // convenience function for string conversions if not explicit for template
 
