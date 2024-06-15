@@ -120,6 +120,11 @@ public:
 private:
     std::function<void()> action_;
 };
+
+// some commonly forwarded classes...
+
+class keyfile;
+class Key;
 } // end namespace
 
 #endif
