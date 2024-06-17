@@ -190,6 +190,21 @@ public:
         return addr_ == MAP_FAILED;
     }
 
+    auto operator*() const {
+        if(addr_ == MAP_FAILED)
+            throw std::runtime_exception("no mapped handle");
+
+        return addr_;
+    }
+
+    auto operator[](size_t pos) -> uint8_t& {
+        if(addr_ == MAP_FAILED)
+            throw std::runtime_exception("no mapped handle");
+        if(pos >= size_)
+            throw std::runtime_exception("outside of map range");
+        return addr_[pos];
+    }
+
     auto data() const noexcept {
         return addr_;
     }
