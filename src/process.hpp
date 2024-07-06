@@ -291,10 +291,6 @@ private:
     size_t size_{0};
 };
 
-inline auto poll(struct pollfd *fds, size_t nfds, int timeout) {
-    return WSAPoll(fds, nfds, timeout);
-}
-
 inline auto page_size() -> off_t {
     SYSTEM_INFO si;
     GetSystemInfo(&si);

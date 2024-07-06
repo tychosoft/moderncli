@@ -34,6 +34,8 @@
 #include <sys/un.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
+#include <poll.h>
+#define SOCKET int
 #endif
 
 #if __has_include(<poll.h>)
@@ -369,7 +371,7 @@ public:
     }
 
     auto operator*() const {
-        return so_;
+        return static_cast<SOCKET>(so_);
     }
 
     void release() {
@@ -424,6 +426,18 @@ public:
                 continue;
             }
         }
+    }
+
+    auto wait(short events, int timeout) -> int {
+        if(so_ == -1)
+            return -1;
+
+        struct pollfd pfd{static_cast<SOCKET>(so_), events, 0};
+        auto result = socket::poll(&pfd, 1, timeout);
+        if(result <= 0)
+            return result;
+
+        return pfd.revents;
     }
 
     void listen(int backlog = 5) {
@@ -484,6 +498,10 @@ public:
     }
 
 #ifdef USE_CLOSESOCKET
+    static auto poll(struct pollfd *fds, size_t count, int timeout) -> int {
+        return WSAPoll(fds, count, timeout);
+    }
+
     static auto startup() {
         WSADATA data;
         auto ver = MAKEWORD(2, 2);
@@ -494,6 +512,10 @@ public:
         static_cast<void>(WSACleanup());
     }
 #else
+    static auto poll(struct pollfd *fds, size_t count, int timeout) -> int {
+        return ::poll(fds, count, timeout);
+    }
+
     static auto startup() {
         return true;
     }
