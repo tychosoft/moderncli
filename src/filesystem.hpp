@@ -1,8 +1,8 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef FILESYSTEM_HPP_
-#define FILESYSTEM_HPP_
+#ifndef TYCHO_FILESYSTEM_HPP_
+#define TYCHO_FILESYSTEM_HPP_
 
 #include <filesystem>
 #include <functional>
@@ -212,7 +212,7 @@ inline auto to_string(const fsys::path& path) {
 }
 } // end namespace
 
-#ifdef  PRINT_HPP_
+#ifdef  TYCHO_PRINT_HPP_
 template <> class fmt::formatter<fsys::path> {
 public:
     static constexpr auto parse(format_parse_context& ctx) {

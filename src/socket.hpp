@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef SOCKET_HPP_
-#define SOCKET_HPP_
+#ifndef TYCHO_SOCKET_HPP_
+#define TYCHO_SOCKET_HPP_
 
 #include <string>
 #include <ostream>
@@ -507,7 +507,7 @@ protected:
 using socket_t = socket;
 } // end namespace
 
-#ifdef  PRINT_HPP_
+#ifdef  TYCHO_PRINT_HPP_
 template <> class fmt::formatter<tycho::address_t> {
 public:
     static constexpr auto parse(format_parse_context& ctx) {

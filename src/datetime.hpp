@@ -1,8 +1,8 @@
 // Copyright (C) 2020 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef DATETIME_HPP_
-#define DATETIME_HPP_
+#ifndef TYCHO_DATETIME_HPP_
+#define TYCHO_DATETIME_HPP_
 
 #include <chrono>
 #include <string>
@@ -11,7 +11,7 @@
 #include <cstdlib>
 #include <ctime>
 
-#ifdef  PRINT_HPP_
+#ifdef  TYCHO_PRINT_HPP_
 #include <fmt/chrono.h>
 #endif
 
@@ -84,7 +84,7 @@ inline auto iso_time(const std::time_t& current) {
 }
 } // end namespace
 
-#ifdef PRINT_HPP_
+#ifdef TYCHO_PRINT_HPP_
 template <> class fmt::formatter<std::tm> {
 public:
     static constexpr auto parse(format_parse_context& ctx) {

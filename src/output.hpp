@@ -1,8 +1,8 @@
 // Copyright (C) 2024 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef OUTPUT_HPP_
-#define OUTPUT_HPP_
+#ifndef TYCHO_OUTPUT_HPP_
+#define TYCHO_OUTPUT_HPP_
 
 #include <sstream>
 #include <iostream>

@@ -1,8 +1,8 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef PRINT_HPP_
-#define PRINT_HPP_
+#ifndef TYCHO_PRINT_HPP_
+#define TYCHO_PRINT_HPP_
 
 #include <iostream>
 #include <string_view>

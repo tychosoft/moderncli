@@ -1,8 +1,8 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef PROCESS_HPP_
-#define PROCESS_HPP_
+#ifndef TYCHO_PROCESS_HPP_
+#define TYCHO_PROCESS_HPP_
 
 #include <stdexcept>
 #include <memory>
@@ -198,6 +198,14 @@ public:
     }
 
     auto operator[](size_t pos) -> uint8_t& {
+        if(addr_ == MAP_FAILED)
+            throw std::runtime_exception("no mapped handle");
+        if(pos >= size_)
+            throw std::runtime_exception("outside of map range");
+        return addr_[pos];
+    }
+
+    auto operator[](size_t pos) const -> const uint8_t& {
         if(addr_ == MAP_FAILED)
             throw std::runtime_exception("no mapped handle");
         if(pos >= size_)

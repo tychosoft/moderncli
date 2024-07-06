@@ -1,8 +1,8 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#if !defined(SERIAL_HPP_) && __has_include(<termios.h>)
-#define SERIAL_HPP_
+#if !defined(TYCHO_SERIAL_HPP_) && __has_include(<termios.h>)
+#define TYCHO_SERIAL_HPP_
 
 #include <thread>
 #include <chrono>

@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef DIGEST_HPP_
-#define DIGEST_HPP_
+#ifndef TYCHO_DIGEST_HPP_
+#define TYCHO_DIGEST_HPP_
 
 #include <string_view>
 #include <cstring>

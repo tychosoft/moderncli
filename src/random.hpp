@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef RANDOM_HPP_
-#define RANDOM_HPP_
+#ifndef TYCHO_RANDOM_HPP_
+#define TYCHO_RANDOM_HPP_
 
 #include <type_traits>
 #include <iostream>
@@ -244,7 +244,7 @@ inline auto shared_key(const std::string_view& b64) {
 }
 } // end namespace
 
-#ifdef  PRINT_HPP_
+#ifdef  TYCHO_PRINT_HPP_
 template <> class fmt::formatter<crypto::Key> {
 public:
     static constexpr auto parse(format_parse_context& ctx) {

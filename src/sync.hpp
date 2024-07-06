@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef SYNC_HPP_
-#define SYNC_HPP_
+#ifndef TYCHO_SYNC_HPP_
+#define TYCHO_SYNC_HPP_
 
 #include <mutex>
 #include <chrono>

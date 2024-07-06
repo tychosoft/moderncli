@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef ATOMICS_HPP_
-#define ATOMICS_HPP_
+#ifndef TYCHO_ATOMICS_HPP_
+#define TYCHO_ATOMICS_HPP_
 
 #include <memory>
 #include <atomic>

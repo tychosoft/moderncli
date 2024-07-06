@@ -1,8 +1,8 @@
 // Copyright (C) 2020 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef STRINGS_HPP_
-#define STRINGS_HPP_
+#ifndef TYCHO_STRINGS_HPP_
+#define TYCHO_STRINGS_HPP_
 
 #include <type_traits>
 #include <string>

@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef CIPHER_HPP_
-#define CIPHER_HPP_
+#ifndef TYCHO_CIPHER_HPP_
+#define TYCHO_CIPHER_HPP_
 
 #include <random.hpp>
 #include <openssl/evp.h>

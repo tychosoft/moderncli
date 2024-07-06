@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef ENDIAN_HPP_
-#define ENDIAN_HPP_
+#ifndef TYCHO_ENDIAN_HPP_
+#define TYCHO_ENDIAN_HPP_
 
 #include <cstdint>
 

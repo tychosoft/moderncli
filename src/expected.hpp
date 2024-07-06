@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef EXPECTED_HPP_
-#define EXPECTED_HPP_
+#ifndef TYCHO_EXPECTED_HPP_
+#define TYCHO_EXPECTED_HPP_
 
 #include <variant>
 #include <string>

@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef TEMPLATES_HPP_
-#define TEMPLATES_HPP_
+#ifndef TYCHO_TEMPLATES_HPP_
+#define TYCHO_TEMPLATES_HPP_
 
 #include <type_traits>
 #include <functional>

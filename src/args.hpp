@@ -1,8 +1,8 @@
 // Copyright (C) 2020 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef ARGS_HPP_
-#define ARGS_HPP_
+#ifndef TYCHO_ARGS_HPP_
+#define TYCHO_ARGS_HPP_
 
 #include <string>
 #include <string_view>

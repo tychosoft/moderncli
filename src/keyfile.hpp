@@ -1,8 +1,8 @@
 // Copyright (C) 2020 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef KEYFILE_HPP_
-#define KEYFILE_HPP_
+#ifndef TYCHO_KEYFILE_HPP_
+#define TYCHO_KEYFILE_HPP_
 
 #include <iostream>
 #include <fstream>

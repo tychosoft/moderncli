@@ -19,7 +19,6 @@ compile_commands.json
 *.user
 
 moderncli.pc
-config.hpp
 cmake_*.cmake
 Makefile
 CMakeCache.txt
