@@ -192,25 +192,25 @@ public:
 
     auto operator*() const {
         if(addr_ == MAP_FAILED)
-            throw std::runtime_exception("no mapped handle");
+            throw std::runtime_error("no mapped handle");
 
         return addr_;
     }
 
     auto operator[](size_t pos) -> uint8_t& {
         if(addr_ == MAP_FAILED)
-            throw std::runtime_exception("no mapped handle");
+            throw std::runtime_error("no mapped handle");
         if(pos >= size_)
-            throw std::runtime_exception("outside of map range");
-        return addr_[pos];
+            throw std::runtime_error("outside of map range");
+        return (static_cast<uint8_t *>(addr_))[pos];
     }
 
     auto operator[](size_t pos) const -> const uint8_t& {
         if(addr_ == MAP_FAILED)
-            throw std::runtime_exception("no mapped handle");
+            throw std::runtime_error("no mapped handle");
         if(pos >= size_)
-            throw std::runtime_exception("outside of map range");
-        return addr_[pos];
+            throw std::runtime_error("outside of map range");
+        return (static_cast<uint8_t *>(addr_))[pos];
     }
 
     auto data() const noexcept {
@@ -290,6 +290,10 @@ private:
     void *addr_{MAP_FAILED};
     size_t size_{0};
 };
+
+inline auto poll(struct pollfd *fds, size_t nfds, int timeout) {
+    return WSAPoll(fds, nfds, timeout);
+}
 
 inline auto page_size() -> off_t {
     SYSTEM_INFO si;
