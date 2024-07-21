@@ -5,7 +5,6 @@
 #define TYCHO_EXPECTED_HPP_
 
 #include <variant>
-#include <string>
 
 namespace tycho {
 template <typename T, typename E>

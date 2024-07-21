@@ -4,10 +4,8 @@
 #ifndef TYCHO_ATOMICS_HPP_
 #define TYCHO_ATOMICS_HPP_
 
-#include <memory>
 #include <atomic>
 #include <optional>
-#include <stdexcept>
 #include <type_traits>
 
 namespace atomics {

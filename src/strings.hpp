@@ -238,6 +238,9 @@ constexpr auto str_size(const char *cp, size_t max = 256) -> size_t {
 }
 
 inline auto str_copy(char *cp, size_t max, std::string_view view) {
+    if(!cp)
+        return size_t(0);
+
     auto count = view.size();
     auto dp = view.data();
     if(count >= max)
@@ -252,7 +255,7 @@ inline auto str_copy(char *cp, size_t max, std::string_view view) {
 }
 
 inline auto str_append(char *cp, size_t max, ...) {  // NOLINT
-    va_list list;
+    va_list list{};
     auto pos = str_size(cp, max);
     va_start(list, max);
     for(;;) {
@@ -296,11 +299,11 @@ inline auto from_hex(std::string_view from, uint8_t *to, size_t size) {
     auto hex = from.data();
     auto max = size * 2;
     auto buf = 0U;
-    if (from.size() <= max)
+    if(from.size() <= max)
         max = from.size();
 
     for(auto pos = size_t(0); pos < max; pos += 2) {
-        if (sscanf(hex + pos, "%2x", &buf) != 1)    // NOLINT
+        if(sscanf(hex + pos, "%2x", &buf) != 1)    // NOLINT
             return pos / 2;
         *(to++) = static_cast<uint8_t>(buf);
     }

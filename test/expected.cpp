@@ -5,6 +5,8 @@
 #include "compiler.hpp"
 #include "expected.hpp"
 
+#include <string>
+
 namespace {
 auto ret_error() -> expected<std::string, int> {
     return expected<std::string, int>(23);

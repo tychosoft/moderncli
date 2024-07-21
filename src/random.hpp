@@ -16,11 +16,14 @@
 namespace crypto {
 using key_t = std::pair<const uint8_t *, size_t>;
 
+inline constexpr auto salt = 8UL;
 inline constexpr auto md5_key = 128UL;
 inline constexpr auto sha1_key = 160UL;
 inline constexpr auto sha256_key = 256UL;
 inline constexpr auto sha384_key = 384UL;
 inline constexpr auto sha512_key = 512UL;
+inline constexpr auto aes128_key = 128UL;
+inline constexpr auto aes256_key = 256UL;
 
 inline auto to_b64(const uint8_t *data, size_t size) {
     constexpr std::array<char, 64> base64_chars = {
@@ -128,6 +131,13 @@ inline void zero(T& data) {
 
 inline void zero(uint8_t *ptr, size_t size) {
     memset(ptr, 0, size);
+}
+
+inline auto random_dist(int min, int max) {
+    std::random_device rd;
+    std::mt19937 rgen(rd());
+    std::uniform_int_distribution<> dist(min, max);
+    return dist(rgen);
 }
 
 class Key {

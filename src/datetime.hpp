@@ -8,7 +8,6 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include <cstdlib>
 #include <ctime>
 
 #ifdef  TYCHO_PRINT_HPP_
@@ -23,6 +22,10 @@ inline constexpr auto ISO_TIMESTAMP = "%Y-%m-%d %H:%M:%S %z";
 inline constexpr auto ISO_DATETIME = "%Y-%m-%d %H:%M:%S";
 inline constexpr auto ISO_DATE = "%Y-%m-%d";
 inline constexpr auto ISO_TIME = "%X";
+
+inline auto steady_time() {
+    return std::chrono::steady_clock::now();
+}
 
 inline auto local_time(const std::time_t& time) {
     std::tm local{};

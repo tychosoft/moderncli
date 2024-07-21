@@ -7,7 +7,6 @@
 #include <string>
 #include <string_view>
 #include <iostream>
-#include <variant>
 #include <vector>
 #include <exception>
 #include <cstring>
@@ -17,7 +16,7 @@
 namespace { // NOLINT   only use in mains...
 class bad_arg final : public std::exception {
 public:
-    explicit bad_arg(const char *text) noexcept : msg(::strdup(text)) {}
+    explicit bad_arg(const char *text) noexcept : msg(dup(text)) {}
 
     ~bad_arg() override {
         if(msg)
@@ -31,23 +30,18 @@ public:
 private:
     friend class args;
 
-    char *msg;
+    char *msg{};
 
-    bad_arg(std::string text, std::string_view value) noexcept {
+    bad_arg(std::string text, std::string_view value) {
         text += " ";
         if(value[0] != '+' && value[0] != '-')
             text += "--";
 
         text += value;
-        msg = ::strdup(text.c_str());
+        msg = dup(text.c_str());
     }
 
-    bad_arg(std::string text, char code) noexcept {
-        using namespace std::literals::string_literals;
-        text += " -";
-        text += code;
-        msg = ::strdup(text.c_str()); // NOLINT
-    }
+    bad_arg(std::string text, char code) : msg(dup((text + " -" + code).c_str())) {}
 
     static auto str_size(const char *cp, size_t max = 255) {
         size_t count = 0;
@@ -67,6 +61,15 @@ private:
             throw bad_arg("value format wrong", cp);
         return value;
     }
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+    static auto dup(const char *str) -> char * {
+        return _strdup(str);
+    }
+#else
+    static auto dup(const char *str) -> char * {
+        return ::strdup(str);
+    }
+#endif
 };
 
 class args final {

@@ -6,7 +6,6 @@
 
 #include <sstream>
 #include <iostream>
-#include <string_view>
 #include <cstdlib>
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)

@@ -25,7 +25,6 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <atomic>
 #else
 #include <sys/socket.h>
 #include <net/if.h>
@@ -41,6 +40,8 @@
 #if __has_include(<poll.h>)
 #include <poll.h>
 #endif
+
+#include <cstdint>
 
 namespace tycho {
 class address_t final {
@@ -386,7 +387,7 @@ public:
     }
 
     void bind(const address_t& addr, int type = 0, int protocol = 0) {
-        so_ = ::socket(addr.family(), type, protocol);
+        so_ = make_socket(::socket(addr.family(), type, protocol));
         if(so_ != -1)
             if(::bind(so_, addr.data(), addr.size()) == -1)
                 release();
@@ -396,11 +397,11 @@ public:
         auto addr = *list;
         release();
         while(addr) {
-            so_ = ::socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+            so_ = make_socket(::socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol));
             if(so_ == -1)
                 continue;
 
-            if(::bind(so_, addr->ai_addr, addr->ai_addrlen) == -1) {
+            if(::bind(so_, addr->ai_addr, make_socklen(addr->ai_addrlen)) == -1) {
                 release();
                 continue;
             }
@@ -417,18 +418,18 @@ public:
         auto addr = *list;
         release();
         while(addr) {
-            so_ = ::socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+            so_ = make_socket(::socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol));
             if(so_ == -1)
                 continue;
 
-            if(::connect(so_, addr->ai_addr, addr->ai_addrlen) == -1) {
+            if(::connect(so_, addr->ai_addr, make_socklen(addr->ai_addrlen)) == -1) {
                 release();
                 continue;
             }
         }
     }
 
-    auto wait(short events, int timeout) -> int {
+    auto wait(short events, int timeout) const -> int {
         if(so_ == -1)
             return -1;
 
@@ -448,7 +449,7 @@ public:
     auto accept() const {
         socket from{};
         if(so_ != -1)
-            from.so_ = ::accept(so_, nullptr, nullptr);
+            from.so_ = make_socket(::accept(so_, nullptr, nullptr));
         return from;
     }
 
@@ -470,31 +471,31 @@ public:
         return addr;
     }
 
-    auto send(const char *from, size_t size, int flags = 0) const -> int {
+    auto send(const char *from, socklen_t size, int flags = 0) const -> socklen_t {
         if(so_ == -1)
             return 0;
-        return static_cast<int>(::send(so_, from, size, flags));
+        return ::send(so_, from, size, flags);
     }
 
-    auto recv(char *to, size_t size, int flags = 0) const -> int {
+    auto recv(char *to, socklen_t size, int flags = 0) const -> socklen_t {
         if(so_ == -1)
             return 0;
-        return static_cast<int>(::recv(so_, to, size, flags));
+        return ::recv(so_, to, size, flags);
     }
 
-    auto send(const char *from, size_t size, const address_t addr, int flags = 0) const -> int {
+    auto send(const char *from, socklen_t size, const address_t addr, int flags = 0) const -> socklen_t {
         if(so_ == -1)
             return 0;
 
-        return static_cast<int>(::sendto(so_, from, size, flags, addr.data(), addr.size()));
+        return ::sendto(so_, from, size, flags, addr.data(), addr.size());
     }
 
-    auto recv(char *to, size_t size, address_t& addr, int flags = 0) const -> int {
+    auto recv(char *to, socklen_t size, address_t& addr, int flags = 0) const -> socklen_t {
         auto len = address_t::maxsize();
         if(so_ == -1)
             return 0;
 
-        return static_cast<int>(::recvfrom(so_, to, size, flags, addr.data(), &len));
+        return ::recvfrom(so_, to, size, flags, addr.data(), &len);
     }
 
 #ifdef USE_CLOSESOCKET
@@ -525,6 +526,25 @@ public:
 #endif
 protected:
     int so_{-1};
+
+private:
+#ifdef USE_CLOSESOCKET
+    static auto make_socket(SOCKET so) -> int {
+        return static_cast<int>(so);
+    }
+
+    static auto make_socklen(size_t size) -> socklen_t {
+        return static_cast<socklen_t>(size);
+    }
+#else
+    static auto make_socket(int so) -> int {
+        return so;
+    }
+
+    static auto make_socklen(socklen_t size) -> socklen_t {
+        return size;
+    }
+#endif
 };
 using socket_t = socket;
 } // end namespace

@@ -4,13 +4,12 @@
 #ifndef TYCHO_PROCESS_HPP_
 #define TYCHO_PROCESS_HPP_
 
-#include <stdexcept>
 #include <memory>
 #include <string>
 #include <cstdlib>
 #include <cstring>
 #include <optional>
-#include <utility>
+#include <stdexcept>
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 #if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
@@ -510,6 +509,29 @@ public:
 
     auto operator!() const noexcept {
         return addr_ == MAP_FAILED;
+    }
+
+    auto operator*() const {
+        if(addr_ == MAP_FAILED)
+            throw std::runtime_error("no mapped handle");
+
+        return addr_;
+    }
+
+    auto operator[](size_t pos) -> uint8_t& {
+        if(addr_ == MAP_FAILED)
+            throw std::runtime_error("no mapped handle");
+        if(pos >= size_)
+            throw std::runtime_error("outside of map range");
+        return (static_cast<uint8_t *>(addr_))[pos];
+    }
+
+    auto operator[](size_t pos) const -> const uint8_t& {
+        if(addr_ == MAP_FAILED)
+            throw std::runtime_error("no mapped handle");
+        if(pos >= size_)
+            throw std::runtime_error("outside of map range");
+        return (static_cast<uint8_t *>(addr_))[pos];
     }
 
     auto size() const noexcept {

@@ -9,7 +9,6 @@
 #include <unordered_map>
 #include <memory>
 #include <string>
-#include <list>
 
 namespace tycho {
 class keyfile {
