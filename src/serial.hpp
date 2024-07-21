@@ -121,24 +121,29 @@ public:
         return 0U;
     }
 
-    auto put(char code) const {
+    auto put(char code, bool drain = false) const {
         if(device_ > -1) {
             if(::write(device_, &code, 1) < 1)
                 return EOF;
+            if(drain)
+                tcdrain(device_);
             return 1;
         }
         return EOF;
     }
 
-    auto put(const char *data, size_t size) const {
+    auto put(const char *data, size_t size, bool drain = false) const {
         auto count = ::write(device_, data, size);
-        if(count > 0)
+        if(count > 0) {
+            if(drain)
+                tcdrain(device_);
             return static_cast<unsigned>(count);
+        }
         return 0U;
     }
 
-    auto puts(std::string_view msg) const {
-        return put(msg.data(), msg.size());
+    auto puts(std::string_view msg, bool drain = false) const {
+        return put(msg.data(), msg.size(), drain);
     }
 
     void timed_mode(size_t size, uint8_t timer = 1) {
@@ -231,7 +236,7 @@ public:
             tcsendbreak(device_, 0);
     }
 
-    void dtr(unsigned msec) {
+    void dtr(unsigned msec = 120) {
         if(device_ < 0)
             return;
 
@@ -247,7 +252,7 @@ public:
         }
     }
 
-    void flow(bool hw, bool sw) {
+    void flow(bool hw = true, bool sw = true) {
         if(device_ < 0)
             return;
 
@@ -257,8 +262,10 @@ public:
         if(sw)
             current_.c_iflag |= (IXON | IXANY | IXOFF);
 
-        if(hw)
-            current_.c_iflag |= (IXON | IXANY | IXOFF);
+        if(hw) {
+            current_.c_iflag |= IXOFF;
+            current_.c_cflag |= CRTSCTS;
+        }
 
         tcsetattr(device_, TCSANOW, &current_);
     }
