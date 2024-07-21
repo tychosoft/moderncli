@@ -270,7 +270,7 @@ public:
         tcsetattr(device_, TCSANOW, &current_);
     }
 
-    void format(const char *s) {
+    auto format(const char *s) {
         unsigned bits = 8;
         unsigned stop = 1;
         unsigned parity = 'n';
@@ -285,10 +285,10 @@ public:
             stop = *(s++) - '0';
 
         if(stop < 1 || stop > 2 || bits < 5 || bits > 8)
-            return;
+            return false;
 
         if(device_ < 0)
-            return;
+            return false;
 
         current_.c_cflag &= ~(PARENB | PARODD | CSTOPB | CSIZE);
 
@@ -306,7 +306,7 @@ public:
             current_.c_cflag |= CS8;
             break;
         default:
-            return;
+            return false;
         }
 
         switch(stop) {
@@ -316,7 +316,7 @@ public:
             current_.c_cflag |= CSTOPB;
             break;
         default:
-            return;
+            return false;
         }
 
         switch(parity) {
@@ -329,10 +329,11 @@ public:
         case 'n':
             break;
         default:
-            return;
+            return false;
         }
 
         tcsetattr(device_, TCSANOW, &current_);
+        return true;
     }
 
     auto speed(unsigned long bytes) {

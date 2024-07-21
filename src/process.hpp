@@ -55,7 +55,7 @@ using handle_t = HANDLE;
 
 inline constexpr auto dso_suffix = ".dll";
 
-constexpr auto invalid_handle() -> handle_t {
+inline auto invalid_handle() -> handle_t {
     return INVALID_HANDLE_VALUE;
 }
 
@@ -145,15 +145,16 @@ public:
     map_t(const map_t&) = delete;
     auto operator=(const map_t&) -> auto& = delete;
 
-    map_t(handle_t h, size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept : size_(size) {
+    map_t(handle_t h, size_t size, bool rw = true, [[maybe_unused]] bool priv = false, off_t offset = 0) noexcept : size_(size) {
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable: 4293)
 #endif
+        const int64_t offset64 = offset;
         const DWORD dwFileOffsetLow = (sizeof(off_t) <= sizeof(DWORD)) ?
-                        (DWORD)offset : (DWORD)(offset & 0xFFFFFFFFL);
+                        (DWORD)offset : (DWORD)(offset64 & 0xFFFFFFFFL);
         const DWORD dwFileOffsetHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
-                        (DWORD)0 : (DWORD)((offset >> 32) & 0xFFFFFFFFL);
+                        (DWORD)0 : (DWORD)((offset64 >> 32) & 0xFFFFFFFFL);
 
         const DWORD protectAccess = (rw) ? PAGE_READWRITE : PAGE_READONLY;
         const DWORD desiredAccess = (rw) ? FILE_MAP_READ | FILE_MAP_WRITE : FILE_MAP_READ;
@@ -220,13 +221,11 @@ public:
         return size_;
     }
 
-    auto sync(bool wait = false) noexcept {
+    auto sync([[maybe_unused]]bool wait = false) noexcept {
         if(addr_ == MAP_FAILED)
             return false;
 
-        if(FlushViewOfFile(addr_, size_))
-            return true;
-        return false;
+        return FlushViewOfFile(addr_, size_) == TRUE;
     }
 
     auto lock() {
@@ -249,7 +248,7 @@ public:
         return false;
     }
 
-    auto set(handle_t h, size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept -> void *{
+    auto set(handle_t h, size_t size, bool rw = true, [[maybe_unused]]bool priv = false, off_t offset = 0) noexcept -> void *{
         if(addr_ != MAP_FAILED)
             UnmapViewOfFile(addr_);
         addr_ = MAP_FAILED;
@@ -257,18 +256,20 @@ public:
 #pragma warning(push)
 #pragma warning(disable: 4293)
 #endif
+        const int64_t offset64 = offset;
         const DWORD dwFileOffsetLow = (sizeof(off_t) <= sizeof(DWORD)) ?
-                        (DWORD)offset : (DWORD)(offset & 0xFFFFFFFFL);
+                        (DWORD)offset : (DWORD)(offset64 & 0xFFFFFFFFL);
         const DWORD dwFileOffsetHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
-                        (DWORD)0 : (DWORD)((offset >> 32) & 0xFFFFFFFFL);
+                        (DWORD)0 : (DWORD)((offset64 >> 32) & 0xFFFFFFFFL);
 
         const DWORD protectAccess = (rw) ? PAGE_READWRITE : PAGE_READONLY;
         const DWORD desiredAccess = (rw) ? FILE_MAP_READ | FILE_MAP_WRITE : FILE_MAP_READ;
 
         const auto max = offset + static_cast<off_t>(size);
-        const DWORD dwMaxSizeLow = (sizeof(off_t) <= sizeof(DWORD)) ? (DWORD)max : (DWORD)(max & 0xFFFFFFFFL);
+        [[maybe_unused]] const int64_t max64 = max;
+        const DWORD dwMaxSizeLow = (sizeof(off_t) <= sizeof(DWORD)) ? (DWORD)max : (DWORD)(max64 & 0xFFFFFFFFL);
         const DWORD dwMaxSizeHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
-                        (DWORD)0 : (DWORD)((max >> 32) & 0xFFFFFFFFL);
+                        (DWORD)0 : (DWORD)((max64 >> 32) & 0xFFFFFFFFL);
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -293,18 +294,17 @@ private:
 inline auto page_size() -> off_t {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
-    return si.dwPageSize;
+    return static_cast<off_t>(si.dwPageSize);
 }
 
 inline void time(struct timeval *tp) {
     static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
     SYSTEMTIME  system_time;
     FILETIME    file_time;
-    uint64_t    time;
 
     GetSystemTime(&system_time);
     SystemTimeToFileTime(&system_time, &file_time);
-    time =  (static_cast<uint64_t>(file_time.dwLowDateTime));
+    auto time =  (static_cast<uint64_t>(file_time.dwLowDateTime));
     time += (static_cast<uint64_t>(file_time.dwHighDateTime)) << 32;
 
     tp->tv_sec  = static_cast<long>((time - EPOCH) / 10000000L);
@@ -315,9 +315,7 @@ inline auto is_tty(handle_t handle) {
     if(handle == INVALID_HANDLE_VALUE)
         return false;
     auto type = GetFileType(handle);
-    if(type == FILE_TYPE_CHAR)
-        return true;
-    return false;
+    return type == FILE_TYPE_CHAR;
 }
 
 inline auto load(const std::string& path) {
@@ -395,7 +393,7 @@ inline auto wait(std::FILE *fp) {
 }
 
 inline auto stop(id_t pid) {
-    return CloseHandle((HANDLE)pid) == TRUE;
+    return CloseHandle(reinterpret_cast<HANDLE>(pid)) == TRUE;
 }
 
 inline auto id() noexcept -> id_t {

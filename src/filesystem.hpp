@@ -35,9 +35,9 @@ extern "C" {
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-auto _getline(char **lp, size_t *size, FILE *fp) -> ssize_t {
-    size_t pos;
-    int c;
+auto getline_w32(char **lp, size_t *size, FILE *fp) -> ssize_t {
+    size_t pos{0};
+    int c{EOF};
 
     if(lp == nullptr || fp == nullptr || size == nullptr)
         return -1;
@@ -74,7 +74,7 @@ auto _getline(char **lp, size_t *size, FILE *fp) -> ssize_t {
         c = getc(fp);   // FlawFinder: ignore
     }
     (*lp)[pos] = '\0';
-    return pos;
+    return static_cast<ssize_t>(pos);
 }
 #endif
 
@@ -90,7 +90,7 @@ inline auto native_handle(int fd) {
 }
 
 inline auto native_handle(std::FILE *fp) {
-    return native_handle(static_cast<int>(_fileno(fp)));
+    return native_handle(_fileno(fp));
 }
 #else
 inline auto native_handle(int fd) {
@@ -161,7 +161,7 @@ inline auto scan_file(std::FILE *file, std::function<bool(const std::string_view
     if(size)
         buf = static_cast<char *>(malloc(size));
     while(!feof(file)) {
-        auto len = _getline(&buf, &size, file);
+        auto len = getline_w32(&buf, &size, file);
         if(len < 0 || !proc({buf, static_cast<size_t>(len)}))
             break;
         ++count;
