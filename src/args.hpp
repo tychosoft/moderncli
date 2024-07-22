@@ -41,7 +41,7 @@ private:
         msg = dup(text.c_str());
     }
 
-    bad_arg(std::string text, char code) : msg(dup((text + " -" + code).c_str())) {}
+    bad_arg(const std::string& text, char code) : msg(dup((text + " -" + code).c_str())) {}
 
     static auto str_size(const char *cp, size_t max = 255) {
         size_t count = 0;

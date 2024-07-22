@@ -16,7 +16,7 @@
 namespace crypto {
 using key_t = std::pair<const uint8_t *, size_t>;
 
-inline constexpr auto salt = 8UL;
+inline constexpr auto salt = 64UL;
 inline constexpr auto md5_key = 128UL;
 inline constexpr auto sha1_key = 160UL;
 inline constexpr auto sha256_key = 256UL;
