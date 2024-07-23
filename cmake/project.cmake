@@ -12,13 +12,6 @@ string(TOLOWER "${PROJECT_NAME}" PROJECT_ARCHIVE)
 include(GNUInstallDirs)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-source_group("Documentation" REGULAR_EXPRESSION  ".*\\.(1|2|3|4|5|6|8|md|tex)")
-source_group("Generated Files" REGULAR_EXPRESSION  ".*\\.(in)")
-source_group("Header Files" REGULAR_EXPRESSION  ".*\\.(hpp|h)")
-source_group("Source Files" REGULAR_EXPRESSION  ".*\\.(cpp|c)")
-source_group("Config Files" REGULAR_EXPRESSION ".*\\.(conf|ini|reg)")
-source_group("Script Files" REGULAR_EXPRESSION ".*\\.(sh|py|rb|js)")
-
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
     set(BUILD_TESTING TRUE)
     if(NOT MSVC)

@@ -23,12 +23,13 @@ include(cmake/project.cmake)
 include(cmake/features.cmake)
 include(cmake/coverage.cmake)
 include(cmake/linting.cmake)
+include(cmake/deploy.cmake OPTIONAL)
 
+file(GLOB optional .git[a-z]* *.json *.in *.yml cmake/*)
 file(GLOB markdown *.md)
 file(GLOB headers src/*.hpp)
 
 # Setup headers
-
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
 configure_file(moderncli.pc.in moderncli.pc)
 
@@ -92,9 +93,8 @@ if(NOT WIN32)
 endif()
 
 # Extras...
-
 add_custom_target(header-files SOURCES ${headers})
-add_custom_target(support-files SOURCES moderncli.pc.in ${markdown})
+add_custom_target(support-files SOURCES .clang-tidy ${markdown} ${optional})
 
 install(FILES ${headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/moderncli")
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/moderncli.pc DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig")
