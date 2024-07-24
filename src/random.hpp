@@ -140,6 +140,10 @@ inline auto random_dist(int min, int max) {
     return dist(rgen);
 }
 
+inline auto make_key(uint8_t *data, size_t size) -> key_t {
+    return std::make_pair(data, size);
+}
+
 class Key {
 public:
     virtual ~Key() = default;
@@ -149,6 +153,10 @@ public:
 
     virtual auto bits() const noexcept -> size_t {
         return size() * 8;
+    }
+
+    virtual auto cipher() const noexcept -> const EVP_CIPHER *{
+        return nullptr;
     }
 
     auto operator==(const Key& other) const noexcept {
@@ -202,19 +210,34 @@ public:
         from_b64(b64, data_, sizeof(data_));
     }
 
+    explicit random_t(key_t key) : Key() {
+        if(key.second == (S / 8))
+            memcpy(data_, key.first, S / 8);           // FlawFinder: ignore
+        else
+            throw std::runtime_error("key size mismatch");
+    }
+
     random_t(const random_t& other) : Key() {
         static_assert(other.size() == size());
-        memcpy(&data_, &other.data_, sizeof(data_));    // FlawFinder: ignore
+        memcpy(data_, other.data_, sizeof(data_));    // FlawFinder: ignore
     }
 
     ~random_t() final {
         zero(data_);
     }
 
+    auto operator=(key_t key) -> auto& {
+        if(key.second == (S / 8))
+            memcpy(data_, key.first, S / 8);           // FlawFinder: ignore
+        else
+            throw std::runtime_error("key size mismatch");
+        return *this;
+    }
+
     auto operator=(const random_t& other) -> auto& {
         static_assert(other.size() == size());
         if(this != &other)
-            memcpy(&data_, &other.data_, sizeof(data_));    // FlawFinder: ignore
+            memcpy(data_, other.data_, sizeof(data_));    // FlawFinder: ignore
         return *this;
     }
 

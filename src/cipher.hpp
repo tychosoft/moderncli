@@ -8,63 +8,14 @@
 #include <openssl/evp.h>
 
 namespace crypto {
-class salt_t final : public Key {
-public:
-    salt_t() noexcept {
-        rand(data_, 8);
-    }
-
-    salt_t(const salt_t& other) noexcept : valid_(other.valid_) {
-        if(valid_)
-            memcpy(data_, other.data_, 8); // FlawFinder: ignore
-    }
-
-    explicit salt_t(const uint8_t *salt) noexcept {
-        if(salt)
-            memcpy(data_, salt, 8); // FlawFinder: ignore
-        else
-            valid_ = false;
-    }
-
-    explicit salt_t(const key_t& key) noexcept {
-        if(key.second != 8)
-            valid_ = false;
-        else
-            memcpy(data_, key.first, 8); // FlawFinder: ignore
-    }
-
-    ~salt_t() final {
-        zero(data_);
-    }
-
-    auto operator=(const key_t& key) noexcept -> salt_t& {
-        if(key.second == 8) {
-            memcpy(data_, key.first, 8); // FlawFinder: ignore
-            valid_ = true;
-        }
-        else
-            valid_ = false;
-        return *this;
-    }
-
-    auto data() const noexcept -> const uint8_t * final {
-        return (valid_) ? data_ : nullptr;
-    }
-
-    auto size() const noexcept -> size_t final {
-        return (valid_) ? 8 : 0;
-    }
-
-private:
-    bool valid_{true};
-    uint8_t data_[8]{0};
-};
+using salt_t = random_t<salt>;
 
 class keyphrase_t final : public Key {
 public:
     keyphrase_t() = default;
 
-    explicit keyphrase_t(const salt_t& salt, const std::string_view& phrase, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept : size_(EVP_CIPHER_key_length(algo)) {
+    keyphrase_t(const salt_t& salt, const std::string_view& phrase, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept :
+    cipher_(algo), size_(EVP_CIPHER_key_length(algo)) {
         auto kp = reinterpret_cast<const uint8_t *>(phrase.data());
         auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.data(), kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
         if(ks < size_)
@@ -73,7 +24,18 @@ public:
             size_ = ks;
     }
 
-    explicit keyphrase_t(const salt_t& salt, const Key& key, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept : size_(EVP_CIPHER_key_length(algo)) {
+    explicit keyphrase_t(const std::string_view& phrase, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept :
+    cipher_(algo), size_(EVP_CIPHER_key_length(algo)) {
+        auto kp = reinterpret_cast<const uint8_t *>(phrase.data());
+        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, nullptr, kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
+        if(ks < size_)
+            size_ = 0;
+        else
+            size_ = ks;
+    }
+
+    keyphrase_t(const salt_t& salt, const Key& key, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept :
+    cipher_(algo), size_(EVP_CIPHER_key_length(algo)) {
         auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.data(), key.data(), static_cast<int>(key.size()), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
@@ -81,7 +43,17 @@ public:
             size_ = ks;
     }
 
-    keyphrase_t(const keyphrase_t& other) noexcept : size_(other.size_) {
+    explicit keyphrase_t(const Key& key, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept :
+    cipher_(algo), size_(EVP_CIPHER_key_length(algo)) {
+        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, nullptr, key.data(), static_cast<int>(key.size()), rounds, data_, iv_));
+        if(ks < size_)
+            size_ = 0;
+        else
+            size_ = ks;
+    }
+
+    keyphrase_t(const keyphrase_t& other) noexcept :
+    cipher_(other.cipher_), size_(other.size_) {
         if(size_) {
             memcpy(data_, other.data_, size_);    // FlawFinder: ignore
             memcpy(iv_, other.iv_, size_);        // FlawFinder: ignore
@@ -98,6 +70,7 @@ public:
             return *this;
 
         size_ = other.size_;
+        cipher_ = other.cipher_;
         if(size_) {
             memcpy(data_, other.data_, size_);          // FlawFinder: ignore
             memcpy(iv_, other.iv_, size_);              // FlawFinder: ignore
@@ -136,9 +109,14 @@ public:
         return size_;
     }
 
+    auto cipher() const noexcept -> const EVP_CIPHER * final {
+        return cipher_;
+    }
+
 private:
     static constexpr size_t maxsize = 64;
 
+    const EVP_CIPHER *cipher_{nullptr};
     uint8_t data_[maxsize]{0};
     uint8_t iv_[maxsize]{0};
     size_t size_{0U};
@@ -156,11 +134,12 @@ public:
         }
     }
 
-    explicit decrypt_t(const keyphrase_t& key, const EVP_CIPHER *algo = EVP_aes_256_cbc()) noexcept : ctx_(EVP_CIPHER_CTX_new()), algo_(algo) {
+    explicit decrypt_t(const keyphrase_t& key) noexcept :
+    ctx_(EVP_CIPHER_CTX_new()), algo_(key.cipher()) {
         if(!ctx_)
             return;
 
-        if(key.size() != keysize() || !EVP_DecryptInit_ex(ctx_, algo, nullptr, key.data(), key.iv())) {
+        if(key.size() != keysize() || !EVP_DecryptInit_ex(ctx_, algo_, nullptr, key.data(), key.iv())) {
             EVP_CIPHER_CTX_free(ctx_);
             ctx_ = nullptr;
             return;
@@ -186,7 +165,10 @@ public:
         return *this;
     }
 
-    auto operator=(const keyphrase_t& key) noexcept -> decrypt_t& {
+    auto operator=(const keyphrase_t& key) -> decrypt_t& {
+        if(key.cipher() != algo_)
+            throw std::runtime_error("cipher type mismatch");
+
         if(ctx_)
             EVP_CIPHER_CTX_free(ctx_);
 
@@ -218,6 +200,10 @@ public:
 
     auto size() const noexcept {
         return EVP_CIPHER_block_size(algo_);
+    }
+
+    auto cipher() const noexcept {
+        return algo_;
     }
 
     auto keysize() const noexcept -> size_t {
@@ -267,7 +253,8 @@ public:
         }
     }
 
-    explicit encrypt_t(const keyphrase_t& key, const EVP_CIPHER *algo = EVP_aes_256_cbc()) noexcept : ctx_(EVP_CIPHER_CTX_new()), algo_(algo) {
+    explicit encrypt_t(const keyphrase_t& key) noexcept :
+    ctx_(EVP_CIPHER_CTX_new()), algo_(key.cipher()) {
         if(!ctx_)
             return;
 
@@ -277,7 +264,7 @@ public:
             return;
         }
 
-        if(!EVP_EncryptInit_ex(ctx_, algo, nullptr, key.data(), key.iv())) {
+        if(!EVP_EncryptInit_ex(ctx_, algo_, nullptr, key.data(), key.iv())) {
             EVP_CIPHER_CTX_free(ctx_);
             return;
         }
@@ -302,7 +289,10 @@ public:
         return *this;
     }
 
-    auto operator=(const keyphrase_t& key) noexcept -> encrypt_t& {
+    auto operator=(const keyphrase_t& key) -> encrypt_t& {
+        if(key.cipher() != algo_)
+            throw std::runtime_error("cipher type mismatch");
+
         if(ctx_)
             EVP_CIPHER_CTX_free(ctx_);
 
@@ -334,6 +324,10 @@ public:
 
     auto size() const noexcept {
         return EVP_CIPHER_block_size(algo_);
+    }
+
+    auto cipher() const noexcept {
+        return algo_;
     }
 
     auto keysize() const noexcept -> size_t {
