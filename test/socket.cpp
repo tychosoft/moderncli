@@ -2,7 +2,7 @@
 // This code is licensed under MIT license.
 
 #undef  NDEBUG
-#include "compiler.hpp"
+#include "compiler.hpp"     // IWYU pragma: keep
 #include "templates.hpp"
 #include "socket.hpp"
 

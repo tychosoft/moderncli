@@ -2,12 +2,12 @@
 // This code is licensed under MIT license.
 
 #undef  NDEBUG
-#include "compiler.hpp"
-#include "args.hpp"
-#include "print.hpp"
-#include "filesystem.hpp"
+#include "compiler.hpp"     // IWYU pragma: keep
+#include "args.hpp"         // IWYU pragma: keep
+#include "print.hpp"        // IWYU pragma: keep
+#include "filesystem.hpp"   // IWYU pragma: keep
 #include "templates.hpp"
-#include "output.hpp"
+#include "output.hpp"       // IWYU pragma: keep
 
 // Test of init trick, a "kind of" atinit() function or golang init().
 namespace {

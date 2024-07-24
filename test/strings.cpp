@@ -2,12 +2,8 @@
 // This code is licensed under MIT license.
 
 #undef  NDEBUG
-#include "compiler.hpp"
-#include "print.hpp"
+#include "compiler.hpp"     // IWYU pragma: keep
 #include "strings.hpp"
-#include "datetime.hpp"
-
-#include <iostream>
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     const std::string text = "hi,bye,gone";
