@@ -18,7 +18,7 @@
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 #if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
 #undef  _WIN32_WINNT
-#define _WIN32_WINNT    0x0600
+#define _WIN32_WINNT    0x0600  // NOLINT
 #endif
 #define USE_CLOSESOCKET
 #define WIN32_LEAN_AND_MEAN

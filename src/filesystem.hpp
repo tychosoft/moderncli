@@ -47,7 +47,7 @@ auto getline_w32(char **lp, size_t *size, FILE *fp) -> ssize_t {
         return -1;
 
     if(*lp == nullptr) {
-        *lp = static_cast<char *>(malloc(128));
+        *lp = static_cast<char *>(malloc(128)); // NOLINT
         if(*lp == nullptr) {
             return -1;
         }
@@ -61,7 +61,7 @@ auto getline_w32(char **lp, size_t *size, FILE *fp) -> ssize_t {
             if(new_size < 128) {
                 new_size = 128;
             }
-            auto new_ptr = static_cast<char *>(realloc(*lp, new_size));
+            auto new_ptr = static_cast<char *>(realloc(*lp, new_size)); // NOLINT
             if(new_ptr == nullptr)
                 return -1;
             *size = new_size;
@@ -159,7 +159,7 @@ inline auto scan_file(std::FILE *file, std::function<bool(const std::string_view
     char *buf{nullptr};
     size_t count{0};
     if(size)
-        buf = static_cast<char *>(malloc(size));
+        buf = static_cast<char *>(malloc(size));    // NOLINT
     while(!feof(file)) {
         auto len = getline_w32(&buf, &size, file);
         if(len < 0 || !proc({buf, static_cast<size_t>(len)}))

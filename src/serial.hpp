@@ -19,6 +19,24 @@
 #include <sys/ioctl.h>
 
 namespace tycho {
+class bad_serial final : public std::exception {
+public:
+    auto err() const {
+        return err_;
+    }
+
+    auto what() const noexcept -> const char * override {
+        return "serial i/o error";
+    }
+
+private:
+    friend class serial_t;
+
+    bad_serial() : err_(errno) {}
+
+    int err_{-1};
+};
+
 class serial_t final {
 public:
     serial_t() = default;
@@ -104,7 +122,10 @@ public:
     auto get() const {
         if(device_ > -1) {
             char buf{0};
-            if(::read(device_, &buf, 1) < 1)    // FlawFinder: safe
+            auto result = ::read(device_, &buf, 1);
+            if(result < 0)
+                throw bad_serial();
+            if(result < 1)
                 return EOF;
             return static_cast<int>(buf);
         }
@@ -116,14 +137,49 @@ public:
             return 0U;
 
         auto count = ::read(device_, data, size);   // FlawFinder: safe
+        if(count < 0)
+            throw bad_serial();
         if(count > 0)
             return static_cast<unsigned>(count);
         return 0U;
     }
 
+    auto gets(char *buf, size_t max, char eol = '\n', const char *ignore = nullptr) const {
+        *buf = 0;
+        --max;
+
+        auto count{0U};
+        while(count < max) {
+            auto code = get();
+            if(code == EOF)
+                return count;
+            if(ignore && strchr(ignore, code))
+                continue;
+            buf[count++] = static_cast<char>(code);
+            if(eol && code == eol) {
+                break;
+            }
+        }
+        buf[count] = 0;
+        return count;
+    }
+
+    auto until(const char *chars) const {
+        for(;;) {
+            auto code = get();
+            if(code == EOF)
+                return false;
+            if(strchr(chars, code))
+                return true;
+        };
+    }
+
     auto put(char code, bool drain = false) const {
         if(device_ > -1) {
-            if(::write(device_, &code, 1) < 1)
+            auto result = ::write(device_, &code, 1);
+            if(result < 0)
+                throw bad_serial();
+            if(result < 1)
                 return EOF;
             if(drain)
                 tcdrain(device_);
@@ -139,6 +195,8 @@ public:
                 tcdrain(device_);
             return static_cast<unsigned>(count);
         }
+        if(count < 0)
+            throw bad_serial();
         return 0U;
     }
 
