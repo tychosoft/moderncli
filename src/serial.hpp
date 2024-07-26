@@ -7,6 +7,7 @@
 #include <thread>
 #include <chrono>
 #include <string>
+#include <string_view>
 #include <cctype>
 #include <cstring>
 #include <csignal>
@@ -21,6 +22,9 @@
 namespace tycho {
 class bad_serial final : public std::exception {
 public:
+    bad_serial(const bad_serial&) = delete;
+    auto operator=(const bad_serial&) -> auto& = delete;
+
     auto err() const {
         return err_;
     }
@@ -35,6 +39,21 @@ private:
     bad_serial() : err_(errno) {}
 
     int err_{-1};
+};
+
+class drop_serial final : public std::exception {
+public:
+    drop_serial(const drop_serial&) = delete;
+    auto operator=(const drop_serial&) -> auto& = delete;
+
+    auto what() const noexcept -> const char * override {
+        return "serial hangup";
+    }
+
+private:
+    friend class serial_t;
+
+    drop_serial() = default;
 };
 
 class serial_t final {
@@ -110,16 +129,51 @@ public:
         struct pollfd pfd{};
         pfd.fd = device_;
         pfd.revents = 0;
-        pfd.events = POLLIN;
+        pfd.events = POLLIN | POLLHUP;
 
         status = ::poll(&pfd, 1, msec);
+        if(status < 0)
+            throw bad_serial();
+
         if(status < 1)
             return false;
+
+        if(pfd.revents & POLLHUP)
+            throw drop_serial();
+
+        if(pfd.revents & POLLERR)
+            throw bad_serial();
 
         return pfd.revents & POLLIN;
     }
 
-    auto get() const {
+    auto pending(int msec = -1) const -> bool {
+        if(device_ < 0)
+            return false;
+
+        int status{0};
+        struct pollfd pfd{};
+        pfd.fd = device_;
+        pfd.revents = 0;
+        pfd.events = POLLOUT | POLLHUP;
+
+        status = ::poll(&pfd, 1, msec);
+        if(status < 0)
+            throw bad_serial();
+
+        if(status < 1)
+            return false;
+
+        if(pfd.revents & POLLHUP)
+            throw drop_serial();
+
+        if(pfd.revents & POLLERR)
+            throw bad_serial();
+
+        return pfd.revents & POLLOUT;
+    }
+
+    auto get(bool echo = false, int echocode = EOF, int eol = EOF) const {
         if(device_ > -1) {
             char buf{0};
             auto result = ::read(device_, &buf, 1);
@@ -127,30 +181,36 @@ public:
                 throw bad_serial();
             if(result < 1)
                 return EOF;
+            if(echo && echocode != EOF && (eol == EOF || buf != eol))
+                put(echocode);
+            else if(echo)
+                put(buf);
             return static_cast<int>(buf);
         }
         return EOF;
     }
 
-    auto get(char *data, size_t size) const {
+    auto get(char *data, size_t size, bool echo = false) const {
         if(!data || !size)
             return 0U;
 
         auto count = ::read(device_, data, size);   // FlawFinder: safe
         if(count < 0)
             throw bad_serial();
+        if(count > 0 && echo)
+            put(data, count);
         if(count > 0)
             return static_cast<unsigned>(count);
         return 0U;
     }
 
-    auto gets(char *buf, size_t max, char eol = '\n', const char *ignore = nullptr) const {
+    auto getline(char *buf, size_t max, int eol = '\n', bool echo = false, int echocode = EOF, const char *ignore = nullptr) const {
         *buf = 0;
         --max;
 
         auto count{0U};
         while(count < max) {
-            auto code = get();
+            auto code = get(echo, echocode, eol);
             if(code == EOF)
                 return count;
             if(ignore && strchr(ignore, code))
@@ -164,35 +224,60 @@ public:
         return count;
     }
 
-    auto until(const char *chars) const {
-        for(;;) {
+    auto expect(const std::string_view& match) const {
+        auto count = 0U;
+        while(count < match.size()) {
             auto code = get();
             if(code == EOF)
                 return false;
-            if(strchr(chars, code))
-                return true;
-        };
-    }
-
-    auto put(char code, bool drain = false) const {
-        if(device_ > -1) {
-            auto result = ::write(device_, &code, 1);
-            if(result < 0)
-                throw bad_serial();
-            if(result < 1)
-                return EOF;
-            if(drain)
-                tcdrain(device_);
-            return 1;
+            // strip lead-in noise...
+            if(!count && match[0] != code)
+                continue;
+            if(match[count] != code)
+                return false;
+            ++count;
         }
-        return EOF;
+        return true;
     }
 
-    auto put(const char *data, size_t size, bool drain = false) const {
+    auto until(int match = EOF, unsigned max = 1) const {
+        auto count = 0U;
+        while(count < max) {
+            auto code = get();
+            if(code == EOF)
+                return false;
+            if(match == EOF || code == match)
+                ++count;
+        };
+        return true;
+    }
+
+    auto put(int code, bool echo = false, int echocode = EOF) const -> bool {
+        if(device_ < 0)
+            return false;
+
+        if(code == EOF)
+            return true;
+
+        char buf = static_cast<char>(code);
+        auto result = ::write(device_, &buf, 1);
+        if(result < 0)
+            throw bad_serial();
+        if(result < 1)
+            return false;
+        if(echo)
+            return until(echocode);
+        return true;
+    }
+
+    auto put(const char *data, size_t size, bool echo = false, int echocode = EOF) const -> unsigned {
+        if(!size || device_ < 0)
+            return 0U;
+
         auto count = ::write(device_, data, size);
         if(count > 0) {
-            if(drain)
-                tcdrain(device_);
+            if(echo && !until(echocode, count))
+                return 0U;
             return static_cast<unsigned>(count);
         }
         if(count < 0)
@@ -200,8 +285,15 @@ public:
         return 0U;
     }
 
-    auto puts(std::string_view msg, bool drain = false) const {
-        return put(msg.data(), msg.size(), drain);
+    auto put(const std::string_view msg, bool echo = false, int echomode = EOF) const {
+        return put(msg.data(), msg.size(), echo, echomode);
+    }
+
+    auto putline(std::string_view msg, const std::string_view& eol = "\n", bool echo = false, int echocode = EOF) const {
+        auto result = put(msg, echo, echocode);
+        if(put(eol, echo) == eol.size())
+            return result;
+        return 0U;
     }
 
     void timed_mode(size_t size, uint8_t timer = 1) {
