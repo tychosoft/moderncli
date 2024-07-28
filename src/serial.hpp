@@ -119,6 +119,7 @@ public:
             ::close(device_);
         }
         device_ = -1;
+        timed_ = 0;
     }
 
     auto wait(int msec = -1) const -> bool {
@@ -176,7 +177,7 @@ public:
     auto get(bool echo = false, int echocode = EOF, int eol = EOF) const {
         if(device_ > -1) {
             char buf{0};
-            auto result = ::read(device_, &buf, 1);
+            auto result = ::read(device_, &buf, 1); // FlawFinder: ignore
             if(result < 0)
                 throw bad_serial();
             if(result < 1)
@@ -296,9 +297,21 @@ public:
         return 0U;
     }
 
-    void timed_mode(size_t size, uint8_t timer = 1) {
+    auto is_packet() const noexcept {
         if(device_ < 0)
-            return;
+            return false;
+        return 0 == (current_.c_lflag & ICANON);
+    }
+
+    auto timed() const noexcept {
+        if(is_packet())
+            return timed_;
+        return uint8_t(0);
+    }
+
+    auto timed_mode(size_t size, uint8_t timer = 1) noexcept -> size_t {
+        if(device_ < 0)
+            return 0U;
 
 #ifdef  _PC_MAX_INPUT
         auto max = fpathconf(device_, _PC_MAX_INPUT);
@@ -315,9 +328,11 @@ public:
         current_.c_lflag &= ~ICANON;
         tcsetattr(device_, TCSANOW, &current_);
         bufsize_ = max;
+        timed_ = timer;
+        return size;
     }
 
-    void line_mode(const char *nl = "\r\n", uint8_t min = 1) {
+    void line_mode(const char *nl = "\r\n", uint8_t min = 1) noexcept {
         if(device_ < 0)
             return;
 
@@ -331,6 +346,7 @@ public:
             nl2 = nl[1];
         }
 
+        timed_ = 0;
         current_.c_cc[VMIN] = min;
         current_.c_cc[VTIME] = 0;
         current_.c_cc[VEOL] = nl1;
@@ -360,6 +376,7 @@ public:
 
         tcsetattr(device_, TCSANOW, &current_);
         bufsize_ = 0;
+        timed_ = 0;
     }
 
     auto size() const {
@@ -564,6 +581,7 @@ public:
 private:
     int device_{-1};
     size_t bufsize_{0};
+    uint8_t timed_{0};
     struct termios original_{}, current_{};
 };
 } // end namespace
