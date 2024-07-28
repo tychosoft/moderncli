@@ -46,53 +46,53 @@
 namespace tycho {
 class address_t final {
 public:
-    address_t() {
+    address_t() noexcept {
         memset(&store_, 0, sizeof(store_));
     }
 
     address_t(const address_t& from) = default;
     auto operator=(const address_t& from) -> address_t& = default;
 
-    explicit address_t(const struct addrinfo *addr) {
+    explicit address_t(const struct addrinfo *addr) noexcept {
         set(addr);
     }
 
-    explicit address_t(const struct sockaddr *addr) {
+    explicit address_t(const struct sockaddr *addr) noexcept {
         set(addr);
     }
 
-    explicit address_t(const std::string& addr, uint16_t port = 0) {
+    explicit address_t(const std::string& addr, uint16_t port = 0) noexcept {
         set(addr, port);
     }
 
-    auto operator=(const struct addrinfo *addr) -> auto& {
+    auto operator=(const struct addrinfo *addr) noexcept -> auto& {
         set(addr);
         return *this;
     }
 
-    auto operator=(const struct sockaddr *addr) -> auto& {
+    auto operator=(const struct sockaddr *addr) noexcept -> auto& {
         set(addr);
         return *this;
     }
 
-    auto operator=(const std::string& addr) -> auto& {
+    auto operator=(const std::string& addr) noexcept -> auto& {
         set(addr);
         return *this;
     }
 
-    operator bool() const {
+    operator bool() const noexcept {
         return store_.ss_family != 0;
     }
 
-    auto operator!() const {
+    auto operator!() const noexcept {
         return store_.ss_family == 0;
     }
 
-    auto operator*() const {
+    auto operator*() const noexcept {
         return reinterpret_cast<const struct sockaddr *>(&store_);
     }
 
-    auto operator*() {
+    auto operator*() noexcept {
         return reinterpret_cast<struct sockaddr *>(&store_);
     }
 
@@ -100,11 +100,11 @@ public:
         return sizeof(struct sockaddr_storage);
     }
 
-    auto data() const {
+    auto data() const noexcept {
         return reinterpret_cast<const struct sockaddr *>(&store_);
     }
 
-    auto port() const -> uint16_t {
+    auto port() const noexcept -> uint16_t {
         switch(store_.ss_family) {
         case AF_INET:
             return ntohs((reinterpret_cast<const struct sockaddr_in *>(&store_))->sin_port);
@@ -115,15 +115,15 @@ public:
         }
     }
 
-    auto size() const -> socklen_t {
+    auto size() const noexcept -> socklen_t {
         return size_(store_.ss_family);
     }
 
-    auto family() const {
+    auto family() const noexcept {
         return store_.ss_family;
     }
 
-    void set(const std::string& str, uint16_t in_port = 0) {
+    void set(const std::string& str, uint16_t in_port = 0) noexcept {
         memset(&store_, 0, sizeof(store_));
         auto cp = str.c_str();
         if(strchr(cp, ':') != nullptr) {
@@ -160,11 +160,11 @@ public:
         return std::string();
     }
 
-    auto data() {
+    auto data() noexcept {
         return reinterpret_cast<struct sockaddr *>(&store_);
     }
 
-    void set(const struct addrinfo *addr) {
+    void set(const struct addrinfo *addr) noexcept {
         if(!addr)
             memset(&store_, 0, sizeof(store_));
         else
@@ -172,7 +172,7 @@ public:
             memcpy(&store_, addr->ai_addr, addr->ai_addrlen);
     }
 
-    void set(const struct sockaddr *addr) {
+    void set(const struct sockaddr *addr) noexcept {
         if(!addr || !size_(addr->sa_family))
             memset(&store_, 0, sizeof(store_));
         else
@@ -181,7 +181,7 @@ public:
    }
 
 private:
-    static auto size_(int family) -> socklen_t {
+    static auto size_(int family) noexcept -> socklen_t {
         switch(family) {
         case AF_INET:
             return sizeof(struct sockaddr_in);
@@ -205,7 +205,7 @@ public:
         from.list_ = nullptr;
     }
 
-    service_t(const std::string& host, const std::string& service, int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) {
+    service_t(const std::string& host, const std::string& service, int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) noexcept {
         set(host, service, family, type, protocol);
     }
 
@@ -220,19 +220,19 @@ public:
         return *this;
     }
 
-    auto operator*() const {
+    auto operator*() const noexcept {
         return list_;
     }
 
-    operator bool() const {
+    operator bool() const noexcept {
         return list_ != nullptr;
     }
 
-    auto operator!() const {
+    auto operator!() const noexcept {
         return list_ == nullptr;
     }
 
-    auto operator[](unsigned index) const {
+    auto operator[](unsigned index) const noexcept {
         auto size{0U};
         auto addr = list_;
         while(addr) {
@@ -244,11 +244,11 @@ public:
         return static_cast<struct addrinfo *>(nullptr);
     }
 
-    auto empty() const {
+    auto empty() const noexcept {
         return list_ == nullptr;
     }
 
-    auto count() const {
+    auto count() const noexcept {
         auto size{0U};
         const auto *addr = list_;
         while(addr) {
@@ -258,14 +258,14 @@ public:
         return size;
     }
 
-    void release() {
+    void release() noexcept {
         if(list_) {
             ::freeaddrinfo(list_);
             list_ = nullptr;
         }
     }
 
-    void set(const std::string& host = "*", const std::string& service = "", int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) {
+    void set(const std::string& host = "*", const std::string& service = "", int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) noexcept {
         release();
         auto svc = service.c_str();
         if(service.empty())
@@ -293,7 +293,7 @@ public:
         getaddrinfo(addr, svc, &hint, &list_);  // NOLINT
     }
 
-    auto store(unsigned index = 0) const {
+    auto store(unsigned index = 0) const noexcept {
         struct sockaddr_storage data{};
         auto size{0U};
         const auto *addr = list_;
@@ -311,14 +311,14 @@ public:
     }
 
 private:
-    auto last_() const {
+    auto last_() const noexcept {
         auto addr = list_;
         while(addr && addr->ai_next)
             addr = addr->ai_next;
         return addr;
     }
 
-    void join_(struct addrinfo *from) {
+    void join_(struct addrinfo *from) noexcept {
         auto addr = last_();
         if(addr)
             addr->ai_next = from;
@@ -343,7 +343,7 @@ public:
         bind(list);
     }
 
-    explicit socket(const address_t& addr, int type = 0, int protocol = 0) {
+    explicit socket(const address_t& addr, int type = 0, int protocol = 0) noexcept {
         bind(addr, type, protocol);
     }
 
@@ -358,24 +358,24 @@ public:
         return *this;
     }
 
-    auto operator=(const service_t& to) -> auto& {
+    auto operator=(const service_t& to) noexcept -> auto& {
         connect(to);
         return *this;
     }
 
-    operator bool() const {
+    operator bool() const noexcept {
         return so_ != -1;
     }
 
-    auto operator!() const {
+    auto operator!() const noexcept {
         return so_ == -1;
     }
 
-    auto operator*() const {
+    auto operator*() const noexcept {
         return static_cast<SOCKET>(so_);
     }
 
-    void release() {
+    void release() noexcept {
         if(so_ != -1) {
 #ifdef  USE_CLOSESOCKET
             closesocket(so_);
@@ -386,14 +386,14 @@ public:
         }
     }
 
-    void bind(const address_t& addr, int type = 0, int protocol = 0) {
+    void bind(const address_t& addr, int type = 0, int protocol = 0) noexcept {
         so_ = make_socket(::socket(addr.family(), type, protocol));
         if(so_ != -1)
             if(::bind(so_, addr.data(), addr.size()) == -1)
                 release();
     }
 
-    void bind(const service_t& list) {
+    void bind(const service_t& list) noexcept {
         auto addr = *list;
         release();
         while(addr) {
@@ -408,13 +408,13 @@ public:
         }
     }
 
-    auto connect(const address_t& addr) const {
+    auto connect(const address_t& addr) const noexcept {
         if(so_ != -1)
             return ::connect(so_, addr.data(), addr.size());
         return -1;
     }
 
-    void connect(const service_t& list) {
+    void connect(const service_t& list) noexcept {
         auto addr = *list;
         release();
         while(addr) {
@@ -429,7 +429,7 @@ public:
         }
     }
 
-    auto wait(short events, int timeout) const -> int {
+    auto wait(short events, int timeout) const noexcept -> int {
         if(so_ == -1)
             return -1;
 
@@ -441,19 +441,19 @@ public:
         return pfd.revents;
     }
 
-    void listen(int backlog = 5) {
+    void listen(int backlog = 5) noexcept {
         if(so_ != -1 && ::listen(so_, backlog) == -1)
             release();
     }
 
-    auto accept() const {
+    auto accept() const noexcept {
         socket from{};
         if(so_ != -1)
             from.so_ = make_socket(::accept(so_, nullptr, nullptr));
         return from;
     }
 
-    auto peer() const {
+    auto peer() const noexcept {
         address_t addr;
         socklen_t len = address_t::maxsize();
         memset(*addr, 0, sizeof(addr));
@@ -462,7 +462,7 @@ public:
         return addr;
     }
 
-    auto local() const {
+    auto local() const noexcept {
         address_t addr;
         socklen_t len = address_t::maxsize();
         memset(*addr, 0, sizeof(addr));
@@ -471,26 +471,26 @@ public:
         return addr;
     }
 
-    auto send(const char *from, socklen_t size, int flags = 0) const -> socklen_t {
+    auto send(const char *from, socklen_t size, int flags = 0) const noexcept -> socklen_t {
         if(so_ == -1)
             return 0;
         return ::send(so_, from, size, flags);
     }
 
-    auto recv(char *to, socklen_t size, int flags = 0) const -> socklen_t {
+    auto recv(char *to, socklen_t size, int flags = 0) const noexcept -> socklen_t {
         if(so_ == -1)
             return 0;
         return ::recv(so_, to, size, flags);
     }
 
-    auto send(const char *from, socklen_t size, const address_t addr, int flags = 0) const -> socklen_t {
+    auto send(const char *from, socklen_t size, const address_t addr, int flags = 0) const noexcept -> socklen_t {
         if(so_ == -1)
             return 0;
 
         return ::sendto(so_, from, size, flags, addr.data(), addr.size());
     }
 
-    auto recv(char *to, socklen_t size, address_t& addr, int flags = 0) const -> socklen_t {
+    auto recv(char *to, socklen_t size, address_t& addr, int flags = 0) const noexcept -> socklen_t {
         auto len = address_t::maxsize();
         if(so_ == -1)
             return 0;
@@ -499,29 +499,29 @@ public:
     }
 
 #ifdef USE_CLOSESOCKET
-    static auto poll(struct pollfd *fds, size_t count, int timeout) -> int {
+    static auto poll(struct pollfd *fds, size_t count, int timeout) noexcept -> int {
         return WSAPoll(fds, count, timeout);
     }
 
-    static auto startup() {
+    static auto startup() noexcept {
         WSADATA data;
         auto ver = MAKEWORD(2, 2);
         return WSAStartup(ver, &data) == 0;
     }
 
-    static void shutdown() {
+    static void shutdown() noexcept {
         static_cast<void>(WSACleanup());
     }
 #else
-    static auto poll(struct pollfd *fds, size_t count, int timeout) -> int {
+    static auto poll(struct pollfd *fds, size_t count, int timeout) noexcept -> int {
         return ::poll(fds, count, timeout);
     }
 
-    static auto startup() {
+    static auto startup() noexcept {
         return true;
     }
 
-    static void shutdown() {
+    static void shutdown() noexcept {
     }
 #endif
 protected:
@@ -529,19 +529,19 @@ protected:
 
 private:
 #ifdef USE_CLOSESOCKET
-    static auto make_socket(SOCKET so) -> int {
+    static auto make_socket(SOCKET so) noexcept -> int {
         return static_cast<int>(so);
     }
 
-    static auto make_socklen(size_t size) -> socklen_t {
+    static auto make_socklen(size_t size) noexcept -> socklen_t {
         return static_cast<socklen_t>(size);
     }
 #else
-    static auto make_socket(int so) -> int {
+    static auto make_socket(int so) noexcept -> int {
         return so;
     }
 
-    static auto make_socklen(socklen_t size) -> socklen_t {
+    static auto make_socklen(socklen_t size) noexcept -> socklen_t {
         return size;
     }
 #endif

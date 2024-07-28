@@ -1,5 +1,16 @@
 # Release Notes
 
+## v0.9.1
+- Serial timed support extended
+- Serial session functions and echo mode
+- Serial errors and better input support
+- Improve and simplify key support
+- Redo project structure
+- Fix windows headers
+- Fix flow control, add drain flag
+- Improve headers
+- Mapped data memory access
+
 ## v0.9.0
 - Standardize templates.hpp for language features
 - Get process posix time value

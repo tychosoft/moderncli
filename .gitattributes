@@ -7,3 +7,5 @@ vcpkg.json export-ignore
 .gitignore export-ignore
 .gitea/ export-ignore
 .github/ export-ignore
+.gitlab-ci.yml export-ignore
+.gitlab/ export-ignore

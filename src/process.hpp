@@ -55,7 +55,7 @@ using handle_t = HANDLE;
 
 inline constexpr auto dso_suffix = ".dll";
 
-inline auto invalid_handle() -> handle_t {
+inline auto invalid_handle() noexcept -> handle_t {
     return INVALID_HANDLE_VALUE;
 }
 
@@ -228,7 +228,7 @@ public:
         return FlushViewOfFile(addr_, size_) == TRUE;
     }
 
-    auto lock() {
+    auto lock() noexcept {
         if(addr_ == MAP_FAILED)
             return false;
 
@@ -238,7 +238,7 @@ public:
         return false;
     }
 
-    auto unlock() {
+    auto unlock() noexcept {
         if(addr_ == MAP_FAILED)
             return false;
 
@@ -291,13 +291,13 @@ private:
     size_t size_{0};
 };
 
-inline auto page_size() -> off_t {
+inline auto page_size() noexcept -> off_t {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
     return static_cast<off_t>(si.dwPageSize);
 }
 
-inline void time(struct timeval *tp) {
+inline void time(struct timeval *tp) noexcept {
     static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
     SYSTEMTIME  system_time;
     FILETIME    file_time;
@@ -311,7 +311,7 @@ inline void time(struct timeval *tp) {
     tp->tv_usec = static_cast<long>(system_time.wMilliseconds * 1000L);
 }
 
-inline auto is_tty(handle_t handle) {
+inline auto is_tty(handle_t handle) noexcept {
     if(handle == INVALID_HANDLE_VALUE)
         return false;
     auto type = GetFileType(handle);
@@ -354,15 +354,15 @@ inline auto async(const std::string& path, char *const *argv, char *const *env) 
     return _spawnvpe(_P_NOWAIT, path.c_str(), argv, env);
 }
 
-inline auto input() {
+inline auto input() noexcept {
     return GetStdHandle(STD_INPUT_HANDLE);
 }
 
-inline auto output() {
+inline auto output() noexcept {
     return GetStdHandle(STD_OUTPUT_HANDLE);
 }
 
-inline auto error() {
+inline auto error() noexcept {
     return GetStdHandle(STD_ERROR_HANDLE);
 }
 
@@ -382,7 +382,7 @@ inline auto detach(const std::string& path, char *const *argv, char *const *env)
     return _spawnvpe(_P_DETACH, path.c_str(), argv, env);
 }
 
-inline auto wait(id_t pid) {
+inline auto wait(id_t pid) noexcept {
     int status{-1};
     _cwait(&status, pid, _WAIT_CHILD);
     return status;
@@ -392,7 +392,7 @@ inline auto wait(std::FILE *fp) {
     return _pclose(fp);
 }
 
-inline auto stop(id_t pid) {
+inline auto stop(id_t pid) noexcept {
     return CloseHandle(reinterpret_cast<HANDLE>(pid)) == TRUE;
 }
 
@@ -566,15 +566,15 @@ private:
     size_t size_{0};
 };
 
-inline auto page_size() -> off_t {
+inline auto page_size() noexcept -> off_t {
     return sysconf(_SC_PAGESIZE);
 }
 
-inline void time(struct timeval *tp) {
+inline void time(struct timeval *tp) noexcept {
     gettimeofday(tp, nullptr);
 }
 
-inline auto is_tty(handle_t fd) {
+inline auto is_tty(handle_t fd) noexcept {
     if(fd < 0)
         return false;
 
@@ -596,15 +596,15 @@ inline void unload(void *dso) {
     dlclose(dso);
 }
 
-inline auto input() {
+inline auto input() noexcept {
     return 0;
 }
 
-inline auto output() {
+inline auto output() noexcept {
     return 1;
 }
 
-inline auto error() {
+inline auto error() noexcept {
     return 2;
 }
 
@@ -618,7 +618,7 @@ inline auto output(const std::string& cmd) {
     return popen(cmd.c_str(), "w");
 }
 
-inline auto wait(id_t pid) {
+inline auto wait(id_t pid) noexcept {
     int status{-1};
     waitpid(pid, &status, 0);
     return WEXITSTATUS(status);
@@ -628,7 +628,7 @@ inline auto wait(std::FILE *fp) {
     return pclose(fp);
 }
 
-inline auto stop(id_t pid) {
+inline auto stop(id_t pid) noexcept {
     return !kill(pid, SIGTERM);
 }
 
