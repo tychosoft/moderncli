@@ -429,10 +429,8 @@ public:
         if(sw)
             current_.c_iflag |= (IXON | IXANY | IXOFF);
 
-        if(hw) {
-            current_.c_iflag |= IXOFF;
+        if(hw)
             current_.c_cflag |= CRTSCTS;
-        }
 
         tcsetattr(device_, TCSANOW, &current_);
     }
