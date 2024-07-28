@@ -18,8 +18,8 @@
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 #ifndef quick_exit
-#define quick_exit(x) ::exit(x)
-#define at_quick_exit(x) ::atexit(x)
+#define quick_exit(x) ::exit(x)         // NOLINT
+#define at_quick_exit(x) ::atexit(x)    // NOLINT
 #endif
 #endif
 

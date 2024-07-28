@@ -23,8 +23,8 @@
 #include <handleapi.h>
 #include <io.h>
 #ifndef quick_exit
-#define quick_exit(x) ::exit(x)
-#define at_quick_exit(x) ::atexit(x)
+#define quick_exit(x) ::exit(x)         // NOLINT
+#define at_quick_exit(x) ::atexit(x)    // NOLINT
 #endif
 #define MAP_FAILED  nullptr
 #else
