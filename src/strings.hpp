@@ -17,10 +17,6 @@
 #include <set>
 #include <sstream>
 
-#if defined(_MSC_VER)
-#define sscanf  sscanf_s    // NOLINT
-#endif
-
 namespace tycho {
 template <typename T>
 inline constexpr bool is_string_type_v = std::is_convertible_v<T, std::string_view>;
@@ -302,14 +298,19 @@ inline auto to_hex(const std::string_view str) {
 inline auto from_hex(std::string_view from, uint8_t *to, size_t size) {
     auto hex = from.data();
     auto max = size * 2;
-    auto buf = 0U;
     if(from.size() <= max)
         max = from.size();
 
     for(auto pos = size_t(0); pos < max; pos += 2) {
-        if(sscanf(hex + pos, "%2x", &buf) != 1)
+        char buf[3];
+        buf[0] = hex[pos];
+        buf[1] = hex[pos + 1];
+        buf[2] = 0;
+        char *end = nullptr;
+        auto value = strtoul(buf, &end, 16);
+        if(*end != 0)
             return pos / 2;
-        *(to++) = static_cast<uint8_t>(buf);
+        *(to++) = static_cast<uint8_t>(value);
     }
     return max / 2;
 }
