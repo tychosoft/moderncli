@@ -20,6 +20,9 @@
 #include <sys/ioctl.h>
 
 namespace tycho {
+using crc16_t = uint16_t;
+using crc32_t = uint32_t;
+
 class bad_serial final : public std::exception {
 public:
     bad_serial(const bad_serial&) = delete;
@@ -582,5 +585,43 @@ private:
     uint8_t timed_{0};
     struct termios original_{}, current_{};
 };
+
+inline auto csum8(const uint8_t *data, size_t size) {
+    uint8_t sum = 0;
+    while (size--)
+        sum += *data++;
+    return sum;
+}
+
+inline auto crc16(const uint8_t *data, size_t size) {
+    crc16_t crc = 0x0000;
+    while(size--) {
+        crc ^= *data++ << 8;
+        for(uint8_t i = 0; i < 8; i++) {
+            if(crc & 0x8000)
+                crc = (crc << 1) ^ 0x8005;
+            else
+                crc <<= 1;
+        }
+    }
+    return crc;
+}
+
+inline auto crc32(const uint8_t *data, size_t size) {
+    static crc32_t table[256]{0};
+    crc32_t crc = 0xffffffff;
+
+    for (size_t i = 0; i < 256; i++) {
+        crc32_t c = i;
+        for (size_t j = 0; j < 8; j++)
+            c = (c & 1) ? 0xedb88320 ^ (c >> 1) : c >> 1;
+        table[i] = c;
+    }
+
+    for(size_t i = 0; i < size; i++)
+        crc = table[(crc ^ data[i]) & 0xff] ^ (crc >> 8);
+
+    return crc ^ 0xffffffff;
+}
 } // end namespace
 #endif

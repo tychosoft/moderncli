@@ -1,6 +1,7 @@
 # Release Notes
 
 ## v0.9.1
+- Add checksum and crc support
 - Serial timed support extended
 - Serial session functions and echo mode
 - Serial errors and better input support
