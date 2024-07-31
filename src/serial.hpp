@@ -306,21 +306,22 @@ public:
         tcsetattr(device_, TCSANOW, &current_);
     }
 
-    auto format(const char *s) {
-        unsigned bits = 8;
-        unsigned stop = 1;
-        unsigned parity = 'n';
+    auto format(const std::string_view& s) {
+        char bits = '8';
+        char stop = '1';
+        char parity = 'n';
+        unsigned pos = 0;
 
-        if(s && *s && isdigit(*s))
-            bits = *(s++) - '0';
+        if(s.size() > pos && strchr("5678", s[pos]))
+            bits = s[pos++];
 
-        if(s && *s && !isdigit(*s))
-            parity = static_cast<unsigned>(tolower(*(s++)));
+        if(s.size() > pos && strchr("oOeEnN", s[pos]))
+            parity = s[pos++];
 
-        if(s && *s && isdigit(*s))
-            stop = *(s++) - '0';
+        if(s.size() > pos && strchr("12", s[pos]))
+            stop = s[pos++];
 
-        if(stop < 1 || stop > 2 || bits < 5 || bits > 8)
+        if(s.size() > pos)
             return false;
 
         if(device_ < 0)
@@ -357,12 +358,15 @@ public:
 
         switch(parity) {
         case 'o':
+        case 'O':
             current_.c_cflag |= (PARENB | PARODD);
             break;
         case 'e':
+        case 'E':
             current_.c_cflag |= PARENB;
             break;
         case 'n':
+        case 'N':
             break;
         default:
             return false;
@@ -685,40 +689,46 @@ public:
         SetCommState(device_, &active_);
     }
 
-    auto format(const char *s) {
+    auto format(const std::string_view& s) {
         if(device_ == invalid_)
             return false;
 
+        unsigned pos = 0;
         unsigned bits = 8;
         unsigned stop = 1;
-        unsigned parity = 'n';
+        char parity = 'n';
 
-        if(s && *s && isdigit(*s))
-            bits = *(s++) - '0';
+        if(s.size() > pos && strchr("5678", s[pos]))
+            bits = s[pos++] - '0';
 
-        if(s && *s && !isdigit(*s))
-            parity = static_cast<unsigned>(tolower(*(s++)));
+        if(s.size() > pos && strchr("oOeEnNmMsS", s[pos]))
+            parity = s[pos++];
 
-        if(s && *s && isdigit(*s))
-            stop = *(s++) - '0';
+        if(s.size() > pos && strchr("12", s[pos]))
+            stop = s[pos] - '0';
 
-        if(stop < 1 || stop > 2 || bits < 5 || bits > 8)
+        if(s.size() > pos)
             return false;
 
         switch(parity) {
         case 'o':
+        case 'O':
             active_.Parity = ODDPARITY;
             break;
         case 'e':
+        case 'E':
             active_.Parity = EVENPARITY;
             break;
         case 'n':
+        case 'N':
             active_.Parity = NOPARITY;
             break;
         case 'm':
+        case 'M':
             active_.Parity = MARKPARITY;
             break;
         case 's':
+        case 'S':
             active_.Parity = SPACEPARITY;
             break;
         default:
