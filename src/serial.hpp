@@ -1,15 +1,12 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#if !defined(TYCHO_SERIAL_HPP_) && __has_include(<termios.h>)
+#if !defined(TYCHO_SERIAL_HPP_)
 #define TYCHO_SERIAL_HPP_
 
+#if __has_include(<termios.h>)
 #include <thread>
 #include <chrono>
-#include <string>
-#include <string_view>
-#include <cctype>
-#include <cstring>
 #include <csignal>
 #include <climits>
 
@@ -17,6 +14,24 @@
 #include <unistd.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#else
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+#if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
+#undef  _WIN32_WINNT
+#define _WIN32_WINNT    0x0600  // NOLINT
+#endif
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <handleapi.h>
+#include <process.h>
+#endif
+#endif
+
+#include <string>
+#include <string_view>
+#include <cstring>
+#include <cstdint>
+#include <cctype>
 
 namespace tycho {
 using crc16_t = uint16_t;
@@ -24,7 +39,6 @@ using crc32_t = uint32_t;
 
 class bad_serial final : public std::exception {
 public:
-    bad_serial(const bad_serial&) = delete;
     auto operator=(const bad_serial&) -> auto& = delete;
 
     auto err() const {
@@ -39,10 +53,12 @@ private:
     friend class serial_t;
 
     bad_serial() : err_(errno) {}
+    bad_serial(const bad_serial& other) = default;
 
     int err_{-1};
 };
 
+#if __has_include(<termios.h>)
 class serial_t final {
 public:
     serial_t() = default;
@@ -128,7 +144,7 @@ public:
 
     auto get(char *data, size_t size, bool echo = false) const {
         if(!data || !size)
-            return 0U;
+            return size_t(0U);
 
         auto count = ::read(device_, data, size);   // FlawFinder: safe
         if(count < 0)
@@ -136,59 +152,11 @@ public:
         if(count > 0 && echo)
             put(data, count);
         if(count > 0)
-            return static_cast<unsigned>(count);
-        return 0U;
+            return size_t(count);
+        return size_t(0U);
     }
 
-    auto getline(char *buf, size_t max, int eol = '\n', bool echo = false, int echocode = EOF, const char *ignore = nullptr) const {
-        *buf = 0;
-        --max;
-
-        auto count{0U};
-        while(count < max) {
-            auto code = get(echo, echocode, eol);
-            if(code == EOF)
-                return count;
-            if(ignore && strchr(ignore, code))
-                continue;
-            buf[count++] = static_cast<char>(code);
-            if(eol && code == eol) {
-                break;
-            }
-        }
-        buf[count] = 0;
-        return count;
-    }
-
-    auto expect(const std::string_view& match) const {
-        auto count = 0U;
-        while(count < match.size()) {
-            auto code = get();
-            if(code == EOF)
-                return false;
-            // strip lead-in noise...
-            if(!count && match[0] != code)
-                continue;
-            if(match[count] != code)
-                return false;
-            ++count;
-        }
-        return true;
-    }
-
-    auto until(int match = EOF, unsigned max = 1) const {
-        auto count = 0U;
-        while(count < max) {
-            auto code = get();
-            if(code == EOF)
-                return false;
-            if(match == EOF || code == match)
-                ++count;
-        };
-        return true;
-    }
-
-    auto put(int code, bool echo = false, int echocode = EOF) const -> bool {
+    auto put(int code) const -> bool {
         if(device_ < 0)
             return false;
 
@@ -201,35 +169,23 @@ public:
             throw bad_serial();
         if(result < 1)
             return false;
-        if(echo)
-            return until(echocode);
         return true;
     }
 
-    auto put(const char *data, size_t size, bool echo = false, int echocode = EOF) const -> unsigned {
+    auto put(const char *data, size_t size) const -> size_t {
         if(!size || device_ < 0)
-            return 0U;
+            return size_t(0U);
 
         auto count = ::write(device_, data, size);
-        if(count > 0) {
-            if(echo && !until(echocode, count))
-                return 0U;
-            return static_cast<unsigned>(count);
-        }
+        if(count > 0)
+            return size_t(count);
         if(count < 0)
             throw bad_serial();
-        return 0U;
+        return size_t(0U);
     }
 
-    auto put(const std::string_view msg, bool echo = false, int echomode = EOF) const {
-        return put(msg.data(), msg.size(), echo, echomode);
-    }
-
-    auto putline(std::string_view msg, const std::string_view& eol = "\n", bool echo = false, int echocode = EOF) const {
-        auto result = put(msg, echo, echocode);
-        if(put(eol, echo) == eol.size())
-            return result;
-        return 0U;
+    auto put(const std::string_view msg) const {
+        return put(msg.data(), msg.size());
     }
 
     auto is_packet() const noexcept {
@@ -296,24 +252,6 @@ public:
 #else
         return size_t(MAX_INPUT);
 #endif
-    }
-
-    void reset() {
-        if(device_ < 0)
-            return;
-
-        current_.c_oflag = current_.c_lflag = 0;
-        current_.c_cflag = CLOCAL | CREAD | HUPCL;
-        current_.c_iflag = IGNBRK;
-
-        memset(&current_.c_cc, 0, sizeof(current_.c_cc));
-        current_.c_cc[VMIN] = 1;
-
-        current_.c_cflag |= original_.c_cflag & (CRTSCTS | CSIZE | PARENB | PARODD | CSTOPB);
-        current_.c_iflag |= original_.c_iflag & (IXON | IXANY | IXOFF);
-
-        tcsetattr(device_, TCSANOW, &current_);
-        timed_ = 0;
     }
 
     void flush() const {
@@ -513,7 +451,361 @@ private:
     int device_{-1};
     uint8_t timed_{0};
     struct termios original_{}, current_{};
+
+    void reset() {
+        if(device_ < 0)
+            return;
+
+        current_.c_oflag = current_.c_lflag = 0;
+        current_.c_cflag = CLOCAL | CREAD | HUPCL;
+        current_.c_iflag = IGNBRK;
+
+        memset(&current_.c_cc, 0, sizeof(current_.c_cc));
+        current_.c_cc[VMIN] = 1;
+
+        current_.c_cflag |= original_.c_cflag & (CRTSCTS | CSIZE | PARENB | PARODD | CSTOPB);
+        current_.c_iflag |= original_.c_iflag & (IXON | IXANY | IXOFF);
+
+        tcsetattr(device_, TCSANOW, &current_);
+        timed_ = 0;
+    }
 };
+#elif defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+class serial_t final {
+public:
+    serial_t() = default;
+
+    explicit serial_t(const std::string& path) {
+        open(path); // FlawFinder: ignore
+    }
+
+    serial_t(const serial_t& from) :
+    timeouts_(from.timeouts_), saved_(from.saved_), active_(from.active_) {
+        if(from.device_ != invalid_) {
+            auto pid = GetCurrentProcess();
+            HANDLE handle{INVALID_HANDLE_VALUE};
+            DuplicateHandle(pid, from.device_, pid, &handle, 0, FALSE, DUPLICATE_SAME_ACCESS);
+            device_ = static_cast<HINSTANCE>(handle);
+        }
+    }
+
+    serial_t(serial_t&& from) noexcept :
+    device_(from.device_), timed_(from.timed_), saved_(from.saved_), active_(from.active_) {
+        from.device_ = invalid_;
+    }
+
+    ~serial_t() {
+        close();
+    }
+
+    auto operator!() const {
+        return device_ == invalid_;
+    }
+
+    operator bool() const {
+        return device_ != invalid_;
+    }
+
+    void open(const std::string& fname) { // FlawFinder: safe
+        close();
+        device_ = static_cast<HINSTANCE>(CreateFile(fname.c_str(),
+            GENERIC_READ | GENERIC_WRITE,
+            0,                      // exclusive access
+            nullptr,                // no security attrs
+            OPEN_EXISTING,
+            FILE_FLAG_OVERLAPPED | FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | FILE_FLAG_NO_BUFFERING,
+            nullptr));
+
+        if(device_ != invalid_) {
+            GetCommTimeouts(device_, &timeouts_);
+            saved_.DCBlength = active_.DCBlength = sizeof(DCB);
+            GetCommState(device_, &saved_);
+            GetCommState(device_, &active_);
+        }
+    }
+
+    void close() {
+        if(device_ != invalid_) {
+            SetCommTimeouts(device_, &timeouts_);
+            SetCommState(device_, &saved_);
+            CloseHandle(device_);
+            device_ = invalid_;
+        }
+    }
+
+    auto get(bool echo = false, int echocode = EOF, int eol = EOF) const {
+        if(device_ != invalid_) {
+            char buf{0};
+            DWORD count{0};
+            if(ReadFile(device_, &buf, DWORD(1), &count, nullptr) == FALSE)
+                throw bad_serial();
+            if(count < 1)
+                return EOF;
+            if(echo && echocode != EOF && (eol == EOF || buf != eol))
+                put(echocode);
+            else if(echo)
+                put(buf);
+            return static_cast<int>(buf);
+        }
+        return EOF;
+    }
+
+    auto get(char *data, size_t size, bool echo = false) const {
+        if(!data || !size)
+             return size_t(0U);
+        DWORD count{0};
+        if(ReadFile(device_, data, DWORD(size), &count, nullptr) == FALSE)
+            throw bad_serial();
+        if(count > 0 && echo)
+            put(data, count);
+        if(count > 0)
+            return size_t(count);
+        return size_t(0U);
+    }
+
+    auto put(const char *data, size_t size) const -> size_t {
+        if(!size || device_ == invalid_)
+            return size_t(0U);
+
+        DWORD count{0};
+        if(WriteFile(device_, data, DWORD(size), &count, nullptr) == FALSE)
+            throw bad_serial();
+        if(count > 0)
+            return size_t(count);
+        return size_t(0U);
+    }
+
+    auto put(int code) const -> bool {
+        if(device_ == invalid_)
+            return false;
+
+        if(code == EOF)
+            return true;
+
+        char buf = static_cast<char>(code);
+        DWORD count{0};
+        if(WriteFile(device_, &buf, 1, &count, nullptr) == FALSE)
+            throw bad_serial();
+        if(count < 1)
+            return false;
+        return true;
+    }
+
+    auto put(const std::string_view msg) const {
+        return put(msg.data(), msg.size());
+    }
+
+    auto timed_mode(size_t size, uint8_t timer = 1) noexcept -> size_t {
+        if(device_ == invalid_)
+            return size_t(0);
+
+        COMMTIMEOUTS timed{0};
+        timed.WriteTotalTimeoutMultiplier = 0;
+        timed.WriteTotalTimeoutConstant = 0;
+        timed.ReadTotalTimeoutMultiplier = 0;
+        if(timer > 0 && size > 0) {
+            timed.ReadIntervalTimeout = MAXDWORD;
+            timed.ReadTotalTimeoutConstant = timer * 100;
+        }
+        else if(size > 0 && !timer) {
+            timed.ReadIntervalTimeout = 0;
+            timed.ReadTotalTimeoutConstant = 0;
+        }
+        else if(!size && timer > 0) {
+            timed.ReadIntervalTimeout = timer * 100;
+            timed.ReadTotalTimeoutConstant = 0;
+        } else {
+            timed.ReadIntervalTimeout = MAXDWORD;
+            timed.ReadTotalTimeoutConstant = 0;
+        }
+        SetCommTimeouts(device_, &timed);
+        return size;
+    }
+
+    auto line_mode(const char *nl = "\r\n", uint8_t min = 1) noexcept { // NOLINT
+        return size_t(0U);
+    }
+
+    void flush() {
+        if(device_ != invalid_)
+            PurgeComm(device_, PURGE_TXABORT | PURGE_TXCLEAR);
+    }
+
+    void purge() {
+        if(device_ != invalid_)
+            PurgeComm(device_, PURGE_RXABORT | PURGE_RXCLEAR);
+    }
+
+    void sync() {
+        if(device_ != invalid_)
+            FlushFileBuffers(device_);
+    }
+
+    void hup() {
+        if(device_ == invalid_)
+            return;
+
+        SetCommBreak(device_);
+        Sleep(100L);
+        ClearCommBreak(device_);
+    }
+
+    void dtr(unsigned msec = 120) {
+        if(device_ == invalid_)
+            return;
+
+        EscapeCommFunction(device_, CLRDTR);
+        if(msec) {
+            Sleep(msec);
+            EscapeCommFunction(device_, SETDTR);
+        }
+    }
+
+    void flow(bool hw = true, bool sw = true) {
+        if(device_ == invalid_)
+            return;
+
+        active_.XonChar = 0x11;
+        active_.XoffChar = 0x13;
+        active_.XonLim = 100;
+        active_.XoffLim = 100;
+        if(sw)
+            active_.fInX = active_.fOutX = 1;
+        else
+            active_.fInX = active_.fOutX = 0;
+
+        if(hw) {
+            active_.fOutxCtsFlow = 1;
+            active_.fRtsControl = RTS_CONTROL_HANDSHAKE;
+        }
+        else {
+            active_.fOutxCtsFlow = 0;
+            active_.fRtsControl = 0;
+        }
+        SetCommState(device_, &active_);
+    }
+
+    auto format(const char *s) {
+        if(device_ == invalid_)
+            return false;
+
+        unsigned bits = 8;
+        unsigned stop = 1;
+        unsigned parity = 'n';
+
+        if(s && *s && isdigit(*s))
+            bits = *(s++) - '0';
+
+        if(s && *s && !isdigit(*s))
+            parity = static_cast<unsigned>(tolower(*(s++)));
+
+        if(s && *s && isdigit(*s))
+            stop = *(s++) - '0';
+
+        if(stop < 1 || stop > 2 || bits < 5 || bits > 8)
+            return false;
+
+        switch(parity) {
+        case 'o':
+            active_.Parity = ODDPARITY;
+            break;
+        case 'e':
+            active_.Parity = EVENPARITY;
+            break;
+        case 'n':
+            active_.Parity = NOPARITY;
+            break;
+        case 'm':
+            active_.Parity = MARKPARITY;
+            break;
+        case 's':
+            active_.Parity = SPACEPARITY;
+            break;
+        default:
+            return false;
+        }
+
+        if(stop == 1)
+            active_.StopBits = ONESTOPBIT;
+        else
+            active_.StopBits = TWOSTOPBITS;
+        active_.ByteSize = bits;
+        return SetCommState(device_, &active_) == TRUE;
+    }
+
+    auto speed(unsigned long rate) {
+        if(device_ == invalid_)
+            return 0UL;
+        active_.BaudRate = rate;
+        if(SetCommState(device_, &active_) == FALSE)
+            GetCommState(device_, &active_);
+        return active_.BaudRate;
+    }
+
+private:
+    static inline const auto invalid_ = static_cast<HINSTANCE>(INVALID_HANDLE_VALUE);
+
+    COMMTIMEOUTS timeouts_{0};
+    DCB saved_{0}, active_{0};
+    uint8_t timed_{0};
+    HINSTANCE device_{invalid_};
+};
+#endif
+
+inline auto getline(const serial_t& sio, char *buf, size_t max, int eol = '\n', bool echo = false, int echocode = EOF, const char *ignore = nullptr) {
+    *buf = 0;
+    --max;
+
+    auto count = size_t(0);
+    while(count < max) {
+        auto code = sio.get(echo, echocode, eol);
+        if(code == EOF)
+            return count;
+        if(ignore && strchr(ignore, code))
+            continue;
+        buf[count++] = static_cast<char>(code);
+        if(eol && code == eol) {
+            break;
+        }
+    }
+    buf[count] = 0;
+    return count;
+}
+
+inline auto putline(const serial_t& sio, std::string_view msg, const std::string_view& eol = "\n") {
+    auto result = sio.put(msg);
+    if(result > 0 && sio.put(eol) == eol.size())
+        return result;
+    return size_t(0U);
+}
+
+inline auto expect(const serial_t& sio, const std::string_view& match) {
+    auto count = 0U;
+    while(count < match.size()) {
+        auto code = sio.get();
+        if(code == EOF)
+            return false;
+        // strip lead-in noise...
+        if(!count && match[0] != code)
+            continue;
+        if(match[count] != code)
+            return false;
+        ++count;
+    }
+    return true;
+}
+
+inline auto until(const serial_t& sio, int match = EOF, unsigned max = 1) {
+    auto count = 0U;
+    while(count < max) {
+        auto code = sio.get();
+        if(code == EOF)
+            return false;
+        if(match == EOF || code == match)
+            ++count;
+    };
+    return true;
+}
 
 inline auto csum8(const uint8_t *data, size_t size) {
     uint8_t sum = 0;
