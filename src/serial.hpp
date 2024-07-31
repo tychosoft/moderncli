@@ -68,13 +68,13 @@ public:
     }
 
     serial_t(const serial_t& from) :
-    original_(from.original_), current_(from.current_) {
+    timed_(from.timed_), bufsize_(from.bufsize_), original_(from.original_), current_(from.current_) {
         if(from.device_ > -1)
             device_ = ::dup(from.device_);
     }
 
     serial_t(serial_t&& from) noexcept :
-    device_(from.device_), original_(from.original_), current_(from.current_) {
+    device_(from.device_), timed_(from.timed_), bufsize_(from.bufsize_), original_(from.original_), current_(from.current_) {
         from.device_ = -1;
     }
 
