@@ -15,7 +15,6 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <poll.h>
 #include <termios.h>
 #include <sys/ioctl.h>
 
@@ -44,21 +43,6 @@ private:
     int err_{-1};
 };
 
-class drop_serial final : public std::exception {
-public:
-    drop_serial(const drop_serial&) = delete;
-    auto operator=(const drop_serial&) -> auto& = delete;
-
-    auto what() const noexcept -> const char * override {
-        return "serial hangup";
-    }
-
-private:
-    friend class serial_t;
-
-    drop_serial() = default;
-};
-
 class serial_t final {
 public:
     serial_t() = default;
@@ -68,13 +52,13 @@ public:
     }
 
     serial_t(const serial_t& from) :
-    timed_(from.timed_), bufsize_(from.bufsize_), original_(from.original_), current_(from.current_) {
+    timed_(from.timed_), original_(from.original_), current_(from.current_) {
         if(from.device_ > -1)
             device_ = ::dup(from.device_);
     }
 
     serial_t(serial_t&& from) noexcept :
-    device_(from.device_), timed_(from.timed_), bufsize_(from.bufsize_), original_(from.original_), current_(from.current_) {
+    device_(from.device_), timed_(from.timed_), original_(from.original_), current_(from.current_) {
         from.device_ = -1;
     }
 
@@ -123,58 +107,6 @@ public:
         }
         device_ = -1;
         timed_ = 0;
-    }
-
-    auto wait(int msec = -1) const -> bool {
-        if(device_ < 0)
-            return false;
-
-        int status{0};
-        struct pollfd pfd{};
-        pfd.fd = device_;
-        pfd.revents = 0;
-        pfd.events = POLLIN | POLLHUP;
-
-        status = ::poll(&pfd, 1, msec);
-        if(status < 0)
-            throw bad_serial();
-
-        if(status < 1)
-            return false;
-
-        if(pfd.revents & POLLHUP)
-            throw drop_serial();
-
-        if(pfd.revents & POLLERR)
-            throw bad_serial();
-
-        return pfd.revents & POLLIN;
-    }
-
-    auto pending(int msec = -1) const -> bool {
-        if(device_ < 0)
-            return false;
-
-        int status{0};
-        struct pollfd pfd{};
-        pfd.fd = device_;
-        pfd.revents = 0;
-        pfd.events = POLLOUT | POLLHUP;
-
-        status = ::poll(&pfd, 1, msec);
-        if(status < 0)
-            throw bad_serial();
-
-        if(status < 1)
-            return false;
-
-        if(pfd.revents & POLLHUP)
-            throw drop_serial();
-
-        if(pfd.revents & POLLERR)
-            throw bad_serial();
-
-        return pfd.revents & POLLOUT;
     }
 
     auto get(bool echo = false, int echocode = EOF, int eol = EOF) const {
@@ -325,19 +257,21 @@ public:
         if(size > (size_t)max)
             size = max;
 
+        if(size > 255)
+            size = 255;
+
         current_.c_cc[VEOL] = current_.c_cc[VEOL2] = 0;
         current_.c_cc[VMIN] = (uint8_t)size;
         current_.c_cc[VTIME] = timer;
         current_.c_lflag &= ~ICANON;
         tcsetattr(device_, TCSANOW, &current_);
-        bufsize_ = max;
         timed_ = timer;
         return size;
     }
 
-    void line_mode(const char *nl = "\r\n", uint8_t min = 1) noexcept {
+    auto line_mode(const char *nl = "\r\n", uint8_t min = 1) noexcept {
         if(device_ < 0)
-            return;
+            return size_t(0U);
 
         if(!nl)
             nl = "";
@@ -356,10 +290,11 @@ public:
         current_.c_cc[VEOL2] = nl2;
         current_.c_lflag |= ICANON;
         tcsetattr(device_, TCSANOW, &current_);
-#ifdef  _PC_MAX_CANON
-        bufsize_ = fpathconf(device_, _PC_MAX_CANON);
+
+#ifdef  _PC_MAX_INPUT
+        return size_t(fpathconf(device_, _PC_MAX_INPUT));
 #else
-        bufsize_ = MAX_CANON
+        return size_t(MAX_INPUT);
 #endif
     }
 
@@ -378,12 +313,7 @@ public:
         current_.c_iflag |= original_.c_iflag & (IXON | IXANY | IXOFF);
 
         tcsetattr(device_, TCSANOW, &current_);
-        bufsize_ = 0;
         timed_ = 0;
-    }
-
-    auto size() const {
-        return bufsize_;
     }
 
     void flush() const {
@@ -581,7 +511,6 @@ public:
 
 private:
     int device_{-1};
-    size_t bufsize_{0};
     uint8_t timed_{0};
     struct termios original_{}, current_{};
 };
