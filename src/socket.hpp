@@ -474,20 +474,20 @@ public:
     auto send(const void *from, socklen_t size, int flags = 0) const noexcept -> socklen_t {
         if(so_ == -1)
             return 0;
-        return ::send(so_, from, size, flags);
+        return ::send(so_, static_cast<const char *>(from), size, flags);
     }
 
     auto recv(void *to, socklen_t size, int flags = 0) const noexcept -> socklen_t {
         if(so_ == -1)
             return 0;
-        return ::recv(so_, to, size, flags);
+        return ::recv(so_, static_cast<char *>(to), size, flags);
     }
 
     auto send(const void *from, socklen_t size, const address_t addr, int flags = 0) const noexcept -> socklen_t {
         if(so_ == -1)
             return 0;
 
-        return ::sendto(so_, from, size, flags, addr.data(), addr.size());
+        return ::sendto(so_, static_cast<const char *>(from), size, flags, addr.data(), addr.size());
     }
 
     auto recv(void *to, socklen_t size, address_t& addr, int flags = 0) const noexcept -> socklen_t {
@@ -495,7 +495,7 @@ public:
         if(so_ == -1)
             return 0;
 
-        return ::recvfrom(so_, to, size, flags, addr.data(), &len);
+        return ::recvfrom(so_, static_cast<char *>(to), size, flags, addr.data(), &len);
     }
 
 #ifdef USE_CLOSESOCKET

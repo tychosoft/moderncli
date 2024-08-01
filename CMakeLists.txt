@@ -9,7 +9,7 @@
 # warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 cmake_minimum_required(VERSION 3.16.0)
-project(ModernCLI VERSION 0.9.1 LANGUAGES CXX)
+project(ModernCLI VERSION 0.9.2 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -64,9 +64,9 @@ add_test(NAME test-output COMMAND test_output)
 add_executable(test_socket test/socket.cpp src/socket.hpp)
 add_test(NAME test-socket COMMAND test_socket)
 if(WIN32)
-    target_link_libraries(test_socket PRIVATE Threads::Threads fmt::fmt ws2_32)
+    target_link_libraries(test_socket PRIVATE fmt::fmt Threads::Threads ws2_32)
 else()
-    target_link_libraries(test_socket PRIVATE Threads::Threads fmt::fmt)
+    target_link_libraries(test_socket PRIVATE fmt::fmt Threads::Threads)
 endif()
 
 add_executable(test_process test/process.cpp src/process.hpp)
@@ -89,6 +89,7 @@ add_test(NAME test-cipher COMMAND test_cipher)
 
 add_executable(test_serial test/serial.cpp src/serial.hpp)
 add_test(NAME test-serial COMMAND test_serial)
+target_link_libraries(test_serial PRIVATE fmt::fmt)
 
 # Extras...
 add_custom_target(header-files SOURCES ${headers})

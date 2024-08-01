@@ -9,8 +9,8 @@
 #include <mutex>
 #include <cstdlib>
 
-#include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <fmt/format.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>

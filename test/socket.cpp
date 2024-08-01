@@ -3,7 +3,6 @@
 
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
-#include "print.hpp"        // IWYU pragma: keep
 #include "templates.hpp"
 #include "socket.hpp"
 

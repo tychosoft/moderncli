@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.9.2
+- Enhanced i/o templates
+- Print output to serial device
+- Improve serial format parsing
+- Windows serial support
+- Remove non-portable serial features
+
 ## v0.9.1
 - Add checksum and crc support
 - Serial timed support extended
