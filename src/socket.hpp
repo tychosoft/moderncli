@@ -549,17 +549,31 @@ private:
 using socket_t = socket;
 
 template<typename T>
-inline auto send(const socket_t& sock, const T& msg) {
+inline auto send(const socket_t& sock, const T& msg, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
-    return sock.send(&msg, sizeof(msg));
+    return sock.send(&msg, sizeof(msg), flags);
 }
 
 template<typename T>
-inline auto recv(const socket_t& sock, T& msg) {
+inline auto recv(const socket_t& sock, T& msg, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
-    return sock.recv(&msg, sizeof(msg));
+    return sock.recv(&msg, sizeof(msg), flags);
+}
+
+template<typename T>
+inline auto send(const socket_t& sock, const T& msg, const address_t& addr, int flags = 0) {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
+    return sock.send(&msg, sizeof(msg), addr, flags);
+}
+
+template<typename T>
+inline auto recv(const socket_t& sock, T& msg, address_t& addr, int flags = 0) {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
+    return sock.recv(&msg, sizeof(msg), addr, flags);
 }
 } // end namespace
 
