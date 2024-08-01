@@ -3,6 +3,7 @@
 
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
+#include "print.hpp"        // IWYU pragma: keep
 #include "serial.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {

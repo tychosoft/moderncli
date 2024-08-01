@@ -854,5 +854,18 @@ inline auto crc32(const uint8_t *data, size_t size) {
 
     return crc ^ 0xffffffff;
 }
+
+#ifdef  TYCHO_PRINT_HPP_
+template<class... Args>
+void print(serial_t& sio, std::string_view fmt, const Args&... args) {
+    sio.put(fmt::format(fmt, args...));
+}
+
+template<class... Args>
+void println(serial_t& sio, std::string_view fmt, const Args&... args) {
+    putline(sio, fmt::format(fmt, args...));
+}
+#endif
+
 } // end namespace
 #endif
