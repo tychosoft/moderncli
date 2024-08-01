@@ -471,26 +471,26 @@ public:
         return addr;
     }
 
-    auto send(const char *from, socklen_t size, int flags = 0) const noexcept -> socklen_t {
+    auto send(const void *from, socklen_t size, int flags = 0) const noexcept -> socklen_t {
         if(so_ == -1)
             return 0;
         return ::send(so_, from, size, flags);
     }
 
-    auto recv(char *to, socklen_t size, int flags = 0) const noexcept -> socklen_t {
+    auto recv(void *to, socklen_t size, int flags = 0) const noexcept -> socklen_t {
         if(so_ == -1)
             return 0;
         return ::recv(so_, to, size, flags);
     }
 
-    auto send(const char *from, socklen_t size, const address_t addr, int flags = 0) const noexcept -> socklen_t {
+    auto send(const void *from, socklen_t size, const address_t addr, int flags = 0) const noexcept -> socklen_t {
         if(so_ == -1)
             return 0;
 
         return ::sendto(so_, from, size, flags, addr.data(), addr.size());
     }
 
-    auto recv(char *to, socklen_t size, address_t& addr, int flags = 0) const noexcept -> socklen_t {
+    auto recv(void *to, socklen_t size, address_t& addr, int flags = 0) const noexcept -> socklen_t {
         auto len = address_t::maxsize();
         if(so_ == -1)
             return 0;
@@ -547,6 +547,20 @@ private:
 #endif
 };
 using socket_t = socket;
+
+template<typename T>
+inline auto send(const socket_t& sock, const T& msg) {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
+    return sock.send(&msg, sizeof(msg));
+}
+
+template<typename T>
+inline auto recv(const socket_t& sock, T& msg) {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
+    return sock.recv(&msg, sizeof(msg));
+}
 } // end namespace
 
 #ifdef  TYCHO_PRINT_HPP_

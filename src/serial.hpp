@@ -142,7 +142,7 @@ public:
         return EOF;
     }
 
-    auto get(char *data, size_t size, bool echo = false) const {
+    auto get(void *data, size_t size, bool echo = false) const {
         if(!data || !size)
             return size_t(0U);
 
@@ -172,7 +172,7 @@ public:
         return true;
     }
 
-    auto put(const char *data, size_t size) const -> size_t {
+    auto put(const void *data, size_t size) const -> size_t {
         if(!size || device_ < 0)
             return size_t(0U);
 
@@ -184,7 +184,7 @@ public:
         return size_t(0U);
     }
 
-    auto put(const std::string_view msg) const {
+    auto put(const std::string_view& msg) const {
         return put(msg.data(), msg.size());
     }
 
@@ -554,7 +554,7 @@ public:
         return EOF;
     }
 
-    auto get(char *data, size_t size, bool echo = false) const {
+    auto get(void *data, size_t size, bool echo = false) const {
         if(!data || !size)
              return size_t(0U);
         DWORD count{0};
@@ -567,7 +567,7 @@ public:
         return size_t(0U);
     }
 
-    auto put(const char *data, size_t size) const -> size_t {
+    auto put(const void *data, size_t size) const -> size_t {
         if(!size || device_ == invalid_)
             return size_t(0U);
 
@@ -595,7 +595,7 @@ public:
         return true;
     }
 
-    auto put(const std::string_view msg) const {
+    auto put(const std::string_view& msg) const {
         return put(msg.data(), msg.size());
     }
 
@@ -762,6 +762,20 @@ private:
 };
 #endif
 
+template<typename T>
+inline auto send(const serial_t& sio, const T& msg) {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
+    return sio.put(&msg, sizeof(msg));
+}
+
+template<typename T>
+inline auto recv(const serial_t& sio, T& msg) {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
+    return sio.get(&msg, sizeof(msg));
+}
+
 inline auto getline(const serial_t& sio, char *buf, size_t max, int eol = '\n', bool echo = false, int echocode = EOF, const char *ignore = nullptr) {
     *buf = 0;
     --max;
@@ -866,6 +880,5 @@ void println(serial_t& sio, std::string_view fmt, const Args&... args) {
     putline(sio, fmt::format(fmt, args...));
 }
 #endif
-
 } // end namespace
 #endif
