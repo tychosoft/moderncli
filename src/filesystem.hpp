@@ -82,6 +82,8 @@ namespace fsys {
 using namespace std::filesystem;
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+enum mode {rd = _O_RDONLY, wr = _O_WRONLY, app = _O_APPEND, rw = _O_RDWR, make = _O_CREAT, empty = _O_TRUNC};
+
 template <typename T>
 inline auto read(int fd, T& data) noexcept {    // FlawFinder: ignore
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
@@ -106,8 +108,8 @@ inline auto append(int fd) noexcept {
     return _lseek(fd, 0, SEEK_END);
 }
 
-inline auto open(const fsys::path& path, int flags) noexcept {  // FlawFinder: ignore
-    return _open(path.u8string().c_str(), flags);
+inline auto open(const fsys::path& path, mode flags = mode::rw) noexcept {  // FlawFinder: ignore
+    return _open(path.u8string().c_str(), flags | _O_BINARY, 0664);
 }
 
 inline auto close(int fd) noexcept {
@@ -134,6 +136,8 @@ inline auto native_handle(std::FILE *fp) {
     return native_handle(_fileno(fp));
 }
 #else
+enum mode {rd = O_RDONLY, wr = O_WRONLY, app = O_APPEND, rw = O_RDWR, make = O_CREAT, empty = O_TRUNC};
+
 template <typename T>
 inline auto read(int fd, T& data) noexcept {    // FlawFinder: ignore
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
@@ -158,8 +162,8 @@ inline auto append(int fd) noexcept {
     return ::lseek(fd, 0, SEEK_END);
 }
 
-inline auto open(const fsys::path& path, int flags) noexcept {  // FlawFinder: ignore
-    return ::open(path.u8string().c_str(), flags);  // FlawFinder: ignore
+inline auto open(const fsys::path& path, mode flags = mode::rw) noexcept {   // FlawFinder: ignore
+    return ::open(path.u8string().c_str(), flags, 0664); // FlawFinder: ignore
 }
 
 inline auto close(int fd) noexcept {
@@ -188,10 +192,19 @@ public:
     fd_t() noexcept = default;
     fd_t(const fd_t&) = delete;
     auto operator=(const fd_t&) noexcept -> auto& = delete;
-    explicit fd_t(int fd) noexcept : fd_(fd) {};
+
+    explicit fd_t(int fd) noexcept : fd_(fd) {}
+
+    explicit fd_t(const fsys::path& path, mode flags = mode::rw) noexcept :
+    fd_(fsys::open(path, flags)) {} // FlawFinder: ignore
 
     fd_t(fd_t&& other) noexcept : fd_(other.fd_) {
         other.fd_ = -1;
+    }
+
+    ~fd_t() {
+        if(fd_ != -1)
+            fsys::close(fd_);
     }
 
     auto operator=(fd_t&& other) noexcept -> auto& {
@@ -222,10 +235,38 @@ public:
         return fd_ == -1;
     }
 
-    ~fd_t() {
-        if(fd_ != -1)
-            fsys::close(fd_);
+    auto seek(off_t pos) const noexcept {
+        return fd_ == -1 ? -EBADF : fsys::seek(fd_, pos);
     }
+
+    auto tell() const noexcept {
+        return fd_ == -1 ? -EBADF : fsys::tell(fd_);
+    }
+
+    auto append() const noexcept {
+        return fd_ == -1 ? -EBADF : fsys::append(fd_);
+    }
+
+    auto read(void *buf, size_t len) const noexcept { // FlawFinder: ignore
+        return fd_ == -1 ? -EBADF : fsys::read(fd_, buf, len);  // FlawFinder: ignore
+    }
+
+    auto write(const void *buf, size_t len) const noexcept {
+        return fd_ == -1 ? -EBADF : fsys::write(fd_, buf, len);
+    }
+
+    template <typename T>
+    auto read(T& data) const noexcept {       // FlawFinder: ignore
+        static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+        return fd_ == -1 ? -EBADF : fsys::read(fd_, &data, sizeof(data));   // FlawFinder: ignore
+    }
+
+    template <typename T>
+    auto write(const T& data) const noexcept {
+        static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+        return fd_ == -1 ? -EBADF : fsys::write(fd_, &data, sizeof(data));
+    }
+
 private:
     int fd_{-1};
 
