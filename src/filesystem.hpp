@@ -187,9 +187,18 @@ class fd_t final {
 public:
     fd_t() noexcept = default;
     fd_t(const fd_t&) = delete;
-    auto operator=(const fd_t&) -> auto& = delete;
-
+    auto operator=(const fd_t&) noexcept -> auto& = delete;
     explicit fd_t(int fd) noexcept : fd_(fd) {};
+
+    fd_t(fd_t&& other) noexcept : fd_(other.fd_) {
+        other.fd_ = -1;
+    }
+
+    auto operator=(fd_t&& other) noexcept -> auto& {
+        release();
+        fd_ = other.fd_;
+        return *this;
+    }
 
     auto operator=(int fd) noexcept -> fd_t& {
         release();
