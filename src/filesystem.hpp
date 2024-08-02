@@ -235,6 +235,12 @@ public:
         return fd_ == -1;
     }
 
+    // FlawFinder: ignore
+    void open(const fsys::path& path, mode flags = mode::rw) noexcept {
+        release();
+        fd_ = fsys::open(path, flags);  // FlawFinder: ignore
+    }
+
     auto seek(off_t pos) const noexcept {
         return fd_ == -1 ? -EBADF : fsys::seek(fd_, pos);
     }
@@ -270,7 +276,7 @@ public:
 private:
     int fd_{-1};
 
-    void release() {
+    void release() noexcept {
         if(fd_ != -1)
             fsys::close(fd_);
         fd_ = -1;
