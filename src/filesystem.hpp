@@ -83,7 +83,7 @@ using namespace std::filesystem;
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 template <typename T>
-inline auto read(int fd, T& data) noexcept {
+inline auto read(int fd, T& data) noexcept {    // FlawFinder: ignore
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     return _read(fd, &data, sizeof(data));
 }
@@ -106,7 +106,7 @@ inline auto append(int fd) noexcept {
     return _lseek(fd, 0, SEEK_END);
 }
 
-inline auto open(const fsys::path& path, int flags) noexcept {
+inline auto open(const fsys::path& path, int flags) noexcept {  // FlawFinder: ignore
     return _open(path.u8string().c_str(), flags);
 }
 
@@ -126,9 +126,9 @@ inline auto native_handle(std::FILE *fp) {
 }
 #else
 template <typename T>
-inline auto read(int fd, T& data) noexcept {
+inline auto read(int fd, T& data) noexcept {    // FlawFinder: ignore
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-    return ::read(fd, &data, sizeof(data));
+    return ::read(fd, &data, sizeof(data)); // FlawFinder: ignore
 }
 
 template <typename T>
@@ -149,8 +149,8 @@ inline auto append(int fd) noexcept {
     return ::lseek(fd, 0, SEEK_END);
 }
 
-inline auto open(const fsys::path& path, int flags) noexcept {
-    return ::open(path.u8string().c_str(), flags);
+inline auto open(const fsys::path& path, int flags) noexcept {  // FlawFinder: ignore
+    return ::open(path.u8string().c_str(), flags);  // FlawFinder: ignore
 }
 
 inline auto close(int fd) noexcept {
