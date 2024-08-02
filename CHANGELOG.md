@@ -6,6 +6,7 @@
 - Improve serial format parsing
 - Windows serial support
 - Remove non-portable serial features
+- Mini cross-platform posix i/o in fsys
 
 ## v0.9.1
 - Add checksum and crc support

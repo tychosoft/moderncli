@@ -82,6 +82,38 @@ namespace fsys {
 using namespace std::filesystem;
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+template <typename T>
+inline auto read(int fd, T& data) noexcept {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    return _read(fd, &data, sizeof(data));
+}
+
+template <typename T>
+inline auto write(int fd, const T& data) noexcept {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    return _write(fd, &data, sizeof(data));
+}
+
+inline auto seek(int fd, off_t pos) noexcept {
+    return _lseek(fd, pos, SEEK_SET);
+}
+
+inline auto tell(int fd) noexcept {
+    return _lseek(fd, 0, SEEK_CUR);
+}
+
+inline auto append(int fd) noexcept {
+    return _lseek(fd, 0, SEEK_END);
+}
+
+inline auto open(const fsys::path& path, int flags) noexcept {
+    return _open(path.u8string().c_str(), flags);
+}
+
+inline auto close(int fd) noexcept {
+    return _close(fd);
+}
+
 inline auto native_handle(int fd) {
     auto handle = _get_osfhandle(fd);
     if(handle == -1)
@@ -93,6 +125,38 @@ inline auto native_handle(std::FILE *fp) {
     return native_handle(_fileno(fp));
 }
 #else
+template <typename T>
+inline auto read(int fd, T& data) noexcept {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    return ::read(fd, &data, sizeof(data));
+}
+
+template <typename T>
+inline auto write(int fd, const T& data) noexcept {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    return ::write(fd, &data, sizeof(data));
+}
+
+inline auto seek(int fd, off_t pos) noexcept {
+    return ::lseek(fd, pos, SEEK_SET);
+}
+
+inline auto tell(int fd) noexcept {
+    return ::lseek(fd, 0, SEEK_CUR);
+}
+
+inline auto append(int fd) noexcept {
+    return ::lseek(fd, 0, SEEK_END);
+}
+
+inline auto open(const fsys::path& path, int flags) noexcept {
+    return ::open(path.u8string().c_str(), flags);
+}
+
+inline auto close(int fd) noexcept {
+    return ::close(fd);
+}
+
 inline auto native_handle(int fd) {
     return fd;
 }
