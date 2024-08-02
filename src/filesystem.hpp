@@ -114,6 +114,15 @@ inline auto close(int fd) noexcept {
     return _close(fd);
 }
 
+inline auto read(int fd, void *buf, size_t len) {   // FlawFinder: ignore
+    return _read(fd, buf, len);
+}
+
+inline auto write(int fd, const void *buf, size_t len) {
+    return _write(fd, buf, len);
+}
+
+
 inline auto native_handle(int fd) {
     auto handle = _get_osfhandle(fd);
     if(handle == -1)
@@ -157,6 +166,14 @@ inline auto close(int fd) noexcept {
     return ::close(fd);
 }
 
+inline auto read(int fd, void *buf, size_t len) { // FlawFinder: ignore
+    return ::read(fd, buf, len);    // FlawFinder: ignore
+}
+
+inline auto write(int fd, const void *buf, size_t len) {
+    return ::write(fd, buf, len);
+}
+
 inline auto native_handle(int fd) {
     return fd;
 }
@@ -165,6 +182,50 @@ inline auto native_handle(std::FILE *fp) {
     return fileno(fp);
 }
 #endif
+
+class fd_t final {
+public:
+    fd_t() noexcept = default;
+    fd_t(const fd_t&) = delete;
+    auto operator=(const fd_t&) -> auto& = delete;
+
+    explicit fd_t(int fd) noexcept : fd_(fd) {};
+
+    auto operator=(int fd) noexcept -> fd_t& {
+        release();
+        fd_ = fd;
+        return *this;
+    }
+
+    auto operator*() const noexcept {
+        return fd_;
+    }
+
+    operator int() const noexcept {
+        return fd_;
+    }
+
+    operator bool() const noexcept {
+        return fd_ != -1;
+    }
+
+    auto operator!() const noexcept {
+        return fd_ == -1;
+    }
+
+    ~fd_t() {
+        if(fd_ != -1)
+            fsys::close(fd_);
+    }
+private:
+    int fd_{-1};
+
+    void release() {
+        if(fd_ != -1)
+            fsys::close(fd_);
+        fd_ = -1;
+    }
+};
 } // end fsys namespace
 
 namespace tycho {
