@@ -20,7 +20,7 @@
 #include <unistd.h>
 #else
 #include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
+using ssize_t = SSIZE_T;
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
@@ -35,7 +35,7 @@ extern "C" {
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-auto getline_w32(char **lp, size_t *size, FILE *fp) -> ssize_t {
+inline auto getline_w32(char **lp, size_t *size, FILE *fp) -> ssize_t {
     size_t pos{0};
     int c{EOF};
 

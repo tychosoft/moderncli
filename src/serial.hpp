@@ -31,7 +31,6 @@
 #include <string_view>
 #include <cstring>
 #include <cstdint>
-#include <cctype>
 
 namespace tycho {
 using crc16_t = uint16_t;

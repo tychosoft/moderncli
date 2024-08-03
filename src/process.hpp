@@ -794,5 +794,4 @@ inline auto shell(const std::string& cmd) noexcept {
     return system(cmd.c_str());
 }
 } // end namespace
-
 #endif
