@@ -520,7 +520,11 @@ public:
             nullptr));
 
         if(device_ != invalid_) {
-            GetCommTimeouts(device_, &timeouts_);
+            if(GetCommTimeouts(device_, &timeouts_) == FALSE) {
+                CloseHandle(device_);
+                device_ = invalid_;
+                return;
+            }
             saved_.DCBlength = active_.DCBlength = sizeof(DCB);
             GetCommState(device_, &saved_);
             GetCommState(device_, &active_);
