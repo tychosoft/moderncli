@@ -1,0 +1,19 @@
+stages:
+  - test
+
+merge:
+  image: alpine
+  stage: test
+  script:
+    - apk add alpine-sdk cmake openssl-dev fmt-dev
+    - CXXFLAGS=-Werror cmake -DCMAKE_BUILD_TYPE=Debug .
+    - make | tee make.log
+    - CTEST_OUTPUT_ON_FAILURE=1 ctest | tee test.log
+  only:
+    - merge_requests
+  artifacts:
+    expire_in: 1 week
+    when: always
+    paths:
+      - ./*.log
+
