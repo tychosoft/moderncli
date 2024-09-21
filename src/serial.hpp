@@ -799,6 +799,7 @@ public:
         else
             active_.StopBits = TWOSTOPBITS;
         active_.ByteSize = bits;
+        active_.fBinary = 1;
         return SetCommState(device_, &active_) == TRUE;
     }
 
