@@ -203,7 +203,7 @@ private:
 #define EAI_SYSTEM EAI_NODATA + 2001        // NOLINT
 #endif
 
-class socket {
+class socket_t {
 public:
     enum class error : int {
         success = 0,
@@ -245,6 +245,8 @@ public:
         noconnection = ENOTCONN,
         invalid_flags = EOPNOTSUPP,
         disconnect = EPIPE,
+        toomany = EMFILE,
+        exhausted = ENFILE,
     };
 
     enum class flag : int {
@@ -435,27 +437,27 @@ public:
         mutable error err_{error::success};
     };
 
-    socket() = default;
-    socket(const socket& from) = delete;
-    auto operator=(const socket& from) = delete;
+    socket_t() = default;
+    socket_t(const socket_t& from) = delete;
+    auto operator=(const socket_t& from) = delete;
 
-    socket(socket&& from) noexcept : so_(from.so_), err_(from.err_) {
+    socket_t(socket_t&& from) noexcept : so_(from.so_), err_(from.err_) {
         from.so_ = -1;
     }
 
-    explicit socket(const socket::service& list) noexcept {
+    explicit socket_t(const socket_t::service& list) noexcept {
         bind(list);
     }
 
-    explicit socket(const address_t& addr, int type = 0, int protocol = 0) noexcept {
+    explicit socket_t(const address_t& addr, int type = 0, int protocol = 0) noexcept {
         bind(addr, type, protocol);
     }
 
-    ~socket() {
+    ~socket_t() {
         release();
     }
 
-    auto operator=(socket&& from) noexcept -> auto& {
+    auto operator=(socket_t&& from) noexcept -> auto& {
         release();
         so_ = from.so_;
         err_ = from.err_;
@@ -463,7 +465,7 @@ public:
         return *this;
     }
 
-    auto operator=(const socket::service& to) noexcept -> auto& {
+    auto operator=(const socket_t::service& to) noexcept -> auto& {
         connect(to);
         return *this;
     }
@@ -503,7 +505,7 @@ public:
                 release();
     }
 
-    void bind(const socket::service& list) noexcept {
+    void bind(const socket_t::service& list) noexcept {
         auto addr = *list;
         release();
         while(addr) {
@@ -524,7 +526,7 @@ public:
         return -1;
     }
 
-    void connect(const socket::service& list) noexcept {
+    void connect(const socket_t::service& list) noexcept {
         auto addr = *list;
         release();
         while(addr) {
@@ -544,7 +546,7 @@ public:
             return -1;
 
         struct pollfd pfd{static_cast<SOCKET>(so_), events, 0};
-        auto result = set_error(socket::poll(&pfd, 1, timeout));
+        auto result = set_error(socket_t::poll(&pfd, 1, timeout));
         if(result <= 0)
             return result;
 
@@ -557,7 +559,7 @@ public:
     }
 
     auto accept() const noexcept {
-        socket from{};
+        socket_t from{};
         if(so_ != -1) {
             from.so_ = make_socket(::accept(so_, nullptr, nullptr));
             from.set_error(from.so_);
@@ -681,39 +683,41 @@ private:
     }
 #endif
 };
-using socket_t = socket;
-using service_t = socket::service;
+using Socket = socket_t;
+using service_t = socket_t::service;
+using socket_flags = socket_t::flag;
+using socket_error = socket_t::error;
 
 template<typename T>
-inline auto send(const socket_t& sock, const T& msg, socket::flag flags = socket::flag::none) {
+inline auto send(const socket_t& sock, const T& msg, socket_flags flags = socket_flags::none) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.send(&msg, sizeof(msg), flags);
 }
 
 template<typename T>
-inline auto recv(const socket_t& sock, T& msg, socket::flag flags = socket::flag::none) {
+inline auto recv(const socket_t& sock, T& msg, socket_flags flags = socket_flags::none) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.recv(&msg, sizeof(msg), flags);
 }
 
 template<typename T>
-inline auto send(const socket_t& sock, const T& msg, const address_t& addr, socket::flag flags = socket::flag::none) {
+inline auto send(const socket_t& sock, const T& msg, const address_t& addr, socket_flags flags = socket_flags::none) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.send(&msg, sizeof(msg), addr, flags);
 }
 
 template<typename T>
-inline auto recv(const socket_t& sock, T& msg, address_t& addr, socket::flag flags = socket::flag::none) {
+inline auto recv(const socket_t& sock, T& msg, address_t& addr, socket_flags flags = socket_flags::none) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.recv(&msg, sizeof(msg), addr, flags);
 }
 
-auto constexpr operator|(socket::flag lhs, socket::flag rhs) {
-    return static_cast<socket::flag>(int(lhs) | int(rhs));
+auto constexpr operator|(socket_flags lhs, socket_flags rhs) {
+    return static_cast<socket_flags>(int(lhs) | int(rhs));
 }
 } // end namespace
 

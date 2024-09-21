@@ -7,13 +7,13 @@
 #include "socket.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
-    assert(tycho::socket::startup());
+    assert(Socket::startup());
     const socket_t unset;
     address_t addr;
     uint32_t data = 0;
     assert(!is(unset));
-    assert(recv(unset, data, addr, socket::flag::peek | socket::flag::none) == 0);
-    tycho::socket::shutdown();
+    assert(recv(unset, data, addr, socket_flags::peek | socket_flags::none) == 0);
+    Socket::shutdown();
 }
 
 

@@ -38,6 +38,29 @@ using crc32_t = uint32_t;
 
 class bad_serial final : public std::exception {
 public:
+    enum class error : int {
+        success = 0,
+        error = EIO,
+        access = EACCES,
+        perms = EPERM,
+        busy = EAGAIN,
+        badfile = EBADF,
+        fault = EFAULT,
+        interupted = EINTR,
+        invalid = EINVAL,
+        timeout = ETIMEDOUT,
+        disconnect = EPIPE,
+        nofile = EISDIR,
+        nodev = ENODEV,
+        nomem = ENOMEM,
+        loop = ELOOP,
+        toomany = EMFILE,
+        exhausted = ENFILE,
+        badpath = ENAMETOOLONG,
+        nodir = ENOTDIR,
+        blocked = EWOULDBLOCK,
+    };
+
     auto operator=(const bad_serial&) -> auto& = delete;
 
     auto err() const {
@@ -51,11 +74,14 @@ public:
 private:
     friend class serial_t;
 
-    bad_serial() : err_(errno) {}
+    bad_serial() : err_(bad_serial::error(errno)) {}
     bad_serial(const bad_serial& other) = default;
+    explicit bad_serial(bad_serial::error code) : err_(code) {}
 
-    int err_{-1};
+    error err_{bad_serial::error::success};
 };
+
+using serial_error = bad_serial::error;
 
 #if __has_include(<termios.h>)
 class serial_t final {
@@ -67,13 +93,13 @@ public:
     }
 
     serial_t(const serial_t& from) :
-    timed_(from.timed_), original_(from.original_), current_(from.current_) {
+    timed_(from.timed_), original_(from.original_), current_(from.current_), err_(from.err_) {
         if(from.device_ > -1)
             device_ = ::dup(from.device_);
     }
 
     serial_t(serial_t&& from) noexcept :
-    device_(from.device_), timed_(from.timed_), original_(from.original_), current_(from.current_) {
+    device_(from.device_), timed_(from.timed_), original_(from.original_), current_(from.current_), err_(from.err_) {
         from.device_ = -1;
     }
 
@@ -81,19 +107,25 @@ public:
         close();
     }
 
-    auto operator!() const {
+    auto operator!() const noexcept {
         return device_ < 0;
     }
 
-    operator bool() const {
+    operator bool() const noexcept {
         return device_ > -1;
+    }
+
+    auto err() const noexcept {
+        return err_;
     }
 
     void open(const std::string& fname) {   // FlawFinder: safe
         close();
         device_ = ::open(fname.c_str(), O_RDWR | O_NDELAY); // FlawFinder: safe
-        if(device_ < 0)
+        if(device_ < 0) {
+            err_ = bad_serial::error(errno);
             return;
+        }
 
         if(!isatty(device_)) {
             ::close(device_);
@@ -122,14 +154,16 @@ public:
         }
         device_ = -1;
         timed_ = 0;
+        err_ = bad_serial::error::success;
     }
 
     auto get(bool echo = false, int echocode = EOF, int eol = EOF) const {
         if(device_ > -1) {
             char buf{0};
+            err_ = bad_serial::error::success;
             auto result = ::read(device_, &buf, 1); // FlawFinder: ignore
             if(result < 0)
-                throw bad_serial();
+                throw bad_serial(err_ = bad_serial::error(-result));
             if(result < 1)
                 return EOF;
             if(echo && echocode != EOF && (eol == EOF || buf != eol))
@@ -145,9 +179,10 @@ public:
         if(!data || !size)
             return size_t(0U);
 
+        err_ = bad_serial::error::success;
         auto count = ::read(device_, data, size);   // FlawFinder: safe
         if(count < 0)
-            throw bad_serial();
+            throw bad_serial(err_ = bad_serial::error(-count));
         if(count > 0 && echo)
             put(data, count);
         if(count > 0)
@@ -163,9 +198,10 @@ public:
             return true;
 
         char buf = static_cast<char>(code);
+        err_ = bad_serial::error::success;
         auto result = ::write(device_, &buf, 1);
         if(result < 0)
-            throw bad_serial();
+            throw bad_serial(err_ = bad_serial::error(-result));
         if(result < 1)
             return false;
         return true;
@@ -175,11 +211,12 @@ public:
         if(!size || device_ < 0)
             return size_t(0U);
 
+        err_ = bad_serial::error::success;
         auto count = ::write(device_, data, size);
         if(count > 0)
             return size_t(count);
         if(count < 0)
-            throw bad_serial();
+            throw bad_serial(err_ = bad_serial::error(-count));
         return size_t(0U);
     }
 
@@ -454,6 +491,7 @@ private:
     int device_{-1};
     uint8_t timed_{0};
     struct termios original_{}, current_{};
+    mutable bad_serial::error err_{bad_serial::error::success};
 
     void reset() {
         if(device_ < 0)
@@ -483,7 +521,7 @@ public:
     }
 
     serial_t(const serial_t& from) :
-    timeouts_(from.timeouts_), saved_(from.saved_), active_(from.active_) {
+    timeouts_(from.timeouts_), saved_(from.saved_), active_(from.active_), err_(from.err_) {
         if(from.device_ != invalid_) {
             auto pid = GetCurrentProcess();
             HANDLE handle{INVALID_HANDLE_VALUE};
@@ -493,7 +531,7 @@ public:
     }
 
     serial_t(serial_t&& from) noexcept :
-    device_(from.device_), timed_(from.timed_), saved_(from.saved_), active_(from.active_) {
+    device_(from.device_), timed_(from.timed_), saved_(from.saved_), active_(from.active_), err_(from.err_) {
         from.device_ = invalid_;
     }
 
@@ -507,6 +545,10 @@ public:
 
     operator bool() const {
         return device_ != invalid_;
+    }
+
+    auto err() const {
+        return err_;
     }
 
     void open(const std::string& fname) { // FlawFinder: safe
@@ -529,6 +571,7 @@ public:
             GetCommState(device_, &saved_);
             GetCommState(device_, &active_);
         }
+        err_ = bad_serial::error(errno);
     }
 
     void close() {
@@ -538,14 +581,18 @@ public:
             CloseHandle(device_);
             device_ = invalid_;
         }
+        err_ = bad_serial::error::success;
     }
 
     auto get(bool echo = false, int echocode = EOF, int eol = EOF) const {
         if(device_ != invalid_) {
             char buf{0};
             DWORD count{0};
-            if(ReadFile(device_, &buf, DWORD(1), &count, nullptr) == FALSE)
-                throw bad_serial();
+            err_ = bad_serial::error::success;
+            if(ReadFile(device_, &buf, DWORD(1), &count, nullptr) == FALSE) {
+                err_ = bad_serial::error(errno);
+                throw bad_serial(err_);
+            }
             if(count < 1)
                 return EOF;
             if(echo && echocode != EOF && (eol == EOF || buf != eol))
@@ -561,8 +608,11 @@ public:
         if(!data || !size)
              return size_t(0U);
         DWORD count{0};
-        if(ReadFile(device_, data, DWORD(size), &count, nullptr) == FALSE)
-            throw bad_serial();
+        err_ = bad_serial::error::success;
+        if(ReadFile(device_, data, DWORD(size), &count, nullptr) == FALSE) {
+            err_ = bad_serial::error(errno);
+            throw bad_serial(err_);
+        }
         if(count > 0 && echo)
             put(data, count);
         if(count > 0)
@@ -575,8 +625,11 @@ public:
             return size_t(0U);
 
         DWORD count{0};
-        if(WriteFile(device_, data, DWORD(size), &count, nullptr) == FALSE)
-            throw bad_serial();
+        err_ = bad_serial::error::success;
+        if(WriteFile(device_, data, DWORD(size), &count, nullptr) == FALSE) {
+            err_ = bad_serial::error(errno);
+            throw bad_serial(err_);
+        }
         if(count > 0)
             return size_t(count);
         return size_t(0U);
@@ -591,8 +644,11 @@ public:
 
         char buf = static_cast<char>(code);
         DWORD count{0};
-        if(WriteFile(device_, &buf, 1, &count, nullptr) == FALSE)
-            throw bad_serial();
+        err_ = bad_serial::error::success;
+        if(WriteFile(device_, &buf, 1, &count, nullptr) == FALSE) {
+            err_ = bad_serial::error(errno);
+            throw bad_serial(err_);
+        }
         if(count < 1)
             return false;
         return true;
@@ -762,6 +818,7 @@ private:
     DCB saved_{0}, active_{0};
     uint8_t timed_{0};
     HINSTANCE device_{invalid_};
+    mutable bad_serial::error err_{bad_serial::error::success};
 };
 #endif
 
