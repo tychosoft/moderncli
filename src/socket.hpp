@@ -13,6 +13,9 @@
 
 #ifndef _MSC_VER
 #include <unistd.h>
+#else
+#include <BaseTsd.h>
+using ssize_t = SSIZE_T;
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
