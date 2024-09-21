@@ -206,7 +206,7 @@ private:
 #define EAI_SYSTEM EAI_NODATA + 2001        // NOLINT
 #endif
 
-class socket_t {
+class Socket {
 public:
     enum class error : int {
         success = 0,
@@ -440,27 +440,27 @@ public:
         mutable error err_{error::success};
     };
 
-    socket_t() = default;
-    socket_t(const socket_t& from) = delete;
-    auto operator=(const socket_t& from) = delete;
+    Socket() = default;
+    Socket(const Socket& from) = delete;
+    auto operator=(const Socket& from) = delete;
 
-    socket_t(socket_t&& from) noexcept : so_(from.so_), err_(from.err_) {
+    Socket(Socket&& from) noexcept : so_(from.so_), err_(from.err_) {
         from.so_ = -1;
     }
 
-    explicit socket_t(const socket_t::service& list) noexcept {
+    explicit Socket(const Socket::service& list) noexcept {
         bind(list);
     }
 
-    explicit socket_t(const address_t& addr, int type = 0, int protocol = 0) noexcept {
+    explicit Socket(const address_t& addr, int type = 0, int protocol = 0) noexcept {
         bind(addr, type, protocol);
     }
 
-    ~socket_t() {
+    ~Socket() {
         release();
     }
 
-    auto operator=(socket_t&& from) noexcept -> auto& {
+    auto operator=(Socket&& from) noexcept -> auto& {
         release();
         so_ = from.so_;
         err_ = from.err_;
@@ -468,7 +468,7 @@ public:
         return *this;
     }
 
-    auto operator=(const socket_t::service& to) noexcept -> auto& {
+    auto operator=(const Socket::service& to) noexcept -> auto& {
         connect(to);
         return *this;
     }
@@ -508,7 +508,7 @@ public:
                 release();
     }
 
-    void bind(const socket_t::service& list) noexcept {
+    void bind(const Socket::service& list) noexcept {
         auto addr = *list;
         release();
         while(addr) {
@@ -529,7 +529,7 @@ public:
         return -1;
     }
 
-    void connect(const socket_t::service& list) noexcept {
+    void connect(const Socket::service& list) noexcept {
         auto addr = *list;
         release();
         while(addr) {
@@ -549,7 +549,7 @@ public:
             return -1;
 
         struct pollfd pfd{static_cast<SOCKET>(so_), events, 0};
-        auto result = set_error(socket_t::poll(&pfd, 1, timeout));
+        auto result = set_error(Socket::poll(&pfd, 1, timeout));
         if(result <= 0)
             return result;
 
@@ -562,7 +562,7 @@ public:
     }
 
     auto accept() const noexcept {
-        socket_t from{};
+        Socket from{};
         if(so_ != -1) {
             from.so_ = make_socket(::accept(so_, nullptr, nullptr));
             from.set_error(from.so_);
@@ -686,10 +686,10 @@ private:
     }
 #endif
 };
-using Socket = socket_t;
-using service_t = socket_t::service;
-using socket_flags = socket_t::flag;
-using socket_error = socket_t::error;
+using socket_t = Socket;
+using service_t = Socket::service;
+using socket_flags = Socket::flag;
+using socket_error = Socket::error;
 
 template<typename T>
 inline auto send(const socket_t& sock, const T& msg, socket_flags flags = socket_flags::none) {
