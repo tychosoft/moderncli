@@ -265,7 +265,7 @@ public:
     }
 
     template <typename Context>
-    constexpr auto format(crypto:key_t const& key, Context& ctx) const {
+    constexpr auto format(crypto::key_t const& key, Context& ctx) const {
         return format_to(ctx.out(), "{}", crypto::to_b64(key));
     }
 };
