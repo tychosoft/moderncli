@@ -7,10 +7,13 @@
 #include "socket.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
+    using raw_t = const struct sockaddr *;
     assert(Socket::startup());
     const socket_t unset;
     address_t addr;
+    raw_t raw = addr;
     uint32_t data = 0;
+    assert(raw == *addr);
     assert(!is(unset));
     assert(recv(unset, data, addr, socket_flags::peek | socket_flags::none) == 0);
     Socket::shutdown();

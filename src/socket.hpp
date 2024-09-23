@@ -49,6 +49,8 @@ using ssize_t = SSIZE_T;
 namespace tycho {
 class address_t final {
 public:
+    static inline const socklen_t maxsize = sizeof(struct sockaddr_storage);
+
     address_t() noexcept {
         memset(&store_, 0, sizeof(store_));
     }
@@ -87,6 +89,10 @@ public:
         return store_.ss_family != 0;
     }
 
+    operator const struct sockaddr *() const noexcept {
+        return reinterpret_cast<const struct sockaddr *>(&store_);
+    }
+
     auto operator!() const noexcept {
         return store_.ss_family == 0;
     }
@@ -97,10 +103,6 @@ public:
 
     auto operator*() noexcept {
         return reinterpret_cast<struct sockaddr *>(&store_);
-    }
-
-    static constexpr auto maxsize() -> socklen_t {
-        return sizeof(struct sockaddr_storage);
     }
 
     auto data() const noexcept {
@@ -124,6 +126,22 @@ public:
 
     auto family() const noexcept {
         return store_.ss_family;
+    }
+
+    auto is(int fam) const noexcept {
+        return store_.ss_family == fam;
+    }
+
+    auto in() const noexcept {
+        return store_.ss_family == AF_INET ? reinterpret_cast<const struct sockaddr_in*>(&store_) : nullptr;
+    }
+
+    auto in6() const noexcept {
+        return store_.ss_family == AF_INET6 ? reinterpret_cast<const struct sockaddr_in6*>(&store_) : nullptr;
+    }
+
+    void assign(const struct sockaddr_storage& from) noexcept {
+        store_ = from;
     }
 
     void set(const std::string& str, uint16_t in_port = 0) noexcept {
@@ -181,8 +199,7 @@ public:
         else
             // FlawFinder: ignore
             memcpy(&store_, addr, size_(addr->sa_family));
-   }
-
+    }
 private:
     static auto size_(int family) noexcept -> socklen_t {
         switch(family) {
@@ -195,7 +212,7 @@ private:
         }
     }
 
-    struct sockaddr_storage store_{};
+    struct sockaddr_storage store_{AF_UNSPEC};
 };
 
 #ifndef EAI_ADDRFAMILY
@@ -572,7 +589,7 @@ public:
 
     auto peer() const noexcept {
         address_t addr;
-        socklen_t len = address_t::maxsize();
+        socklen_t len = address_t::maxsize;
         memset(*addr, 0, sizeof(addr));
         if(so_ != -1)
             set_error(::getpeername(so_, *addr, &len));
@@ -581,7 +598,7 @@ public:
 
     auto local() const noexcept {
         address_t addr;
-        socklen_t len = address_t::maxsize();
+        socklen_t len = address_t::maxsize;
         memset(*addr, 0, sizeof(addr));
         if(so_ != -1)
             set_error(::getsockname(so_, *addr, &len));
@@ -608,7 +625,7 @@ public:
     }
 
     auto recv(void *to, socklen_t size, address_t& addr, flag flags = flag::none) const noexcept -> socklen_t {
-        auto len = address_t::maxsize();
+        auto len = address_t::maxsize;
         if(so_ == -1)
             return 0;
 
