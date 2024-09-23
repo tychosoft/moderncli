@@ -10,8 +10,6 @@
 #include <openssl/hmac.h>
 
 namespace crypto {
-using key_t = std::pair<const uint8_t *, size_t>;
-
 class digest_t final {
 public:
     explicit digest_t(const EVP_MD *md = EVP_sha256()) noexcept : ctx_(EVP_MD_CTX_create()) {
