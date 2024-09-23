@@ -18,7 +18,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     uint8_t msg[8];
     msg[7] = 0;
     assert(crypto::to_b64(txt, sizeof(txt)) == "QUJDRFoxMg==");
-    crypto::from_b64("QUJDRFoxMg==", msg, sizeof(msg));
+    assert(crypto::size_b64("QUJDRFoxMg==") == 7);
+    assert(crypto::from_b64("QUJDRFoxMg==", msg, sizeof(msg)) == 7);
     assert(eq("ABCDZ12", reinterpret_cast<const char *>(msg)));
 }
 

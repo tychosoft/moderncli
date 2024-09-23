@@ -76,18 +76,31 @@ constexpr auto base64_index(char c) {
     return -1;
 }
 
-inline auto from_b64(std::string_view from, uint8_t *to, size_t max) {
-    size_t size = from.size(), pad = 0;
-    while(size > 0) {
-        if(from[size - 1] == '=') {
-            ++pad;
-            --size;
-        }
-        else
-            break;
-    }
+inline auto size_b64(std::string_view from) {
+    auto size = from.size();
+    if(!size)
+        return size_t(0);
 
-    const size_t out = ((size * 6) / 8) - pad;
+    --size;
+    while(size && from[size] == '=')
+        --size;
+    auto out = ((size / 4) * 3) + 3;
+
+    switch(size % 4) {
+    case 0:
+        return out;
+    case 1:
+        return out - 2;
+    case 2:
+        return out - 1;
+    default:
+        return size_t(0);
+    }
+}
+
+inline auto from_b64(std::string_view from, uint8_t *to, size_t max) {
+    auto out = size_b64(from);
+
     if(out > max)
         return size_t(0);
 
@@ -95,13 +108,14 @@ inline auto from_b64(std::string_view from, uint8_t *to, size_t max) {
     size_t bits = 0, count = 0;
 
     for (const auto &ch : from) {
+        if(count >= out)
+            break;
         auto index = base64_index(ch);
         if (index >= 0) {
             val = (val << 6) | static_cast<uint32_t>(index);
             bits += 6;
             if (bits >= 8) {
-                *(to++) = (val >> (bits - 8));
-                ++count;
+                to[count++] = (val >> (bits - 8));
                 bits -= 8;
             }
         }
@@ -160,10 +174,12 @@ public:
     }
 
     explicit random_t(const std::string_view& b64) {
-        from_b64(b64, data_, sizeof(data_));
+        if(from_b64(b64, data_, sizeof(data_)) != sizeof(data_))
+            throw std::runtime_error("key size mismatch");
     }
 
     explicit random_t(const key_t key) {
+        zero(data_);
         if(key.first && key.second && key.second <= (S / 8))
             memcpy(data_, key.first, key.second);   // FlawFinder: ignore
         else
@@ -205,7 +221,8 @@ public:
 
     auto operator=(const std::string_view& b64) -> auto& {
         zero(data_);
-        from_b64(b64, data_, sizeof(data_));
+        if(from_b64(b64, data_, sizeof(data_)) != sizeof(data_))
+            throw std::runtime_error("key size mismatch");
         return *this;
     }
 
