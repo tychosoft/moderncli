@@ -152,49 +152,6 @@ inline auto to_b64(const key_t& key) {
     return to_b64(key.first, key.second);
 }
 
-class Key {
-public:
-    virtual ~Key() = default;
-
-    virtual auto data() const noexcept -> const uint8_t * = 0;
-    virtual auto size() const noexcept -> size_t = 0;
-
-    virtual auto bits() const noexcept -> size_t {
-        return size() * 8;
-    }
-
-    virtual auto cipher() const noexcept -> const EVP_CIPHER *{
-        return nullptr;
-    }
-
-    auto operator==(const Key& other) const noexcept {
-        if(other.size() != size())
-            return false;
-        return memcmp(data(), other.data(), size()) == 0;
-    }
-
-    auto operator!=(const Key& other) const noexcept {
-        if(other.size() != size())
-            return true;
-        return memcmp(data(), other.data(), size()) != 0;
-    }
-
-    operator bool() const noexcept {
-        return size() > 0;
-    }
-
-    auto operator!() const noexcept {
-        return size() == 0;
-    }
-
-    auto to_string() const {
-        return to_b64(data(), size());
-    }
-
-protected:
-    Key() = default;
-};
-
 template <size_t S>
 class random_t final {
 public:
