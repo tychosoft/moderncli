@@ -11,6 +11,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(key1.bits() == 512);
     assert(key1.size() == 64);
     assert(key1 != key2);
+    const crypto::key_t raw = key1;
+    assert(raw.second == 64);
 
     const uint8_t txt[7] = {'A', 'B', 'C', 'D', 'Z', '1', '2'};
     uint8_t msg[8];

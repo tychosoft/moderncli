@@ -140,8 +140,16 @@ inline auto random_dist(int min, int max) {
     return dist(rgen);
 }
 
-inline auto make_key(uint8_t *data, size_t size) -> key_t {
+inline auto make_key(const uint8_t *data, size_t size) -> key_t {
     return std::make_pair(data, size);
+}
+
+inline auto make_key(const std::string_view& from) {
+    return make_key(reinterpret_cast<const uint8_t *>(from.data()), from.size());
+}
+
+inline auto to_b64(const key_t& key) {
+    return to_b64(key.first, key.second);
 }
 
 class Key {
@@ -179,18 +187,6 @@ public:
         return size() == 0;
     }
 
-    operator key_t() const {
-        return std::make_pair(data(), size());
-    }
-
-    auto operator*() const {
-        return std::make_pair(data(), size());
-    }
-
-    auto key() const {
-        return std::make_pair(data(), size());
-    }
-
     auto to_string() const {
         return to_b64(data(), size());
     }
@@ -200,35 +196,44 @@ protected:
 };
 
 template <size_t S>
-class random_t final : public Key {
+class random_t final {
 public:
-    random_t() : Key() {
+    random_t() {
         rand(data_);
     }
 
-    explicit random_t(const std::string_view& b64) : Key() {
+    explicit random_t(const std::string_view& b64) {
         from_b64(b64, data_, sizeof(data_));
     }
 
-    explicit random_t(key_t key) : Key() {
-        if(key.second == (S / 8))
-            memcpy(data_, key.first, S / 8);           // FlawFinder: ignore
+    explicit random_t(const key_t key) {
+        if(key.first && key.second && key.second <= (S / 8))
+            memcpy(data_, key.first, key.second);   // FlawFinder: ignore
         else
             throw std::runtime_error("key size mismatch");
     }
 
-    random_t(const random_t& other) : Key() {
+    random_t(const random_t& other) {
         static_assert(other.size() == size());
-        memcpy(data_, other.data_, sizeof(data_));    // FlawFinder: ignore
+        memcpy(data_, other.data_, sizeof(data_));  // FlawFinder: ignore
     }
 
-    ~random_t() final {
+    ~random_t() {
         zero(data_);
     }
 
-    auto operator=(key_t key) -> auto& {
-        if(key.second == (S / 8))
-            memcpy(data_, key.first, S / 8);           // FlawFinder: ignore
+    operator key_t() const {
+        return std::make_pair(data_, S / 8);
+    }
+
+    auto operator *() const {
+        return std::make_pair(data_, S / 8);
+    }
+
+    auto operator=(const key_t key) -> auto& {
+        zero(data_);
+        if(key.first && key.second && key.second  <= (S / 8))
+            memcpy(data_, key.first, key.second);       // FlawFinder: ignore
         else
             throw std::runtime_error("key size mismatch");
         return *this;
@@ -237,7 +242,7 @@ public:
     auto operator=(const random_t& other) -> auto& {
         static_assert(other.size() == size());
         if(this != &other)
-            memcpy(data_, other.data_, sizeof(data_));    // FlawFinder: ignore
+            memcpy(data_, other.data_, sizeof(data_));  // FlawFinder: ignore
         return *this;
     }
 
@@ -247,12 +252,28 @@ public:
         return *this;
     }
 
-    auto data() const noexcept -> const uint8_t * final {
+    auto operator==(const random_t& other) const noexcept {
+        return memcmp(data(), other.data(), S / 8) == 0;
+    }
+
+    auto operator!=(const random_t& other) const noexcept {
+        return memcmp(data(), other.data(), S / 8) != 0;
+    }
+
+    auto data() const noexcept -> const uint8_t * {
         return data_;
     }
 
-    auto size() const noexcept -> size_t final {
+    auto size() const noexcept -> size_t {
         return sizeof(data_);
+    }
+
+    auto bits() const noexcept {
+        return S;
+    }
+
+    auto to_string() const {
+        return to_b64(data_, S / 8);
     }
 
 private:
@@ -275,24 +296,26 @@ template <size_t S>
 inline auto shared_key(const std::string_view& b64) {
     return std::make_shared<random_t<S>>(b64);
 }
+
+using salt_t = random_t<salt>;
 } // end namespace
 
 #ifdef  TYCHO_PRINT_HPP_
-template <> class fmt::formatter<crypto::Key> {
+template <> class fmt::formatter<crypto::key_t const> {
 public:
     static constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
 
     template <typename Context>
-    constexpr auto format(crypto::Key const& key, Context& ctx) const {
-        return format_to(ctx.out(), "{}", key.to_string());
+    constexpr auto format(crypto:key_t const& key, Context& ctx) const {
+        return format_to(ctx.out(), "{}", crypto::to_b64(key));
     }
 };
 #endif
 
-inline auto operator<<(std::ostream& out, const crypto::Key& key) -> std::ostream& {
-    out << key.to_string();
+inline auto operator<<(std::ostream& out, const crypto::key_t& key) -> std::ostream& {
+    out << crypto::to_b64(key);
     return out;
 }
 #endif

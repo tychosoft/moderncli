@@ -140,6 +140,27 @@ public:
         return store_.ss_family == AF_INET6 ? reinterpret_cast<const struct sockaddr_in6*>(&store_) : nullptr;
     }
 
+    auto assign_in6(const struct sockaddr *addr) noexcept {
+        if(!addr || (addr->sa_family != AF_INET && addr->sa_family != AF_INET6))
+            return false;
+
+        if(addr->sa_family == AF_INET6) {
+            set(addr);
+            return true;
+        }
+
+        auto addr6 = reinterpret_cast<struct sockaddr_in6 *>(&store_);
+        auto addr4 = reinterpret_cast<const struct sockaddr_in *>(addr);
+        memset(addr6, 0, sizeof(struct sockaddr_in6));
+        addr6->sin6_family = AF_INET6;
+        addr6->sin6_port = addr4->sin_port;
+        addr6->sin6_addr.s6_addr[10] = 0xff;
+        addr6->sin6_addr.s6_addr[11] = 0xff;
+        // FlawFinder: ignore
+        memcpy(&addr6->sin6_addr.s6_addr[12], &addr4->sin_addr, sizeof(addr4->sin_addr));
+        return true;
+    }
+
     void assign(const struct sockaddr_storage& from) noexcept {
         store_ = from;
     }

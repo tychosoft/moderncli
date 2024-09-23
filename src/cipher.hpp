@@ -4,48 +4,48 @@
 #ifndef TYCHO_CIPHER_HPP_
 #define TYCHO_CIPHER_HPP_
 
-#include <random.hpp>
+#include <string_view>
+#include <utility>
+#include <stdexcept>
+#include <cstring>
+#include <cstdint>
 #include <openssl/evp.h>
 
 namespace crypto {
-using salt_t = random_t<salt>;
+using key_t = std::pair<const uint8_t *, size_t>;
 
-class keyphrase_t final : public Key {
+inline constexpr auto nosalt = key_t{nullptr, 64};
+constexpr auto is_salt(const key_t& key) {
+    return key.second == 64;
+}
+
+class keyphrase_t final {
 public:
     keyphrase_t() = default;
 
-    keyphrase_t(const salt_t& salt, const std::string_view& phrase, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept :
+    explicit keyphrase_t(const std::string_view& phrase, const key_t salt = nosalt, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept :
     cipher_(algo), size_(EVP_CIPHER_key_length(algo)) {
+        if(!is_salt(salt)) {
+            size_ = 0;
+            return;
+        }
+
         auto kp = reinterpret_cast<const uint8_t *>(phrase.data());
-        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.data(), kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
+        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.first, kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else
             size_ = ks;
     }
 
-    explicit keyphrase_t(const std::string_view& phrase, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept :
+    explicit keyphrase_t(const key_t& key, const key_t salt = nosalt, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept :
     cipher_(algo), size_(EVP_CIPHER_key_length(algo)) {
-        auto kp = reinterpret_cast<const uint8_t *>(phrase.data());
-        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, nullptr, kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
-        if(ks < size_)
+        if(!is_salt(salt)) {
             size_ = 0;
-        else
-            size_ = ks;
-    }
+            return;
+        }
 
-    keyphrase_t(const salt_t& salt, const Key& key, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept :
-    cipher_(algo), size_(EVP_CIPHER_key_length(algo)) {
-        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.data(), key.data(), static_cast<int>(key.size()), rounds, data_, iv_));
-        if(ks < size_)
-            size_ = 0;
-        else
-            size_ = ks;
-    }
-
-    explicit keyphrase_t(const Key& key, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept :
-    cipher_(algo), size_(EVP_CIPHER_key_length(algo)) {
-        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, nullptr, key.data(), static_cast<int>(key.size()), rounds, data_, iv_));
+        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.first, key.first, static_cast<int>(key.second), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else
@@ -60,9 +60,24 @@ public:
         }
     }
 
-    ~keyphrase_t() final {
-        zero(data_);
-        zero(iv_);
+    ~keyphrase_t() {
+        memset(data_, 0, sizeof(data_));
+    }
+
+    operator key_t() const {
+        return std::make_pair(data_, size_);
+    }
+
+    operator bool() const {
+        return size_ > 0;
+    }
+
+    auto  operator!() const {
+        return size_ == 0;
+    }
+
+    auto operator *() const {
+        return std::make_pair(data_, size_);
     }
 
     auto operator=(const keyphrase_t& other) noexcept -> auto& {
@@ -78,38 +93,48 @@ public:
         return *this;
     }
 
-    void set(const salt_t& salt, const std::string_view& phrase, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept {
+    void set(const std::string_view& phrase, const key_t salt = nosalt, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept {
+        if(!is_salt(salt)) {
+            size_ = 0;
+            return;
+        }
+
         size_ = EVP_CIPHER_key_length(algo);
         auto kp = reinterpret_cast<const uint8_t *>(phrase.data());
-        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.data(), kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
+        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.first, kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else
             size_ = ks;
     }
 
-    void set(const salt_t& salt, const Key& key, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept {
+    void set(const key_t& key, const key_t salt = nosalt, const EVP_CIPHER *algo = EVP_aes_256_cbc(), const EVP_MD *md = EVP_sha256(), int rounds = 1) noexcept {
+        if(!is_salt(salt)) {
+            size_ = 0;
+            return;
+        }
+
         size_ = EVP_CIPHER_key_length(algo);
-        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.data(), key.data(), static_cast<int>(key.size()), rounds, data_, iv_));
+        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.first, key.first, static_cast<int>(key.second), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else
             size_ = ks;
     }
 
-    auto iv() const noexcept -> const uint8_t *{
+    auto iv() const noexcept -> const uint8_t * {
         return iv_;
     }
 
-    auto data() const noexcept -> const uint8_t * final {
+    auto data() const noexcept -> const uint8_t * {
         return data_;
     }
 
-    auto size() const noexcept -> size_t final {
+    auto size() const noexcept {
         return size_;
     }
 
-    auto cipher() const noexcept -> const EVP_CIPHER * final {
+    auto cipher() const noexcept -> const EVP_CIPHER * {
         return cipher_;
     }
 
