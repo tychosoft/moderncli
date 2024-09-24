@@ -7,6 +7,7 @@
 #include <string>
 #include <ostream>
 #include <cstring>
+#include <cstdint>
 
 #include <sys/types.h>
 #include <fcntl.h>
@@ -40,13 +41,13 @@ using ssize_t = SSIZE_T;
 #define SOCKET int
 #endif
 
-#if __has_include(<poll.h>)
-#include <poll.h>
-#endif
-
-#include <cstdint>
-
 namespace tycho {
+
+using multicast_t = union {
+    struct ip_mreq ipv4;
+    struct ipv6_mreq ipv6;
+};
+
 class address_t final {
 public:
     static inline const socklen_t maxsize = sizeof(struct sockaddr_storage);
@@ -371,6 +372,10 @@ public:
             return list_ != nullptr;
         }
 
+        operator const struct addrinfo *() const noexcept {
+            return list_;
+        }
+
         auto operator!() const noexcept {
             return list_ == nullptr;
         }
@@ -582,6 +587,86 @@ public:
         }
     }
 
+    auto join(const address_t& member, int ifindex = 0) {
+        if(so_ == -1)
+            return EBADF;
+
+        const address_t from = local();
+        if(from.family() != member.family())
+            return set_error(-EAI_FAMILY);
+
+        auto res = 0;
+        multicast_t multicast;
+        memset(&multicast, 0, sizeof(multicast));
+        switch(member.family()) {
+        case AF_INET:
+            multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
+            multicast.ipv4.imr_multiaddr = member.in()->sin_addr;
+            if(setsockopt(so_, IPPROTO_IP, IP_ADD_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv4)) == -1)
+                res = errno;
+            break;
+        case AF_INET6:
+            multicast.ipv6.ipv6mr_interface = ifindex;
+            multicast.ipv6.ipv6mr_multiaddr = member.in6()->sin6_addr;
+            if(setsockopt(so_, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv6)) == -1)
+                res = errno;
+            break;
+        default:
+            res = EAI_FAMILY;
+        }
+        err_ = error(res);
+        return res;
+    }
+
+    auto join(const Socket::service& list, int ifindex) noexcept {
+        auto addr = *list;
+        auto count = 0;
+
+        while(addr && join(address_t(addr->ai_addr), ifindex) == 0)
+            ++count;
+        return count;
+    }
+
+    auto drop(const address_t& member, int ifindex = 0) {
+        if(so_ == -1)
+            return EBADF;
+
+        const address_t from = local();
+        if(from.family() != member.family())
+            return set_error(-EAI_FAMILY);
+
+        auto res = 0;
+        multicast_t multicast;
+        memset(&multicast, 0, sizeof(multicast));
+        switch(member.family()) {
+        case AF_INET:
+            multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
+            multicast.ipv4.imr_multiaddr = member.in()->sin_addr;
+            if(setsockopt(so_, IPPROTO_IP, IP_DROP_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv4)) == -1)
+                res = errno;
+            break;
+        case AF_INET6:
+            multicast.ipv6.ipv6mr_interface = ifindex;
+            multicast.ipv6.ipv6mr_multiaddr = member.in6()->sin6_addr;
+            if(setsockopt(so_, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv6)) == -1)
+                res = errno;
+            break;
+        default:
+            res = EAI_FAMILY;
+        }
+        err_ = error(res);
+        return res;
+    }
+
+    auto drop(const Socket::service& list, int ifindex) noexcept {
+        auto addr = *list;
+        auto count = 0;
+
+        while(addr && drop(address_t(addr->ai_addr), ifindex) == 0)
+            ++count;
+        return count;
+    }
+
     auto wait(short events, int timeout) const noexcept -> int {
         if(so_ == -1)
             return -1;
@@ -617,7 +702,7 @@ public:
         return addr;
     }
 
-    auto local() const noexcept {
+    auto local() const noexcept -> address_t {
         address_t addr;
         socklen_t len = address_t::maxsize;
         memset(*addr, 0, sizeof(addr));
@@ -626,31 +711,31 @@ public:
         return addr;
     }
 
-    auto send(const void *from, socklen_t size, flag flags = flag::none) const noexcept -> socklen_t {
+    auto send(const void *from, size_t size, flag flags = flag::none) const noexcept {
         if(so_ == -1)
-            return 0;
-        return io_error(::send(so_, static_cast<const char *>(from), size, int(flags)));
+            return io_error(-EBADF);
+        return io_error(::send(so_, static_cast<const char *>(from), int(size), int(flags)));
     }
 
-    auto recv(void *to, socklen_t size, flag flags = flag::none) const noexcept -> socklen_t {
+    auto recv(void *to, size_t size, flag flags = flag::none) const noexcept {
         if(so_ == -1)
-            return 0;
-        return io_error(::recv(so_, static_cast<char *>(to), size, int(flags)));
+            return io_error(-EBADF);
+        return io_error(::recv(so_, static_cast<char *>(to), int(size), int(flags)));
     }
 
-    auto send(const void *from, socklen_t size, const address_t addr, flag flags = flag::none) const noexcept -> socklen_t {
+    auto send(const void *from, size_t size, const address_t addr, flag flags = flag::none) const noexcept {
         if(so_ == -1)
-            return 0;
+            return io_error(-EBADF);
 
-        return io_error(::sendto(so_, static_cast<const char *>(from), size, int(flags), addr.data(), addr.size()));
+        return io_error(::sendto(so_, static_cast<const char *>(from), int(size), int(flags), addr.data(), addr.size()));
     }
 
-    auto recv(void *to, socklen_t size, address_t& addr, flag flags = flag::none) const noexcept -> socklen_t {
+    auto recv(void *to, size_t size, address_t& addr, flag flags = flag::none) const noexcept {
         auto len = address_t::maxsize;
         if(so_ == -1)
-            return 0;
+            return io_error(-EBADF);
 
-        return io_error(::recvfrom(so_, static_cast<char *>(to), size, int(flags), addr.data(), &len));
+        return io_error(::recvfrom(so_, static_cast<char *>(to), int(size), int(flags), addr.data(), &len));
     }
 
     static auto constexpr has(flag id) {
@@ -687,14 +772,18 @@ protected:
     int so_{-1};
     mutable error err_{error::success};
 
-    auto io_error(ssize_t code) const noexcept -> ssize_t {
-        if(code == -1)
+    auto io_error(ssize_t size) const noexcept -> size_t {
+        if(size == -1) {
+            size = 0;
             err_ = error(errno);
-        else if(code < 0)
-            err_ = error(-code);
+        }
+        else if(size < 0) {
+            err_ = error(-size);
+            size = 0;
+        }
         else
             err_ = error::success;
-        return code;
+        return size_t(size);
     }
 
     auto set_error(int code) const noexcept -> int {
@@ -703,6 +792,10 @@ protected:
         else
             err_ = error::success;
         return code;
+    }
+
+    static auto opt_cast(const void *from) -> const char * {
+        return static_cast<const char *>(from);
     }
 
 private:
