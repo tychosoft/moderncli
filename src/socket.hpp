@@ -29,6 +29,7 @@ using ssize_t = SSIZE_T;
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <iphlpapi.h>
 #else
 #include <sys/socket.h>
 #include <net/if.h>
@@ -38,6 +39,7 @@ using ssize_t = SSIZE_T;
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include <ifaddrs.h>
 #define SOCKET int
 #endif
 
@@ -483,6 +485,225 @@ public:
         mutable error err_{error::success};
     };
 
+#ifdef USE_CLOSESOCKET
+    class interfaces final {
+    public:
+        interfaces(const interfaces& from) = delete;
+        auto operator=(const interfaces&) -> interfaces& = delete;
+
+        interfaces() noexcept {
+            ULONG bufsize{8192};
+            // cppcheck-suppress useInitializationList
+            list_ = static_cast<PIP_ADAPTER_ADDRESSES>(malloc(bufsize));    // NOLINT
+            if(list_ == nullptr)
+                return;
+
+            auto result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr, list_, &bufsize);
+            if (result == ERROR_BUFFER_OVERFLOW) {
+                free(list_); // NOLINT
+                list_ = static_cast<PIP_ADAPTER_ADDRESSES>(malloc(bufsize));    // NOLINT
+                result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr, list_, &bufsize);
+            };
+
+            if(result != NO_ERROR) {
+                free(list_);    // NOLINT
+                list_ = nullptr;
+                return;
+            }
+
+            for(auto entry = list_; entry != nullptr; entry = entry->Next) {
+                for(auto unicast = entry->FirstUnicastAddress; unicast != nullptr; unicast = unicast->Next) {
+                    ++count_;
+                }
+            }
+        }
+
+        ~interfaces() {
+            if(list_)
+                free(list_);    // NOLINT
+            list_ = nullptr;
+        }
+
+        operator bool() const noexcept {
+            return count_ > 0;
+        }
+
+        auto operator!() const noexcept {
+            return count_ == 0;
+        }
+
+        auto operator[](size_t index) const noexcept -> const struct sockaddr *{
+            if(index >= count_)
+                return nullptr;
+            auto entry = list_;
+            while(entry && index) {
+                auto unicast = entry->FirstUnicastAddress;
+                while(unicast && index) {
+                    --index;
+                    unicast = unicast->Next;
+                }
+                if(unicast && !index && unicast->Address.lpSockaddr)
+                    return unicast->Address.lpSockaddr;
+            }
+            return nullptr;
+        }
+
+        auto empty() const noexcept {
+            return count_ == 0;
+        }
+
+        auto size() const noexcept {
+            return count_;
+        }
+        auto find(const std::string& name) const noexcept {
+            size_t pos = 0;
+            for(auto entry = list_; entry != nullptr; entry = entry->Next) {
+                if(entry->AdapterName && name == entry->AdapterName)
+                    return pos;
+                ++pos;
+            }
+            return pos;     // pos == count is not found...
+        }
+
+        auto mask(size_t index) const noexcept {
+            if(index >= count_)
+                return 0;
+            auto entry = list_;
+            while(entry && index) {
+                auto unicast = entry->FirstUnicastAddress;
+                while(unicast && index) {
+                    --index;
+                    unicast = unicast->Next;
+                }
+                if(unicast && !index)
+                    return int(unicast->OnLinkPrefixLength);
+            }
+            return 0;
+        }
+
+    private:
+        PIP_ADAPTER_ADDRESSES list_;
+        size_t count_{0};
+    };
+
+#else
+    class interfaces final {
+    public:
+        interfaces(const interfaces& from) = delete;
+        auto operator=(const interfaces&) -> interfaces& = delete;
+
+        interfaces() noexcept {
+            getifaddrs(&list_);
+            for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
+                ++count_;
+            }
+        }
+
+        ~interfaces() {
+            freeifaddrs(list_);
+            list_ = nullptr;
+        }
+
+        operator bool() const noexcept {
+            return count_ > 0;
+        }
+
+        auto operator!() const noexcept {
+            return count_ == 0;
+        }
+
+        auto operator[](size_t index) const noexcept -> const struct sockaddr *{
+            if(index >= count_)
+                return nullptr;
+            auto entry = list_;
+            while(entry && index--)
+                entry = entry->ifa_next;
+            if(!entry|| !entry->ifa_addr)
+                return nullptr;
+            return entry->ifa_addr;
+        }
+
+        auto empty() const noexcept {
+            return count_ == 0;
+        }
+
+        auto size() const noexcept {
+            return count_;
+        }
+
+        auto find(const std::string& name) const noexcept {
+            size_t pos = 0;
+            for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
+                if(entry->ifa_name && name == entry->ifa_name)
+                    return pos;
+                ++pos;
+            }
+            return pos;     // pos == count is not found...
+        }
+
+        auto mask(size_t index) const noexcept {
+            if(index >= count_)
+                return 0;
+            auto entry = list_;
+            while(entry && index--)
+                entry = entry->ifa_next;
+            if(!entry|| !entry->ifa_addr || !entry->ifa_netmask)
+                return 0;
+
+            switch(entry->ifa_netmask->sa_family) {
+            case AF_INET: {
+                auto ipv4 = reinterpret_cast<const struct sockaddr_in*>(entry->ifa_netmask);
+                return prefix_ipv4(ntohl(ipv4->sin_addr.s_addr));
+            }
+            case AF_INET6: {
+                auto ipv6 = reinterpret_cast<const struct sockaddr_in6*>(entry->ifa_netmask);
+                return prefix_ipv6(ipv6->sin6_addr.s6_addr);
+            }
+            default:
+                return 0;
+            }
+        }
+
+        auto name(size_t index) const noexcept -> std::string {
+            if(index >= count_)
+                return {""};
+            auto entry = list_;
+            while(entry && index--)
+                entry = entry->ifa_next;
+            return {(entry && entry->ifa_name) ? entry->ifa_name : ""};
+        }
+
+    private:
+        struct ifaddrs *list_{nullptr};
+        size_t count_{0};
+
+        static auto prefix_ipv4(uint32_t mask) noexcept -> int {
+            auto count = 0;
+            while (mask & 0x80000000) {
+                count++;
+                mask <<= 1;
+            }
+            return count;
+        }
+
+        static auto prefix_ipv6(const uint8_t *addr) noexcept -> int {
+            auto count = 0;
+            for (int i = 0; i < 16; i++) {
+                std::uint8_t byte = addr[i];
+                for(int j = 0; j < 8; j++) {
+                    if (byte & 0x80) {
+                        count++;
+                        byte <<= 1;
+                    }
+                    else
+                        return count;
+                }
+            }
+            return count;
+        }
+    };
+#endif
+
     Socket() = default;
     Socket(const Socket& from) = delete;
     auto operator=(const Socket& from) = delete;
@@ -819,6 +1040,7 @@ private:
 };
 using socket_t = Socket;
 using service_t = Socket::service;
+using interface_t = Socket::interfaces;
 using socket_flags = Socket::flag;
 using socket_error = Socket::error;
 

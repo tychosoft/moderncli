@@ -29,6 +29,13 @@ using namespace tycho;
 #include <unistd.h>
 #endif
 
+#ifdef  MODERN_TESTING
+#undef  NDEBUG
+#ifndef DEBUG
+#define DEBUG
+#endif
+#endif
+
 #include <cassert>
 #include <cstdint>
 #endif
