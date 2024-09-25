@@ -6,8 +6,11 @@
 
 #include <string>
 #include <ostream>
+#include <functional>
+#include <system_error>
 #include <cstring>
 #include <cstdint>
+#include <cerrno>
 
 #include <sys/types.h>
 #include <fcntl.h>
@@ -712,6 +715,10 @@ public:
         from.so_ = -1;
     }
 
+    explicit Socket(SOCKET from) noexcept : so_(make_socket(from)) {
+        set_error(so_);
+    }
+
     explicit Socket(const Socket::service& list) noexcept {
         bind(list);
     }
@@ -722,6 +729,13 @@ public:
 
     ~Socket() {
         release();
+    }
+
+    auto operator=(SOCKET from) noexcept -> auto& {
+        release();
+        so_ = make_socket(from);
+        set_error(so_);
+        return *this;
     }
 
     auto operator=(Socket&& from) noexcept -> auto& {
@@ -909,15 +923,35 @@ public:
         Socket from{};
         if(so_ != -1) {
             from.so_ = make_socket(::accept(so_, nullptr, nullptr));
+            set_error(from.so_);
             from.set_error(from.so_);
         }
         return from;
     }
 
+    template<typename T>
+    auto accept(std::function<T(int so, const struct sockaddr *)> acceptor) const -> T {
+        if(so_ == -1) {
+            set_error(EBADF);
+            throw std::system_error(EBADF, std::generic_category(), "Invalid accept socket");
+        }
+
+        address_t remote;
+        auto slen = address_t::maxsize;
+        auto to = ::accept(so_, *remote, &slen);
+        if(to < 0) {
+            set_error(errno);
+            throw std::system_error(errno, std::generic_category(), "Failed to accept");
+        }
+        address_t host;
+        slen = address_t::maxsize;
+        ::getsockname(to, *host, &slen);
+        return acceptor(to, *host, *remote);
+    }
+
     auto peer() const noexcept {
         address_t addr;
         socklen_t len = address_t::maxsize;
-        memset(*addr, 0, sizeof(addr));
         if(so_ != -1)
             set_error(::getpeername(so_, *addr, &len));
         return addr;
@@ -926,7 +960,6 @@ public:
     auto local() const noexcept -> address_t {
         address_t addr;
         socklen_t len = address_t::maxsize;
-        memset(*addr, 0, sizeof(addr));
         if(so_ != -1)
             set_error(::getsockname(so_, *addr, &len));
         return addr;

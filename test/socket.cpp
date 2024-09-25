@@ -15,6 +15,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     address_t addr; // NOLINT
     raw_t raw = addr;
     uint32_t data = 0;
+    auto from = unset.accept();
     assert(raw == *addr);
     assert(!is(unset));
     assert(recv(unset, data, addr, socket_flags::peek | socket_flags::none) == 0);
