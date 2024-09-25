@@ -33,6 +33,9 @@ using ssize_t = SSIZE_T;
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
+#ifdef AF_UNIX
+#include <afunix.h>
+#endif
 #else
 #include <sys/socket.h>
 #include <net/if.h>
