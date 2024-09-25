@@ -252,98 +252,6 @@ private:
 
 class Socket {
 public:
-    enum class error : int {
-        success = 0,
-        family_empty = EAI_ADDRFAMILY,
-        family_invalid = EAI_FAMILY,
-        failure = EAI_FAIL,
-        failure_temp = EAI_AGAIN,
-        failure_memory = EAI_MEMORY,
-        failure_service = EAI_SERVICE,
-        failure_type = EAI_SOCKTYPE,
-        failure_system = EAI_SYSTEM,
-        bad_flags = EAI_BADFLAGS,
-        empty = EAI_NODATA,
-        unknown = EAI_NONAME,
-
-        access = EACCES,
-        perms = EPERM,
-        inuse = EADDRINUSE,
-        unavailable = EADDRNOTAVAIL,
-        nofamily = EAFNOSUPPORT,
-        busy = EAGAIN,
-        connecting = EALREADY,
-        badfile = EBADF,
-        refused = ECONNREFUSED,
-        fault = EFAULT,
-        pending = EINPROGRESS,
-        interupted = EINTR,
-        connected = EISCONN,
-        unreachable = ENETUNREACH,
-        notsocket = ENOTSOCK,
-        noprotocol = EPROTOTYPE,
-        timeout = ETIMEDOUT,
-        reset = ECONNRESET,
-        nopeer = EDESTADDRREQ,
-        invalid_argument = EINVAL,
-        maxsize = EMSGSIZE,
-        nobufs = ENOBUFS,
-        nomem = ENOMEM,
-        noconnection = ENOTCONN,
-        invalid_flags = EOPNOTSUPP,
-        disconnect = EPIPE,
-        toomany = EMFILE,
-        exhausted = ENFILE,
-    };
-
-    enum class flag : int {
-        none = 0,
-    #ifdef MSG_CONFIRM
-        confirm = MSG_CONFIRM,
-    #else
-        confirm = -1,
-    #endif
-        noroute = MSG_DONTROUTE,
-    #ifdef MSG_DONTWAIT
-        nowait = MSG_DONTWAIT,
-    #else
-        nowait = -2,
-    #endif
-    #ifdef MSG_EOR
-        eor = MSG_EOR,
-    #else
-        eor = -4,
-    #endif
-    #ifdef MSG_MORE
-        more = MSG_MORE,
-    #else
-        more = -8,
-    #endif
-    #ifdef MSG_NOSIGNAL
-        nosignal = MSG_NOSIGNAL,
-    #else
-        MSG_NOSIGNAL = -16,
-    #endif
-        oob = MSG_OOB,
-    #ifdef MSG_FASTOPEN
-        fast = MSG_FASTOPEN,
-    #else
-        fast = -32,
-    #endif
-    #ifdef MSG_ERRROUTE
-        error = MSG_ERRQUEUE,
-    #else
-        error = -64,
-    #endif
-        peek = MSG_PEEK,
-    #ifdef MSG_TRUNC
-        truncate = MSG_TRUNC,
-    #else
-        truncate = -128,
-    #endif
-        waitall = MSG_WAITALL,
-    };
-
     class service final {
     public:
         service() = default;
@@ -420,7 +328,7 @@ public:
                 ::freeaddrinfo(list_);
                 list_ = nullptr;
             }
-            err_ = error::success;
+            err_ = 0;
         }
 
         void set(const std::string& host = "*", const std::string& service = "", int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) noexcept {
@@ -448,7 +356,7 @@ public:
             if(protocol)
                 hint.ai_flags |= AI_PASSIVE;
 
-            err_ = error(getaddrinfo(addr, svc, &hint, &list_));  // NOLINT
+            err_ = getaddrinfo(addr, svc, &hint, &list_);
         }
 
         auto store(unsigned index = 0) const noexcept {
@@ -485,7 +393,7 @@ public:
         }
 
         struct addrinfo *list_{nullptr};
-        mutable error err_{error::success};
+        mutable int err_{0};
     };
 
 #ifdef USE_CLOSESOCKET
@@ -776,7 +684,7 @@ public:
 #endif
             so_ = -1;
         }
-        err_ = error::success;
+        err_ = 0;
     }
 
     void bind(const address_t& addr, int type = 0, int protocol = 0) noexcept {
@@ -849,7 +757,7 @@ public:
         default:
             res = EAI_FAMILY;
         }
-        err_ = error(res);
+        err_ = res;
         return res;
     }
 
@@ -889,7 +797,7 @@ public:
         default:
             res = EAI_FAMILY;
         }
-        err_ = error(res);
+        err_ = res;
         return res;
     }
 
@@ -965,35 +873,31 @@ public:
         return addr;
     }
 
-    auto send(const void *from, size_t size, flag flags = flag::none) const noexcept {
+    auto send(const void *from, size_t size, int flags = 0) const noexcept {
         if(so_ == -1)
             return io_error(-EBADF);
-        return io_error(::send(so_, static_cast<const char *>(from), int(size), int(flags)));
+        return io_error(::send(so_, static_cast<const char *>(from), int(size), flags));
     }
 
-    auto recv(void *to, size_t size, flag flags = flag::none) const noexcept {
+    auto recv(void *to, size_t size, int flags = 0) const noexcept {
         if(so_ == -1)
             return io_error(-EBADF);
-        return io_error(::recv(so_, static_cast<char *>(to), int(size), int(flags)));
+        return io_error(::recv(so_, static_cast<char *>(to), int(size), flags));
     }
 
-    auto send(const void *from, size_t size, const address_t addr, flag flags = flag::none) const noexcept {
+    auto send(const void *from, size_t size, const address_t addr, int flags = 0) const noexcept {
         if(so_ == -1)
             return io_error(-EBADF);
 
-        return io_error(::sendto(so_, static_cast<const char *>(from), int(size), int(flags), addr.data(), addr.size()));
+        return io_error(::sendto(so_, static_cast<const char *>(from), int(size), flags, addr.data(), addr.size()));
     }
 
-    auto recv(void *to, size_t size, address_t& addr, flag flags = flag::none) const noexcept {
+    auto recv(void *to, size_t size, address_t& addr, int flags = 0) const noexcept {
         auto len = address_t::maxsize;
         if(so_ == -1)
             return io_error(-EBADF);
 
-        return io_error(::recvfrom(so_, static_cast<char *>(to), int(size), int(flags), addr.data(), &len));
-    }
-
-    static auto constexpr has(flag id) {
-        return int(id) < 0;
+        return io_error(::recvfrom(so_, static_cast<char *>(to), int(size), flags, addr.data(), &len));
     }
 
 #ifdef USE_CLOSESOCKET
@@ -1024,27 +928,27 @@ public:
 #endif
 protected:
     int so_{-1};
-    mutable error err_{error::success};
+    mutable int err_{0};
 
     auto io_error(ssize_t size) const noexcept -> size_t {
         if(size == -1) {
             size = 0;
-            err_ = error(errno);
+            err_ = errno;
         }
         else if(size < 0) {
-            err_ = error(-size);
+            err_ = int(-size);
             size = 0;
         }
         else
-            err_ = error::success;
+            err_ = 0;
         return size_t(size);
     }
 
     auto set_error(int code) const noexcept -> int {
         if(code == -1)
-            err_ = error(errno);
+            err_ = errno;
         else
-            err_ = error::success;
+            err_ = 0;
         return code;
     }
 
@@ -1074,39 +978,33 @@ private:
 using socket_t = Socket;
 using service_t = Socket::service;
 using interface_t = Socket::interfaces;
-using socket_flags = Socket::flag;
-using socket_error = Socket::error;
 
 template<typename T>
-inline auto send(const socket_t& sock, const T& msg, socket_flags flags = socket_flags::none) {
+inline auto send(const socket_t& sock, const T& msg, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.send(&msg, sizeof(msg), flags);
 }
 
 template<typename T>
-inline auto recv(const socket_t& sock, T& msg, socket_flags flags = socket_flags::none) {
+inline auto recv(const socket_t& sock, T& msg, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.recv(&msg, sizeof(msg), flags);
 }
 
 template<typename T>
-inline auto send(const socket_t& sock, const T& msg, const address_t& addr, socket_flags flags = socket_flags::none) {
+inline auto send(const socket_t& sock, const T& msg, const address_t& addr, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.send(&msg, sizeof(msg), addr, flags);
 }
 
 template<typename T>
-inline auto recv(const socket_t& sock, T& msg, address_t& addr, socket_flags flags = socket_flags::none) {
+inline auto recv(const socket_t& sock, T& msg, address_t& addr, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.recv(&msg, sizeof(msg), addr, flags);
-}
-
-auto constexpr operator|(socket_flags lhs, socket_flags rhs) {
-    return static_cast<socket_flags>(int(lhs) | int(rhs));
 }
 } // end namespace
 

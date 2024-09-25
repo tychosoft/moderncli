@@ -18,7 +18,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     auto from = unset.accept();
     assert(raw == *addr);
     assert(!is(unset));
-    assert(recv(unset, data, addr, socket_flags::peek | socket_flags::none) == 0);
+    assert(recv(unset, data, addr, MSG_PEEK) == 0);
     Socket::shutdown();
 }
 
