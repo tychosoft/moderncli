@@ -47,6 +47,14 @@ using ssize_t = SSIZE_T;
 #define SOCKET int
 #endif
 
+#ifndef IPV6_ADD_MEMBERSHIP
+#define IPV6_ADD_MEMBERSHIP     IP_ADD_MEMBERSHIP
+#endif
+
+#ifndef IPV6_DROP_MEMBERSHIP
+#define IPV6_DROP_MEMBERSHIP    IP_DROP_MEMBERSHIP
+#endif
+
 namespace tycho {
 
 using multicast_t = union {
