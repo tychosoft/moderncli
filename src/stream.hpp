@@ -1,0 +1,289 @@
+// Copyright (C) 2023 Tycho Softworks.
+// This code is licensed under MIT license.
+
+#ifndef TYCHO_STREAM_HPP_
+#define TYCHO_STREAM_HPP_
+
+#include <system_error>
+#include <iostream>
+#include <mutex>
+#include <cerrno>
+
+#include <sys/types.h>
+#include <fcntl.h>
+
+#ifndef _MSC_VER
+#include <unistd.h>
+#else
+#include <BaseTsd.h>
+using ssize_t = SSIZE_T;
+#endif
+
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+#if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
+#undef  _WIN32_WINNT
+#define _WIN32_WINNT    0x0600  // NOLINT
+#endif
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <sys/socket.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <sys/un.h>
+#include <sys/ioctl.h>
+#include <arpa/inet.h>
+#include <poll.h>
+#endif
+
+namespace tycho {
+template <size_t S = 536>
+class socket_stream : protected std::streambuf, public std::iostream {
+public:
+    inline static const auto maxsize = S;
+
+    // typically used to accept a tcp session from a listener socket
+    socket_stream(int from, const struct sockaddr *peer) :
+    std::iostream(static_cast<std::streambuf *>(this)), so_(from), family_(peer ? peer->sa_family : AF_UNSPEC) {
+        allocate(S);
+    }
+
+    // typically used to connect a tcp session to a remote service
+    explicit socket_stream(const struct sockaddr *peer) :
+    std::iostream(static_cast<std::streambuf *>(this)), family_(peer ? peer->sa_family : AF_UNSPEC) {
+        socklen_t plen = sizeof(sockaddr_storage);
+        if(peer)
+            switch(peer->sa_family) {
+            case AF_INET:
+                plen = sizeof(struct sockaddr_in);
+                break;
+            case AF_INET6:
+                plen = sizeof(struct sockaddr_in6);
+                break;
+            default:
+                break;
+            }
+
+        auto to = -1;
+        if(peer)
+            to = make_socket(::socket(peer->sa_family, SOCK_STREAM, IPPROTO_TCP));
+        if(to == -1 || ::connect(to, peer, plen) == -1) {
+            if(to != -1)
+                close_socket(to);
+            else
+                errno = EBADF;
+            throw std::system_error(errno, std::generic_category(), "Stream failed to connect socket");
+        }
+        so_ = to;
+        allocate(S);
+    }
+
+    socket_stream(socket_stream&& from) noexcept : std::iostream(static_cast<std::streambuf *>(this)), so_(from.so_), family_(from.family_) {
+        from.so_ = -1;
+        from.release();
+        allocate(S);
+    }
+
+    ~socket_stream() override {
+        close_socket(so_);
+        clear();
+    }
+
+    socket_stream(const socket_stream&) = delete;
+    auto operator=(const socket_stream&) -> socket_stream& = delete;
+
+    auto sync() -> int override {
+        auto len = pptr() - pbase();
+        if(!len)
+            return 0;
+
+        if(send_socket(pbase(), len)) {
+            setp(pbuf, pbuf + bufsize);
+            return 0;
+        }
+        return -1;
+    }
+
+    auto is_open() const noexcept {
+        return so_ != -1;
+    }
+
+    auto out_pending() const noexcept {
+        return std::streamsize(pptr() - pbase());
+    }
+
+    auto in_avail() const noexcept {
+        return std::streamsize(egptr() - gptr());
+    }
+
+    auto family() const noexcept {
+        return family_;
+    }
+
+    auto buffer_size() const noexcept {
+        return bufsize;
+    }
+
+    void stop() {           // may be called from another thread context
+        auto so = so_;
+        so_ = -1;
+        close_socket(so);
+    }
+
+    auto wait(int timeout = -1) -> bool {
+        struct pollfd pfd{0};
+        pfd.fd = so_;
+        pfd.revents = 0;
+        pfd.events = POLLIN;
+
+        if(pfd.fd == -1)
+            return false;
+
+        if(gptr() < egptr())
+            return true;
+
+        auto status = wait_socket(&pfd, timeout);
+        if(status < 0) {    // low level error...
+            io_err(status);
+            return false;
+        }
+        if(!status)         // timeout...
+            return false;
+
+        // return if low level is pending...
+        return (pfd.revents & POLLIN);
+    }
+
+protected:
+    auto io_err(ssize_t result) {
+        if(result == -1) {
+            auto error = errno;
+            switch(error) {
+            case EAGAIN:
+            case EINTR:
+                return size_t(0);
+            case EPIPE:
+                setstate(std::ios::eofbit);     // FlawFinder: ignore
+                return size_t(0);
+            default:
+                setstate(std::ios::failbit);    // FlawFinder: ignore
+                throw std::system_error(errno, std::generic_category(), "Stream i/o error");
+            }
+        }
+        return size_t(result);
+    }
+
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+    using socket_t = SOCKET;
+    static auto make_socket(SOCKET so) noexcept {
+        return int(so);
+    }
+
+    static void close_socket(socket_t so) noexcept {
+        closesocket(so);
+    }
+
+    static auto wait_socket(struct pollfd *pfd, int timeout) noexcept {
+        return WSAPoll(pfd, 1, timeout);
+    }
+
+    auto send_socket(const void *buffer, size_t size) {
+        return io_err(::send(so_, static_cast<const char *>(buffer), int(size), 0));
+    }
+
+    auto recv_socket(void *buffer, size_t size) {
+        return io_err(::recv(so_, static_cast<char *>(buffer), int(size), 0));
+    }
+#else
+    using socket_t = int;
+    static auto make_socket(int so) noexcept {
+        return so;
+    }
+
+    static void close_socket(socket_t so) noexcept {
+        ::close(so);
+    }
+
+    static auto wait_socket(struct pollfd *pfd, int timeout) noexcept {
+        return ::poll(pfd, 1, timeout);
+    }
+
+    auto send_socket(const void *buffer, size_t size) {
+        return io_err(::send(so_, buffer, size, 0));
+    }
+
+    auto recv_socket(void *buffer, size_t size) {
+        return io_err(::recv(so_, buffer, size, MSG_WAITALL));
+    }
+#endif
+
+    char gbuf[S]{0}, pbuf[S]{0};
+    // cppcheck-suppress unusedStructMember
+    size_t bufsize{0}, getsize{0};
+
+    void allocate(size_t size) {
+        if(!size)
+            ++size;
+
+        if(size > maxsize)
+            size = maxsize;
+
+        setg(gbuf, gbuf, gbuf);
+        setp(pbuf, pbuf + size);
+        bufsize = getsize = size;
+    }
+
+    auto underflow() -> int override {
+        if(gptr() == egptr()) {
+            auto len = recv_socket(gbuf, getsize);
+            if(!len)
+                return EOF;
+            setg(gbuf, gbuf, gbuf + len);
+        }
+        return get_type(*gptr());
+    }
+
+    auto overflow(int c) -> int override {
+        if(c == EOF) {
+            if(sync() == 0)
+                return not_eof(c);
+            return EOF;
+        }
+
+        if(pptr() == epptr() && sync() != 0)
+            return EOF;
+
+        *pptr() = put_type(c);
+        pbump(1);
+        return c;
+    }
+
+    static auto constexpr is_eof(char x) {
+        return std::streambuf::traits_type::eq_int_type(x, EOF);
+    }
+
+    static auto constexpr not_eof(int x) {
+        return std::streambuf::traits_type::not_eof(x);
+    }
+
+    static auto constexpr get_type(char x) {
+        return std::streambuf::traits_type::to_int_type(x);
+    }
+
+    static auto constexpr put_type(int x) {
+        return std::streambuf::traits_type::to_char_type(x);
+    }
+
+private:
+    volatile int so_{-1};
+    int family_{AF_UNSPEC};
+};
+
+using tcpstream = socket_stream<536>;
+using tcpstream6 = socket_stream<1220>;
+} // end namespace
+
+#endif

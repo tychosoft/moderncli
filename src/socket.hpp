@@ -139,6 +139,30 @@ public:
         return store_.ss_family == fam;
     }
 
+    void assign_any() noexcept {
+        switch(store_.ss_family) {
+        case AF_INET:
+            memset(&(reinterpret_cast<struct sockaddr_in*>(&store_))->sin_addr.s_addr, 0, 4);
+            break;
+        case AF_INET6:
+            memset(&(reinterpret_cast<struct sockaddr_in6*>(&store_))->sin6_addr.s6_addr, 0, 16);
+            break;
+        default:
+            break;
+        }
+    }
+
+    auto is_any() const noexcept {
+        switch(store_.ss_family) {
+        case AF_INET:
+            return zero_(&(reinterpret_cast<const struct sockaddr_in*>(&store_))->sin_addr.s_addr, 4);
+        case AF_INET6:
+            return zero_(&(reinterpret_cast<const struct sockaddr_in6*>(&store_))->sin6_addr.s6_addr, 16);
+        default:
+            return false;
+        }
+    }
+
     auto in() const noexcept {
         return store_.ss_family == AF_INET ? reinterpret_cast<const struct sockaddr_in*>(&store_) : nullptr;
     }
@@ -177,12 +201,18 @@ public:
         auto cp = str.c_str();
         if(strchr(cp, ':') != nullptr) {
             auto ipv6 = reinterpret_cast<struct sockaddr_in6*>(&store_);
-            inet_pton(AF_INET6, cp, &(ipv6->sin6_addr));
+            if(str == "::*")
+                make_any(AF_INET6);
+            else if(inet_pton(AF_INET6, cp, &(ipv6->sin6_addr)) < 1)
+                return;
             ipv6->sin6_family = AF_INET6;
             ipv6->sin6_port = htons(in_port);
-        } else if(strchr(cp, '.') != nullptr) {
+        } else if((str == "*") || (strchr(cp, '.') != nullptr)) {
             auto ipv4 = reinterpret_cast<struct sockaddr_in*>(&store_);
-            inet_pton(AF_INET, cp, &(ipv4->sin_addr));
+            if(str == "*")
+                make_any(AF_INET);
+            else if(inet_pton(AF_INET, cp, &(ipv4->sin_addr)) < 1)
+                return;
             ipv4->sin_family = AF_INET;
             ipv4->sin_port = htons(in_port);
         }
@@ -235,6 +265,29 @@ public:
             memcpy(&store_, addr, size_(addr->sa_family));
     }
 private:
+    void make_any(int family) noexcept {
+        switch(family) {
+        case AF_INET:
+            memset(&(reinterpret_cast<struct sockaddr_in*>(&store_))->sin_addr.s_addr, 0, 4);
+            break;
+        case AF_INET6:
+            memset(&(reinterpret_cast<struct sockaddr_in6*>(&store_))->sin6_addr.s6_addr, 0, 16);
+            break;
+        default:
+            break;
+        }
+    }
+
+    static auto zero_(const void *addr, size_t size) -> bool {
+        auto ptr = static_cast<const std::byte *>(addr);
+        while(size--) {
+            if(*ptr != std::byte(0))
+                return false;
+            ++ptr;
+        }
+        return true;
+    }
+
     static auto size_(int family) noexcept -> socklen_t {
         switch(family) {
         case AF_INET:
@@ -381,6 +434,16 @@ public:
                 addr = addr->ai_next;
             }
             return data;
+        }
+
+        auto visit(const std::function<bool(struct addrinfo*)>& visitor) {
+            auto list = list_;
+            while(list) {
+                if(!visitor(list))
+                    return false;
+                list = list->ai_next;
+            }
+            return true;
         }
 
     private:
@@ -748,9 +811,10 @@ public:
 
     void bind(const address_t& addr, int type = 0, int protocol = 0) noexcept {
         so_ = set_error(make_socket(::socket(addr.family(), type, protocol)));
-        if(so_ != -1)
+        if(so_ != -1) {
             if(set_error(::bind(so_, addr.data(), addr.size())) == -1)
                 release();
+        }
     }
 
     void bind(const Socket::service& list) noexcept {
@@ -789,7 +853,7 @@ public:
         }
     }
 
-    auto join(const address_t& member, int ifindex = 0) {
+    auto join(const address_t& member, unsigned ifindex = 0) {
         if(so_ == -1)
             return EBADF;
 
@@ -820,7 +884,7 @@ public:
         return res;
     }
 
-    auto join(const Socket::service& list, int ifindex) noexcept {
+    auto join(const Socket::service& list, unsigned ifindex) noexcept {
         auto addr = *list;
         auto count = 0;
 
@@ -829,7 +893,7 @@ public:
         return count;
     }
 
-    auto drop(const address_t& member, int ifindex = 0) {
+    auto drop(const address_t& member, unsigned ifindex = 0) {
         if(so_ == -1)
             return EBADF;
 
@@ -860,7 +924,7 @@ public:
         return res;
     }
 
-    auto drop(const Socket::service& list, int ifindex) noexcept {
+    auto drop(const Socket::service& list, unsigned ifindex) noexcept {
         auto addr = *list;
         auto count = 0;
 
@@ -896,7 +960,7 @@ public:
         return from;
     }
 
-    auto accept(std::function<bool(int so, const struct sockaddr *)> acceptor) const {
+    auto accept(const std::function<bool(int so, const struct sockaddr *)>& acceptor) const {
         if(so_ == -1)
             return false;
 
@@ -965,6 +1029,16 @@ public:
         return WSAPoll(fds, count, timeout);
     }
 
+    static auto if_index(const std::string& name) noexcept -> unsigned {
+        NET_LUID uid;
+        if(ConvertInterfaceNameToLuidA(name.c_str(), &uid) != NO_ERROR)
+            return 0;
+        NET_IFINDEX idx{0};
+        if(ConvertInterfaceLuidToIndex(&uid, &idx) != NO_ERROR)
+            return 0;
+        return idx;
+    }
+
     static auto startup() noexcept {
         WSADATA data;
         auto ver = MAKEWORD(2, 2);
@@ -977,6 +1051,10 @@ public:
 #else
     static auto poll(struct pollfd *fds, size_t count, int timeout) noexcept -> int {
         return ::poll(fds, count, timeout);
+    }
+
+    static auto if_index(const std::string& name) noexcept -> unsigned {
+        return if_nametoindex(name.c_str());
     }
 
     static auto startup() noexcept {
@@ -1113,11 +1191,11 @@ inline auto inet_host(struct sockaddr *addr, const std::string& host) noexcept {
 
     switch(addr->sa_family) {
     case AF_INET:
-        if(inet_pton(AF_INET, host.c_str(), &(reinterpret_cast<struct sockaddr_in *>(addr))->sin_addr))
+        if(inet_pton(AF_INET, host.c_str(), &(reinterpret_cast<struct sockaddr_in *>(addr))->sin_addr.s_addr))
             return true;
         break;
     case AF_INET6:
-        if(inet_pton(AF_INET6, host.c_str(), &(reinterpret_cast<struct sockaddr_in6 *>(addr))->sin6_addr))
+        if(inet_pton(AF_INET6, host.c_str(), &(reinterpret_cast<struct sockaddr_in6 *>(addr))->sin6_addr.s6_addr))
             return true;
         break;
     default:

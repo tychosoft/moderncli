@@ -6,6 +6,12 @@
 #include "templates.hpp"
 #include "socket.hpp"
 
+namespace {
+const uint16_t port = 9789;
+address_t localhost("127.0.0.1", port);
+address_t localbind("*", port);
+} // end anon namespace
+
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     using raw_t = const struct sockaddr *;
     assert(Socket::startup());
@@ -19,7 +25,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(raw == *addr);
     assert(!is(unset));
     assert(recv(unset, data, addr, MSG_PEEK) == 0);
+    assert(localbind.is_any() == true);
+    assert(localhost.is_any() == false);
+    assert(localhost.port() == port);
+    assert(localbind.port() == port);
     Socket::shutdown();
 }
-
 

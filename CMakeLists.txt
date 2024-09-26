@@ -9,7 +9,7 @@
 # warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 cmake_minimum_required(VERSION 3.16.0)
-project(ModernCLI VERSION 0.9.2 LANGUAGES CXX)
+project(ModernCLI VERSION 0.9.3 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -67,6 +67,14 @@ if(WIN32)
     target_link_libraries(test_socket PRIVATE fmt::fmt Threads::Threads ws2_32 iphlpapi)
 else()
     target_link_libraries(test_socket PRIVATE fmt::fmt Threads::Threads)
+endif()
+
+add_executable(test_stream test/stream.cpp src/stream.hpp)
+add_test(NAME test-stream COMMAND test_stream)
+if(WIN32)
+    target_link_libraries(test_stream PRIVATE fmt::fmt Threads::Threads ws2_32)
+else()
+    target_link_libraries(test_stream PRIVATE fmt::fmt Threads::Threads)
 endif()
 
 add_executable(test_process test/process.cpp src/process.hpp)

@@ -71,18 +71,38 @@ effectively emulate on some targets.
 
 ## random.hpp
 
-Generate random keys and data using openssl rand functions.
+Generate random keys and data using openssl rand functions. Also has some
+utility functions like b64 support for binary data and to manipulate keys.
 
 ## serial.hpp
 
 Support serial I/O operations through a serial port or ptty device. Includes
-support for line buffered and timed input. Serial support depends on posix
-termios and is disabled on non-posix platforms.
+support for line buffered and timed input. Serial support is provided for both
+modern posix and windows platforms.
 
 ## socket.hpp
 
-Generic C++ socket library.  This deals with low level socket behavior and
-could be thought of as a C++ wrapper for the BSD socket api.
+Generic C++ socket library. This stand-alone header deals with low level socket
+behavior, including multicast, and could be thought of as a C++ wrapper for the
+BSD socket api. This also provides address lookup and manipulations, access to
+name services, and many convenient low level utility functions. A special
+service is provided for identifying network interfaces.
+
+## stream.hpp
+
+Generic C++ network streams based on i/o stream classes. These are typically
+used to make client connections to a server, or to accept a listener. The
+design assumption is one would create an instance for a given network session
+that may process in it's own thread. The lifetime of such a thread and object
+would be associated with the lifetime of the network session itself.
+
+The primary constructors can create a new connected socket, or can receive an
+accepted socket from a listener. The header is purely stand-alone, though it
+often would also be used with socket.hpp for servers or useful utility
+functions. Being stand-alone it could be combined with other kinds of C++
+networking libraries easily without a lot of overlap.
+
+In the future this will include secure socket support.
 
 ## strings.hpp
 
@@ -102,8 +122,8 @@ synchronization objects such as semaphores and barriers.
 
 ## templates.hpp
 
-Some very generic, universal, and miscellanous templates and functions. This
-also is used to introduce new language "features" like init and defer.
+Some very generic, universal, miscellanous templates and functions. This also
+is used to introduce new language-like "features" like init and defer.
 
 ## linting
 

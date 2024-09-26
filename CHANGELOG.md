@@ -1,5 +1,20 @@
 # Release Notes
 
+## v0.9.3
+- Simplify socket and serial errors
+- Acceptor lambda for listener sockers
+- Added network interfaces service
+- Added multicast socket support
+- Introduced streams and network tcp
+- Improved b64 support
+- Pure standalone crypto header
+- Improved socket address api
+- Improved serial error handling
+- Improved socket error handling
+- Updated project info
+- Created gitlab ci pipeline
+- Do not open non-tty device on windows serial
+
 ## v0.9.2
 - Enhanced i/o templates
 - Print output to serial device

@@ -118,7 +118,7 @@ public:
             err_ = 0;
             auto result = ::read(device_, &buf, 1); // FlawFinder: ignore
             if(result < 0)
-                throw std::system_error(err_ = int(-result), std::generic_category(), "Serial");
+                throw std::system_error(err_ = int(-result), std::generic_category(), "Serial i/o error");
             if(result < 1)
                 return EOF;
             if(echo && echocode != EOF && (eol == EOF || buf != eol))
@@ -137,7 +137,7 @@ public:
         err_ = 0;
         auto count = ::read(device_, data, size);   // FlawFinder: safe
         if(count < 0)
-            throw std::system_error(err_ = int(-count), std::generic_category(), "Serial");
+            throw std::system_error(err_ = int(-count), std::generic_category(), "Serial i/o error");
         if(count > 0 && echo)
             put(data, count);
         if(count > 0)
@@ -156,7 +156,7 @@ public:
         err_ = 0;
         auto result = ::write(device_, &buf, 1);
         if(result < 0)
-            throw std::system_error(err_ = int(-result), std::generic_category(), "Serial");
+            throw std::system_error(err_ = int(-result), std::generic_category(), "Serial i/o error");
         if(result < 1)
             return false;
         return true;
@@ -171,7 +171,7 @@ public:
         if(count > 0)
             return size_t(count);
         if(count < 0)
-            throw std::system_error(err_ = int(-count), std::generic_category(), "Serial");
+            throw std::system_error(err_ = int(-count), std::generic_category(), "Serial i/o error");
         return size_t(0U);
     }
 
@@ -546,7 +546,7 @@ public:
             err_ = 0;
             if(ReadFile(device_, &buf, DWORD(1), &count, nullptr) == FALSE) {
                 err_ = errno;
-                throw std::system_error(err_, std::generic_category(), "Serial");
+                throw std::system_error(err_, std::generic_category(), "Serial i/o error");
             }
             if(count < 1)
                 return EOF;
@@ -566,7 +566,7 @@ public:
         err_ = 0;
         if(ReadFile(device_, data, DWORD(size), &count, nullptr) == FALSE) {
             err_ = errno;
-            throw std::system_error(err_, std::generic_category(), "Serial");
+            throw std::system_error(err_, std::generic_category(), "Serial i/o error");
         }
         if(count > 0 && echo)
             put(data, count);
@@ -583,7 +583,7 @@ public:
         err_ = 0;
         if(WriteFile(device_, data, DWORD(size), &count, nullptr) == FALSE) {
             err_ = errno;
-            throw std::system_error(errno, std::generic_category(), "Serial");
+            throw std::system_error(errno, std::generic_category(), "Serial i/o error");
         }
         if(count > 0)
             return size_t(count);
@@ -602,7 +602,7 @@ public:
         err_ = 0;
         if(WriteFile(device_, &buf, 1, &count, nullptr) == FALSE) {
             err_ = errno;
-            throw std::system_error(err_, std::generic_category(), "Serial");
+            throw std::system_error(err_, std::generic_category(), "Serial i/o error");
         }
         if(count < 1)
             return false;

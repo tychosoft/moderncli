@@ -67,6 +67,11 @@ void println(std::ostream& out, std::string_view fmt, const Args&... args) {
     out << fmt::format(fmt, args...) << std::endl;
 }
 
+template<class... Args>
+void println(std::string_view fmt, const Args&... args) {
+    std::cout << fmt::format(fmt, args...) << std::endl;
+}
+
 class system_logger final {
 public:
     using notify_t = void (*)(const std::string&, const char *type);
