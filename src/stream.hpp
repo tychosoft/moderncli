@@ -46,13 +46,13 @@ public:
     inline static const auto maxsize = S;
 
     // typically used to accept a tcp session from a listener socket
-    socket_stream(int from, const struct sockaddr *peer) :
+    socket_stream(int from, const struct sockaddr *peer, size_t size = S) :
     std::iostream(static_cast<std::streambuf *>(this)), so_(from), family_(peer ? peer->sa_family : AF_UNSPEC) {
-        allocate(S);
+        allocate(size);
     }
 
     // typically used to connect a tcp session to a remote service
-    explicit socket_stream(const struct sockaddr *peer) :
+    explicit socket_stream(const struct sockaddr *peer, size_t size = S) :
     std::iostream(static_cast<std::streambuf *>(this)), family_(peer ? peer->sa_family : AF_UNSPEC) {
         socklen_t plen = sizeof(sockaddr_storage);
         if(peer)
@@ -78,7 +78,7 @@ public:
             throw std::system_error(errno, std::generic_category(), "Stream failed to connect socket");
         }
         so_ = to;
-        allocate(S);
+        allocate(size);
     }
 
     socket_stream(socket_stream&& from) noexcept : std::iostream(static_cast<std::streambuf *>(this)), so_(from.so_), family_(from.family_) {
