@@ -114,7 +114,7 @@ public:
     defer(const defer&) = delete;
     auto operator=(const defer&) = delete;
 
-    explicit defer(std::function<void()> func) : action_(std::move(func)) {}
+    explicit defer(const std::function<void()>& func) : action_(std::move(func)) {}
     ~defer() {action_();}
 
 private:

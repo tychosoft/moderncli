@@ -285,7 +285,7 @@ private:
 } // end fsys namespace
 
 namespace tycho {
-inline auto scan_stream(std::istream& input, std::function<bool(const std::string_view&)> proc) {
+inline auto scan_stream(std::istream& input, const std::function<bool(const std::string_view&)>& proc) {
     std::string line;
     size_t count{0};
     while(std::getline(input, line)) {
@@ -296,7 +296,7 @@ inline auto scan_stream(std::istream& input, std::function<bool(const std::strin
     return count;
 }
 
-inline auto scan_file(const fsys::path& path, std::function<bool(const std::string_view&)> proc) {
+inline auto scan_file(const fsys::path& path, const std::function<bool(const std::string_view&)>& proc) {
     std::fstream input(path);
     std::string line;
     size_t count{0};
@@ -309,7 +309,7 @@ inline auto scan_file(const fsys::path& path, std::function<bool(const std::stri
 }
 
 #if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__) && !defined(WIN32)
-inline auto scan_file(std::FILE *file, std::function<bool(const std::string_view&)> proc, size_t size = 0) {
+inline auto scan_file(std::FILE *file, const std::function<bool(const std::string_view&)>& proc, size_t size = 0) {
     char *buf{nullptr};
     size_t count{0};
     if(size)
@@ -325,7 +325,7 @@ inline auto scan_file(std::FILE *file, std::function<bool(const std::string_view
     return count;
 }
 
-inline auto scan_command(const std::string& cmd, std::function<bool(const std::string_view&)> proc, size_t size = 0) {
+inline auto scan_command(const std::string& cmd, const std::function<bool(const std::string_view&)>& proc, size_t size = 0) {
     auto file = popen(cmd.c_str(), "r");    // FlawFinder: ignore
 
     if(!file)
@@ -336,7 +336,7 @@ inline auto scan_command(const std::string& cmd, std::function<bool(const std::s
     return count;
 }
 #else
-inline auto scan_file(std::FILE *file, std::function<bool(const std::string_view&)> proc, size_t size = 0) {
+inline auto scan_file(std::FILE *file, const std::function<bool(const std::string_view&)>& proc, size_t size = 0) {
     char *buf{nullptr};
     size_t count{0};
     if(size)
@@ -352,7 +352,7 @@ inline auto scan_file(std::FILE *file, std::function<bool(const std::string_view
     return count;
 }
 
-inline auto scan_command(const std::string& cmd, std::function<bool(const std::string_view&)> proc, size_t size = 0) {
+inline auto scan_command(const std::string& cmd, const std::function<bool(const std::string_view&)>& proc, size_t size = 0) {
     auto file = _popen(cmd.c_str(), "r");    // FlawFinder: ignore
 
     if(!file)
@@ -378,12 +378,12 @@ inline auto make_output(const fsys::path& path, std::ios::openmode mode = std::i
     return file;
 }
 
-inline auto scan_directory(const fsys::path& path, std::function<bool(const fsys::directory_entry&)> proc) {
+inline auto scan_directory(const fsys::path& path, const std::function<bool(const fsys::directory_entry&)>& proc) {
     auto dir = fsys::directory_iterator(path);
     return std::count_if(begin(dir), end(dir), proc);
 }
 
-inline auto scan_recursive(const fsys::path& path, std::function<bool(const fsys::directory_entry&)> proc) {
+inline auto scan_recursive(const fsys::path& path, const std::function<bool(const fsys::directory_entry&)>& proc) {
     auto dir = fsys::recursive_directory_iterator(path, fsys::directory_options::skip_permission_denied);
     return std::count_if(begin(dir), end(dir), proc);
 }
