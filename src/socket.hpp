@@ -972,6 +972,12 @@ public:
             release();
     }
 
+    void assign(int so) noexcept {
+        release();
+        so_ = so;
+        err_ = 0;
+    }
+
     auto accept() const noexcept {
         Socket from{};
         if(so_ != -1) {
