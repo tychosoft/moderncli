@@ -47,6 +47,10 @@ using ssize_t = SSIZE_T;
 #define SOCKET int
 #endif
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL    0   // NOLINT
+#endif
+
 #ifndef IPV6_ADD_MEMBERSHIP
 #define IPV6_ADD_MEMBERSHIP     IP_ADD_MEMBERSHIP
 #endif
@@ -56,7 +60,6 @@ using ssize_t = SSIZE_T;
 #endif
 
 namespace tycho {
-
 using multicast_t = union {
     struct ip_mreq ipv4;
     struct ipv6_mreq ipv6;
@@ -232,11 +235,15 @@ public:
         const struct sockaddr_in6 *ipv6{nullptr};
         switch(store_.ss_family) {
         case AF_INET:
+            if(is_any())
+                return std::string("*");
             ipv4 = reinterpret_cast<const struct sockaddr_in*>(&store_);
             if(::inet_ntop(AF_INET, &(ipv4->sin_addr), buf, sizeof(buf)))
                 return std::string(buf);
             break;
         case AF_INET6:
+            if(is_any())
+                return std::string("::");
             ipv6 = reinterpret_cast<const struct sockaddr_in6*>(&store_);
             if(::inet_ntop(AF_INET, &(ipv6->sin6_addr), buf, sizeof(buf)))
                 return std::string(buf);
@@ -545,18 +552,16 @@ public:
             return count_;
         }
 
-        auto find(const std::string_view& id, int family) const noexcept {
-            size_t pos = 0;
+        auto find(const std::string_view& id, int family) const noexcept -> const sockaddr * {
             for(auto entry = list_; entry != nullptr; entry = entry->Next) {
                 auto unicast = entry->FirstUnicastAddress;
                 while(unicast) {
                     if(entry->AdapterName && id == entry->AdapterName && unicast->Address.lpSockaddr && unicast->Address.lpSockaddr->sa_family == family)
-                        return pos;
-                    ++pos;
+                        return unicast->Address.lpSockaddr;
                     unicast = unicast->Next;
                 }
             }
-            return count_;     // pos == count is not found...
+            return nullptr;
         }
 
         auto mask(size_t index) const noexcept {
@@ -657,14 +662,12 @@ public:
             return count_;
         }
 
-        auto find(const std::string_view& id, int family) const noexcept {
-            size_t pos = 0;
+        auto find(const std::string_view& id, int family) const noexcept -> const sockaddr * {
             for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
                 if(entry->ifa_name && id == entry->ifa_name && entry->ifa_addr->sa_family == family)
-                    return pos;
-                ++pos;
+                    return entry->ifa_addr;
             }
-            return pos;     // pos == count is not found...
+            return nullptr;
         }
 
         auto mask(size_t index) const noexcept {
@@ -809,20 +812,25 @@ public:
         so_ = -1;
         if(so != -1) {
 #ifdef  USE_CLOSESOCKET
-            closesocket(so);
+            ::shutdown(so, SD_BOTH);
+            ::closesocket(so);
 #else
-            close(so);
+            ::shutdown(so, SHUT_RDWR);
+            ::close(so);
 #endif
         }
-        err_ = 0;
     }
 
     void bind(const address_t& addr, int type = 0, int protocol = 0) noexcept {
+        release();
         so_ = set_error(make_socket(::socket(addr.family(), type, protocol)));
         if(so_ != -1) {
+            reuse(true);
             if(set_error(::bind(so_, addr.data(), addr.size())) == -1)
                 release();
         }
+        else
+            err_ = EBADF;
     }
 
     void bind(const Socket::service& list) noexcept {
@@ -941,16 +949,22 @@ public:
         return count;
     }
 
-    auto wait(short events, int timeout) const noexcept -> int {
-        if(so_ == -1)
-            return -1;
-
-        struct pollfd pfd{static_cast<SOCKET>(so_), events, 0};
-        auto result = set_error(Socket::poll(&pfd, 1, timeout));
-        if(result <= 0)
-            return result;
-
+    auto wait(short events, int timeout = -1) const noexcept -> int {
+        struct pollfd pfd{0};
+        pfd.fd = so_;
+        pfd.events = events;
+        pfd.revents = 0;
+        set_error(Socket::poll(&pfd, 1, timeout));
         return pfd.revents;
+    }
+
+    void reuse(bool flag) {
+        int opt = flag ? 1 : 0;
+        set_error(setsockopt(so_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&opt), sizeof(opt)));
+
+#ifdef SO_REUSEPORT
+        set_error(setsockopt(so_, SOL_SOCKET, SO_REUSEPORT, reinterpret_cast<const char *>(&opt), sizeof(opt)));
+#endif
     }
 
     void listen(int backlog = 5) noexcept {
@@ -1073,7 +1087,7 @@ public:
     }
 #endif
 protected:
-    int so_{-1};
+    volatile int so_{-1};
     mutable int err_{0};
 
     auto io_error(ssize_t size) const noexcept -> size_t {

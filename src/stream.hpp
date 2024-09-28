@@ -6,7 +6,6 @@
 
 #include <system_error>
 #include <iostream>
-#include <mutex>
 #include <cerrno>
 
 #include <sys/types.h>
@@ -37,6 +36,10 @@ using ssize_t = SSIZE_T;
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#endif
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL    0   // NOLINT
 #endif
 
 namespace tycho {
@@ -165,9 +168,13 @@ protected:
             case EAGAIN:
             case EINTR:
                 return size_t(0);
-            case EPIPE:
+            case EPIPE: {
+                auto so = so_;
+                so_ = -1;
+                close_socket(so);
                 setstate(std::ios::eofbit);     // FlawFinder: ignore
                 return size_t(0);
+            }
             default:
                 setstate(std::ios::failbit);    // FlawFinder: ignore
                 throw std::system_error(errno, std::generic_category(), "Stream i/o error");
@@ -183,15 +190,24 @@ protected:
     }
 
     static void close_socket(socket_t so) noexcept {
+        ::shutdown(so, SD_BOTH);
         closesocket(so);
     }
 
-    static auto wait_socket(struct pollfd *pfd, int timeout) noexcept {
-        return WSAPoll(pfd, 1, timeout);
+    auto wait_socket(struct pollfd *pfd, int timeout) noexcept {
+        auto status = WSAPoll(pfd, 1, timeout);
+        if(pfd->revents & (POLLNVAL|POLLHUP)) {
+            auto so = so_;
+            so_ = -1;
+            close_socket(so);
+            setstate(std::ios::eofbit);     // FlawFinder: ignore
+            return 0;
+        }
+        return status;
     }
 
     auto send_socket(const void *buffer, size_t size) {
-        return io_err(::send(so_, static_cast<const char *>(buffer), int(size), 0));
+        return io_err(::send(so_, static_cast<const char *>(buffer), int(size), MSG_NOSIGNAL));
     }
 
     auto recv_socket(void *buffer, size_t size) {
@@ -204,19 +220,27 @@ protected:
     }
 
     static void close_socket(socket_t so) noexcept {
+        ::shutdown(so, SHUT_RDWR);
         ::close(so);
     }
 
-    static auto wait_socket(struct pollfd *pfd, int timeout) noexcept {
-        return ::poll(pfd, 1, timeout);
+    auto wait_socket(struct pollfd *pfd, int timeout) noexcept {
+        auto status = ::poll(pfd, 1, timeout);
+        if(pfd->revents & (POLLNVAL|POLLHUP)) {
+            auto so = so_;
+            so_ = -1;
+            close_socket(so);
+            return 0;
+        }
+        return status;
     }
 
     auto send_socket(const void *buffer, size_t size) {
-        return io_err(::send(so_, buffer, size, 0));
+        return io_err(::send(so_, buffer, size, MSG_NOSIGNAL));
     }
 
     auto recv_socket(void *buffer, size_t size) {
-        return io_err(::recv(so_, buffer, size, MSG_WAITALL));
+        return io_err(::recv(so_, buffer, size, 0));
     }
 #endif
 

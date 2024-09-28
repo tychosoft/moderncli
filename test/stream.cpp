@@ -3,6 +3,7 @@
 
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
+#include "templates.hpp"
 #include "print.hpp"
 #include "stream.hpp"
 #include "socket.hpp"
@@ -30,6 +31,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         try {
             Socket dummy(localhost, SOCK_STREAM);
             assert(dummy.err() == 0);
+            assert(is(dummy));
             dummy.listen();
             assert(dummy.err() == 0);
             tcpstream tcp(localhost);
