@@ -136,6 +136,12 @@ public:
         close_socket(so);
     }
 
+    void close() {
+        sync();
+        stop();
+        setstate(std::ios::eofbit);     // FlawFinder: ignore
+    }
+
     auto wait(int timeout = -1) -> bool {
         struct pollfd pfd{0};
         pfd.fd = so_;
