@@ -88,11 +88,11 @@ public:
             return;
         }
 
-        auto ioflags = fcntl(device_, F_GETFL);
+        auto io_flags = fcntl(device_, F_GETFL);
         tcgetattr(device_, &current_);
         tcgetattr(device_, &original_);
         reset();
-        fcntl(device_, F_SETFL, ioflags & ~O_NDELAY);
+        fcntl(device_, F_SETFL, io_flags & ~O_NDELAY);
 
 #if defined(TIOCM_RTS) && defined(TIOCMODG)
         auto mcs = 0;
@@ -112,7 +112,7 @@ public:
         err_ = 0;
     }
 
-    auto get(bool echo = false, int echocode = EOF, int eol = EOF) const {
+    auto get(bool echo = false, int echo_code = EOF, int eol = EOF) const {
         if(device_ > -1) {
             char buf{0};
             err_ = 0;
@@ -121,8 +121,8 @@ public:
                 throw std::system_error(err_ = int(-result), std::generic_category(), "Serial i/o error");
             if(result < 1)
                 return EOF;
-            if(echo && echocode != EOF && (eol == EOF || buf != eol))
-                put(echocode);
+            if(echo && echo_code != EOF && (eol == EOF || buf != eol))
+                put(echo_code);
             else if(echo)
                 put(buf);
             return static_cast<int>(buf);
@@ -130,9 +130,9 @@ public:
         return EOF;
     }
 
-    auto get(void *data, size_t size, bool echo = false) const {
+    auto get(void *data, std::size_t size, bool echo = false) const {
         if(!data || !size)
-            return size_t(0U);
+            return std::size_t(0U);
 
         err_ = 0;
         auto count = ::read(device_, data, size);   // FlawFinder: safe
@@ -141,8 +141,8 @@ public:
         if(count > 0 && echo)
             put(data, count);
         if(count > 0)
-            return size_t(count);
-        return size_t(0U);
+            return std::size_t(count);
+        return std::size_t(0U);
     }
 
     auto put(int code) const -> bool {
@@ -162,17 +162,17 @@ public:
         return true;
     }
 
-    auto put(const void *data, size_t size) const -> size_t {
+    auto put(const void *data, std::size_t size) const -> std::size_t {
         if(!size || device_ < 0)
-            return size_t(0U);
+            return std::size_t(0U);
 
         err_ = 0;
         auto count = ::write(device_, data, size);
         if(count > 0)
-            return size_t(count);
+            return std::size_t(count);
         if(count < 0)
             throw std::system_error(err_ = int(-count), std::generic_category(), "Serial i/o error");
-        return size_t(0U);
+        return std::size_t(0U);
     }
 
     auto put(const std::string_view& msg) const {
@@ -191,7 +191,7 @@ public:
         return uint8_t(0);
     }
 
-    auto timed_mode(size_t size, uint8_t timer = 1) noexcept -> size_t {
+    auto timed_mode(std::size_t size, uint8_t timer = 1) noexcept -> std::size_t {
         if(device_ < 0)
             return 0U;
 
@@ -201,7 +201,7 @@ public:
         auto max = MAX_INPUT;
 #endif
 
-        if(size > (size_t)max)
+        if(size > std::size_t(max))
             size = max;
 
         if(size > 255)
@@ -218,7 +218,7 @@ public:
 
     auto line_mode(const char *nl = "\r\n", uint8_t min = 1) noexcept {
         if(device_ < 0)
-            return size_t(0U);
+            return std::size_t(0U);
 
         if(!nl)
             nl = "";
@@ -239,9 +239,9 @@ public:
         tcsetattr(device_, TCSANOW, &current_);
 
 #ifdef  _PC_MAX_INPUT
-        return size_t(fpathconf(device_, _PC_MAX_INPUT));
+        return std::size_t(fpathconf(device_, _PC_MAX_INPUT));
 #else
-        return size_t(MAX_INPUT);
+        return std::size_t(MAX_INPUT);
 #endif
     }
 
@@ -539,7 +539,7 @@ public:
         err_ = 0;
     }
 
-    auto get(bool echo = false, int echocode = EOF, int eol = EOF) const {
+    auto get(bool echo = false, int echo_code = EOF, int eol = EOF) const {
         if(device_ != invalid_) {
             char buf{0};
             DWORD count{0};
@@ -550,8 +550,8 @@ public:
             }
             if(count < 1)
                 return EOF;
-            if(echo && echocode != EOF && (eol == EOF || buf != eol))
-                put(echocode);
+            if(echo && echo_code != EOF && (eol == EOF || buf != eol))
+                put(echo_code);
             else if(echo)
                 put(buf);
             return static_cast<int>(buf);
@@ -559,9 +559,9 @@ public:
         return EOF;
     }
 
-    auto get(void *data, size_t size, bool echo = false) const {
+    auto get(void *data, std::size_t size, bool echo = false) const {
         if(!data || !size)
-             return size_t(0U);
+             return std::size_t(0U);
         DWORD count{0};
         err_ = 0;
         if(ReadFile(device_, data, DWORD(size), &count, nullptr) == FALSE) {
@@ -571,13 +571,13 @@ public:
         if(count > 0 && echo)
             put(data, count);
         if(count > 0)
-            return size_t(count);
-        return size_t(0U);
+            return std::size_t(count);
+        return std::size_t(0U);
     }
 
-    auto put(const void *data, size_t size) const -> size_t {
+    auto put(const void *data, std::size_t size) const -> std::size_t {
         if(!size || device_ == invalid_)
-            return size_t(0U);
+            return std::size_t(0U);
 
         DWORD count{0};
         err_ = 0;
@@ -586,8 +586,8 @@ public:
             throw std::system_error(errno, std::generic_category(), "Serial i/o error");
         }
         if(count > 0)
-            return size_t(count);
-        return size_t(0U);
+            return std::size_t(count);
+        return std::size_t(0U);
     }
 
     auto put(int code) const -> bool {
@@ -613,9 +613,9 @@ public:
         return put(msg.data(), msg.size());
     }
 
-    auto timed_mode(size_t size, uint8_t timer = 1) noexcept -> size_t {
+    auto timed_mode(std::size_t size, uint8_t timer = 1) noexcept -> std::size_t {
         if(device_ == invalid_)
-            return size_t(0);
+            return std::size_t(0);
 
         COMMTIMEOUTS timed{0};
         timed.WriteTotalTimeoutMultiplier = 0;
@@ -641,7 +641,7 @@ public:
     }
 
     auto line_mode(const char *nl = "\r\n", uint8_t min = 1) noexcept { // NOLINT
-        return size_t(0U);
+        return std::size_t(0U);
     }
 
     void flush() {
@@ -792,13 +792,13 @@ inline auto recv(const serial_t& sio, T& msg) {
     return sio.get(&msg, sizeof(msg));
 }
 
-inline auto getline(const serial_t& sio, char *buf, size_t max, int eol = '\n', bool echo = false, int echocode = EOF, const char *ignore = nullptr) {
+inline auto getline(const serial_t& sio, char *buf, std::size_t max, int eol = '\n', bool echo = false, int echo_code = EOF, const char *ignore = nullptr) {
     *buf = 0;
     --max;
 
-    auto count = size_t(0);
+    auto count = std::size_t(0);
     while(count < max) {
-        auto code = sio.get(echo, echocode, eol);
+        auto code = sio.get(echo, echo_code, eol);
         if(code == EOF)
             return count;
         if(ignore && strchr(ignore, code))
@@ -816,7 +816,7 @@ inline auto putline(const serial_t& sio, std::string_view msg, const std::string
     auto result = sio.put(msg);
     if(result > 0 && sio.put(eol) == eol.size())
         return result;
-    return size_t(0U);
+    return std::size_t(0U);
 }
 
 inline auto expect(const serial_t& sio, const std::string_view& match) {
@@ -847,14 +847,14 @@ inline auto until(const serial_t& sio, int match = EOF, unsigned max = 1) {
     return true;
 }
 
-inline auto csum8(const uint8_t *data, size_t size) {
+inline auto csum8(const uint8_t *data, std::size_t size) {
     uint8_t sum = 0;
     while (size--)
         sum += *data++;
     return sum;
 }
 
-inline auto crc16(const uint8_t *data, size_t size) {
+inline auto crc16(const uint8_t *data, std::size_t size) {
     crc16_t crc = 0x0000;
     while(size--) {
         crc ^= *data++ << 8;
@@ -868,18 +868,18 @@ inline auto crc16(const uint8_t *data, size_t size) {
     return crc;
 }
 
-inline auto crc32(const uint8_t *data, size_t size) {
+inline auto crc32(const uint8_t *data, std::size_t size) {
     static crc32_t table[256]{0};
     crc32_t crc = 0xffffffff;
 
-    for (size_t i = 0; i < 256; i++) {
+    for (std::size_t i = 0; i < 256; i++) {
         crc32_t c = i;
-        for (size_t j = 0; j < 8; j++)
+        for (std::size_t j = 0; j < 8; j++)
             c = (c & 1) ? 0xedb88320 ^ (c >> 1) : c >> 1;
         table[i] = c;
     }
 
-    for(size_t i = 0; i < size; i++)
+    for(std::size_t i = 0; i < size; i++)
         crc = table[(crc ^ data[i]) & 0xff] ^ (crc >> 8);
 
     return crc ^ 0xffffffff;

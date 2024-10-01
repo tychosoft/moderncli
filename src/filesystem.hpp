@@ -35,8 +35,8 @@ extern "C" {
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-inline auto getline_w32(char **lp, size_t *size, FILE *fp) -> ssize_t {
-    size_t pos{0};
+inline auto getline_w32(char **lp, std::size_t *size, FILE *fp) -> ssize_t {
+    std::size_t pos{0};
     int c{EOF};
 
     if(lp == nullptr || fp == nullptr || size == nullptr)
@@ -47,7 +47,7 @@ inline auto getline_w32(char **lp, size_t *size, FILE *fp) -> ssize_t {
         return -1;
 
     if(*lp == nullptr) {
-        *lp = static_cast<char *>(malloc(128)); // NOLINT
+        *lp = static_cast<char *>(std::malloc(128)); // NOLINT
         if(*lp == nullptr) {
             return -1;
         }
@@ -116,11 +116,11 @@ inline auto close(int fd) noexcept {
     return _close(fd);
 }
 
-inline auto read(int fd, void *buf, size_t len) {   // FlawFinder: ignore
+inline auto read(int fd, void *buf, std::size_t len) {   // FlawFinder: ignore
     return _read(fd, buf, len);
 }
 
-inline auto write(int fd, const void *buf, size_t len) {
+inline auto write(int fd, const void *buf, std::size_t len) {
     return _write(fd, buf, len);
 }
 
@@ -170,11 +170,11 @@ inline auto close(int fd) noexcept {
     return ::close(fd);
 }
 
-inline auto read(int fd, void *buf, size_t len) { // FlawFinder: ignore
+inline auto read(int fd, void *buf, std::size_t len) { // FlawFinder: ignore
     return ::read(fd, buf, len);    // FlawFinder: ignore
 }
 
-inline auto write(int fd, const void *buf, size_t len) {
+inline auto write(int fd, const void *buf, std::size_t len) {
     return ::write(fd, buf, len);
 }
 
@@ -253,11 +253,11 @@ public:
         return fd_ == -1 ? -EBADF : fsys::append(fd_);
     }
 
-    auto read(void *buf, size_t len) const noexcept { // FlawFinder: ignore
+    auto read(void *buf, std::size_t len) const noexcept { // FlawFinder: ignore
         return fd_ == -1 ? -EBADF : fsys::read(fd_, buf, len);  // FlawFinder: ignore
     }
 
-    auto write(const void *buf, size_t len) const noexcept {
+    auto write(const void *buf, std::size_t len) const noexcept {
         return fd_ == -1 ? -EBADF : fsys::write(fd_, buf, len);
     }
 
@@ -287,7 +287,7 @@ private:
 namespace tycho {
 inline auto scan_stream(std::istream& input, const std::function<bool(const std::string_view&)>& proc) {
     std::string line;
-    size_t count{0};
+    std::size_t count{0};
     while(std::getline(input, line)) {
         if (!proc(line))
             break;
@@ -299,7 +299,7 @@ inline auto scan_stream(std::istream& input, const std::function<bool(const std:
 inline auto scan_file(const fsys::path& path, const std::function<bool(const std::string_view&)>& proc) {
     std::fstream input(path);
     std::string line;
-    size_t count{0};
+    std::size_t count{0};
     while(std::getline(input, line)) {
         if (!proc(line))
             break;
@@ -309,54 +309,54 @@ inline auto scan_file(const fsys::path& path, const std::function<bool(const std
 }
 
 #if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__) && !defined(WIN32)
-inline auto scan_file(std::FILE *file, const std::function<bool(const std::string_view&)>& proc, size_t size = 0) {
+inline auto scan_file(std::FILE *file, const std::function<bool(const std::string_view&)>& proc, std::size_t size = 0) {
     char *buf{nullptr};
-    size_t count{0};
+    std::size_t count{0};
     if(size)
-        buf = static_cast<char *>(malloc(size));    // NOLINT
+        buf = static_cast<char *>(std::malloc(size));    // NOLINT
     while(!feof(file)) {
         auto len = getline(&buf, &size, file);
-        if(len < 0 || !proc({buf, static_cast<size_t>(len)}))
+        if(len < 0 || !proc({buf, std::size_t(len)}))
             break;
         ++count;
     }
     if(buf)
-        free(buf);  // NOLINT
+        std::free(buf);  // NOLINT
     return count;
 }
 
-inline auto scan_command(const std::string& cmd, const std::function<bool(const std::string_view&)>& proc, size_t size = 0) {
+inline auto scan_command(const std::string& cmd, const std::function<bool(const std::string_view&)>& proc, std::size_t size = 0) {
     auto file = popen(cmd.c_str(), "r");    // FlawFinder: ignore
 
     if(!file)
-        return size_t(0);
+        return std::size_t(0);
 
     auto count = scan_file(file, proc, size);
     pclose(file);
     return count;
 }
 #else
-inline auto scan_file(std::FILE *file, const std::function<bool(const std::string_view&)>& proc, size_t size = 0) {
+inline auto scan_file(std::FILE *file, const std::function<bool(const std::string_view&)>& proc, std::size_t size = 0) {
     char *buf{nullptr};
-    size_t count{0};
+    std::size_t count{0};
     if(size)
-        buf = static_cast<char *>(malloc(size));    // NOLINT
+        buf = static_cast<char *>(std::malloc(size));    // NOLINT
     while(!feof(file)) {
         auto len = getline_w32(&buf, &size, file);
-        if(len < 0 || !proc({buf, static_cast<size_t>(len)}))
+        if(len < 0 || !proc({buf, std::size_t(len)}))
             break;
         ++count;
     }
     if(buf)
-        free(buf);  // NOLINT
+        std::free(buf);  // NOLINT
     return count;
 }
 
-inline auto scan_command(const std::string& cmd, const std::function<bool(const std::string_view&)>& proc, size_t size = 0) {
+inline auto scan_command(const std::string& cmd, const std::function<bool(const std::string_view&)>& proc, std::size_t size = 0) {
     auto file = _popen(cmd.c_str(), "r");    // FlawFinder: ignore
 
     if(!file)
-        return size_t(0);
+        return std::size_t(0);
 
     auto count = scan_file(file, proc, size);
     _pclose(file);

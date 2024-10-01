@@ -2,7 +2,7 @@
 
 ## v0.9.3
 - Simplify socket and serial errors
-- Acceptor lambda for listener sockers
+- Acceptor lambda for listener sockets
 - Added network interfaces service
 - Added multicast socket support
 - Introduced streams and network tcp

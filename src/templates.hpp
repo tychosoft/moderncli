@@ -23,10 +23,10 @@ constexpr auto is_null(const T& ptr) {
 }
 
 template<typename T>
-constexpr auto bound_ptr(const T* pointer, const T* base, size_t count) {
+constexpr auto bound_ptr(const T* pointer, const T* base, std::size_t count) {
     if(pointer < base || pointer >= &base[count])
         return false;
-    if((static_cast<size_t>(pointer - base)) % sizeof(T))
+    if((std::size_t(pointer - base)) % sizeof(T))
         return false;
     return true;
 }

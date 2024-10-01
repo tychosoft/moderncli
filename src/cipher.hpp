@@ -12,7 +12,7 @@
 #include <openssl/evp.h>
 
 namespace crypto {
-using key_t = std::pair<const uint8_t *, size_t>;
+using key_t = std::pair<const uint8_t *, std::size_t>;
 
 inline constexpr auto nosalt = key_t{nullptr, 64};
 constexpr auto is_salt(const key_t& key) {
@@ -31,7 +31,7 @@ public:
         }
 
         auto kp = reinterpret_cast<const uint8_t *>(phrase.data());
-        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.first, kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
+        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else
@@ -45,7 +45,7 @@ public:
             return;
         }
 
-        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.first, key.first, static_cast<int>(key.second), rounds, data_, iv_));
+        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, key.first, static_cast<int>(key.second), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else
@@ -101,7 +101,7 @@ public:
 
         size_ = EVP_CIPHER_key_length(algo);
         auto kp = reinterpret_cast<const uint8_t *>(phrase.data());
-        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.first, kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
+        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else
@@ -115,7 +115,7 @@ public:
         }
 
         size_ = EVP_CIPHER_key_length(algo);
-        auto ks = static_cast<size_t>(EVP_BytesToKey(algo, md, salt.first, key.first, static_cast<int>(key.second), rounds, data_, iv_));
+        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, key.first, static_cast<int>(key.second), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else
@@ -139,12 +139,12 @@ public:
     }
 
 private:
-    static constexpr size_t maxsize = 64;
+    static constexpr std::size_t maxsize = 64;
 
     const EVP_CIPHER *cipher_{nullptr};
     uint8_t data_[maxsize]{0};
     uint8_t iv_[maxsize]{0};
-    size_t size_{0U};
+    std::size_t size_{0U};
 };
 
 class decrypt_t final {
@@ -231,34 +231,34 @@ public:
         return algo_;
     }
 
-    auto keysize() const noexcept -> size_t {
+    auto keysize() const noexcept -> std::size_t {
         return EVP_CIPHER_key_length(algo_);
     }
 
-    auto update(const uint8_t *in, uint8_t *out, size_t size) noexcept {
+    auto update(const uint8_t *in, uint8_t *out, std::size_t size) noexcept {
         auto used = 0;
 
         if(!ctx_)
-            return size_t(0);
+            return std::size_t(0);
 
-        if(!EVP_DecryptUpdate(ctx_, out, &used, in, static_cast<int>(size)))
-            return size_t(0);
+        if(!EVP_DecryptUpdate(ctx_, out, &used, in, int(size)))
+            return std::size_t(0);
 
-        return static_cast<size_t>(used);
+        return std::size_t(used);
     }
 
     auto finish(uint8_t *out) noexcept {
         auto used = 0;
 
         if(!ctx_)
-            return size_t(0);
+            return std::size_t(0);
 
         if(!EVP_DecryptFinal_ex(ctx_, out, &used))
             used = 0;
 
         EVP_CIPHER_CTX_free(ctx_);
         ctx_ = nullptr;
-        return static_cast<size_t>(used);
+        return std::size_t(used);
     }
 
 private:
@@ -355,34 +355,34 @@ public:
         return algo_;
     }
 
-    auto keysize() const noexcept -> size_t {
+    auto keysize() const noexcept -> std::size_t {
         return EVP_CIPHER_key_length(algo_);
     }
 
-    auto update(const uint8_t *in, uint8_t *out, size_t size) noexcept {
+    auto update(const uint8_t *in, uint8_t *out, std::size_t size) noexcept {
         auto used = 0;
 
         if(!ctx_)
-            return size_t(0);
+            return std::size_t(0);
 
-        if(!EVP_EncryptUpdate(ctx_, out, &used, in, static_cast<int>(size)))
-            return size_t(0);
+        if(!EVP_EncryptUpdate(ctx_, out, &used, in, int(size)))
+            return std::size_t(0);
 
-        return static_cast<size_t>(used);
+        return std::size_t(used);
     }
 
     auto finish(uint8_t *out) noexcept {
         auto used = 0;
 
         if(!ctx_)
-            return size_t(0);
+            return std::size_t(0);
 
         if(!EVP_EncryptFinal_ex(ctx_, out, &used))
             used = 0;
 
         EVP_CIPHER_CTX_free(ctx_);
         ctx_ = nullptr;
-        return static_cast<size_t>(used);
+        return std::size_t(used);
     }
 
 private:

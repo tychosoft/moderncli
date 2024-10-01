@@ -72,8 +72,8 @@ template<typename S = std::string>
 constexpr auto strip(const S& str) -> S {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
-    const size_t first = str.find_first_not_of(" \t\f\v\n\r");
-    const size_t last = str.find_last_not_of(" \t\f\v\n\r");
+    const std::size_t first = str.find_first_not_of(" \t\f\v\n\r");
+    const std::size_t last = str.find_last_not_of(" \t\f\v\n\r");
     if(last == S::npos)
         return "";
     return str.substr(first, (last-first+1));
@@ -218,7 +218,7 @@ inline auto eq(const char *p1, const char *p2) {
     return strcmp(p1, p2) == 0;
 }
 
-inline auto eq(const char *p1, const char *p2, size_t len) {
+inline auto eq(const char *p1, const char *p2, std::size_t len) {
     if(!p1 && !p2)
         return true;
 
@@ -228,8 +228,8 @@ inline auto eq(const char *p1, const char *p2, size_t len) {
     return strncmp(p1, p2, len) == 0;
 }
 
-constexpr auto str_size(const char *cp, size_t max = 256) -> size_t {
-    size_t count = 0;
+constexpr auto str_size(const char *cp, std::size_t max = 256) -> std::size_t {
+    std::size_t count = 0;
     while(cp && *cp && count < max) {
         ++count;
         ++cp;
@@ -237,9 +237,9 @@ constexpr auto str_size(const char *cp, size_t max = 256) -> size_t {
     return count;
 }
 
-inline auto str_copy(char *cp, size_t max, std::string_view view) {
+inline auto str_copy(char *cp, std::size_t max, std::string_view view) {
     if(!cp)
-        return size_t(0);
+        return std::size_t(0);
 
     auto count = view.size();
     auto dp = view.data();
@@ -254,7 +254,7 @@ inline auto str_copy(char *cp, size_t max, std::string_view view) {
     return count;
 }
 
-inline auto str_append(char *cp, size_t max, ...) {  // NOLINT
+inline auto str_append(char *cp, std::size_t max, ...) {  // NOLINT
     va_list list{};
     auto pos = str_size(cp, max);
     va_start(list, max);
@@ -279,12 +279,12 @@ inline auto str_append(char *cp, size_t max, ...) {  // NOLINT
     return pos < max;
 }
 
-inline auto to_hex(const uint8_t *from, size_t size) {
+inline auto to_hex(const uint8_t *from, std::size_t size) {
     std::string out;
     out.resize(size * 2);
     auto hex = out.data();
 
-    for(auto pos = size_t(0); pos < size; ++pos) {
+    for(auto pos = std::size_t(0); pos < size; ++pos) {
         snprintf(hex, 3, "%02x", from[pos]);
         hex += 2;
     }
@@ -295,13 +295,13 @@ inline auto to_hex(const std::string_view str) {
     return to_hex(reinterpret_cast<const uint8_t *>(str.data()), str.size());
 }
 
-inline auto from_hex(std::string_view from, uint8_t *to, size_t size) {
+inline auto from_hex(std::string_view from, uint8_t *to, std::size_t size) {
     auto hex = from.data();
     auto max = size * 2;
     if(from.size() <= max)
         max = from.size();
 
-    for(auto pos = size_t(0); pos < max; pos += 2) {
+    for(auto pos = std::size_t(0); pos < max; pos += 2) {
         char buf[3];
         buf[0] = hex[pos];
         buf[1] = hex[pos + 1];
@@ -316,7 +316,7 @@ inline auto from_hex(std::string_view from, uint8_t *to, size_t size) {
 }
 
 inline void clobber(std::string& str, char fill = '*') {
-    for(auto pos = size_t(0); pos < str.size(); ++pos) {
+    for(auto pos = std::size_t(0); pos < str.size(); ++pos) {
         str[pos] = fill;
     }
 }

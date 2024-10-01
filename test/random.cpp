@@ -17,9 +17,13 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     const uint8_t txt[7] = {'A', 'B', 'C', 'D', 'Z', '1', '2'};
     uint8_t msg[8];
     msg[7] = 0;
+    // cspell:disable-next-line
     assert(crypto::to_b64(txt, sizeof(txt)) == "QUJDRFoxMg==");
+    // cspell:disable-next-line
     assert(crypto::size_b64("QUJDRFoxMg==") == 7);
+    // cspell:disable-next-line
     assert(crypto::from_b64("QUJDRFoxMg==", msg, sizeof(msg)) == 7);
+    // cspell:disable-next-line
     assert(eq("ABCDZ12", reinterpret_cast<const char *>(msg)));
 }
 

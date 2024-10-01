@@ -95,11 +95,11 @@ public:
         return reinterpret_cast<const char *>(data_);
     }
 
-    auto update(const char *cp, size_t size) noexcept {
+    auto update(const char *cp, std::size_t size) noexcept {
         return !ctx_ || size_ ? false : EVP_DigestUpdate(ctx_, reinterpret_cast<uint8_t *>(const_cast<char *>(cp)), size) == 1;
     }
 
-    auto update(const uint8_t *cp, size_t size) noexcept {
+    auto update(const uint8_t *cp, std::size_t size) noexcept {
         return !ctx_ || size_ ? false : EVP_DigestUpdate(ctx_, cp, size) == 1;
     }
 
@@ -126,28 +126,28 @@ private:
 };
 
 #if OPENSSL_API_LEVEL >= 30000
-inline auto hmac(const std::string_view& key, const uint8_t *msg, size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
+inline auto hmac(const std::string_view& key, const uint8_t *msg, std::size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
     unsigned olen{0};
     if(!HMAC(md, key.data(), static_cast<int>(key.size()), msg, size, out, &olen))
         olen = 0;
-    return static_cast<size_t>(olen);
+    return std::size_t(olen);
 }
 #else
-inline auto hmac(const std::string_view& key, const uint8_t *msg, size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
+inline auto hmac(const std::string_view& key, const uint8_t *msg, std::size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
     unsigned olen{0};
     auto ctx = HMAC_CTX_new();
     if(!ctx)
-        return size_t(0);
+        return std::size_t(0);
 
     if(!HMAC_Init_ex(ctx, key.data(), static_cast<int>(key.size()), md, nullptr)) {
         HMAC_CTX_free(ctx);
-        return size_t(0);
+        return std::size_t(0);
     }
 
     HMAC_Update(ctx, msg, size);
     HMAC_Final(ctx, out, &olen);
     HMAC_CTX_free(ctx);
-    return static_cast<size_t>(olen);
+    return std::size_t(olen);
 }
 #endif
 
@@ -155,21 +155,21 @@ inline auto hmac(const std::string_view& key, const std::string_view& msg, uint8
     return hmac(key, reinterpret_cast<const uint8_t *>(msg.data()), msg.size(), out, md);
 }
 
-inline auto digest(const uint8_t *msg, size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
+inline auto digest(const uint8_t *msg, std::size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
     unsigned olen{0};
     auto ctx = EVP_MD_CTX_create();
     if(!ctx)
-        return size_t(0);
+        return std::size_t(0);
 
     if(!EVP_DigestInit_ex(ctx, md, nullptr)) {
         EVP_MD_CTX_destroy(ctx);
-        return size_t(0);
+        return std::size_t(0);
     }
 
     EVP_DigestUpdate(ctx, msg, size);
     EVP_DigestFinal_ex(ctx, out, &olen);
     EVP_MD_CTX_destroy(ctx);
-    return static_cast<size_t>(olen);
+    return std::size_t(olen);
 }
 
 inline auto digest(const std::string_view& msg, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
@@ -179,8 +179,8 @@ inline auto digest(const std::string_view& msg, uint8_t *out, const EVP_MD *md =
 inline auto digest_size(const EVP_MD *md = EVP_sha256()) {
     auto sz = EVP_MD_get_size(md);
     if(sz < 1)
-        return size_t(0);
-    return static_cast<size_t>(sz);
+        return std::size_t(0);
+    return std::size_t(sz);
 }
 
 inline auto digest_id(const char *name) {

@@ -10,7 +10,7 @@
 
 namespace {
 const uint16_t port = 9789;
-address_t localhost("127.0.0.1", port);
+address_t local_host("127.0.0.1", port);
 } // end anon namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
@@ -29,12 +29,12 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     catch(...) {
         // creates a connected socket...
         try {
-            Socket dummy(localhost, SOCK_STREAM);
+            Socket dummy(local_host, SOCK_STREAM);
             assert(dummy.err() == 0);
             assert(is(dummy));
             dummy.listen();
             assert(dummy.err() == 0);
-            tcpstream tcp(localhost);
+            tcpstream tcp(local_host);
             assert(tcp.is_open() == true);
             print(tcp, "HERE");
             assert(tcp.out_pending() == 4);

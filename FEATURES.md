@@ -44,7 +44,7 @@ header presumes a c++ compiler with filesystem runtime support.
 ## keyfile.hpp
 
 This allows for parsing config files that may be broken into \[sections\] and
-have key=value key pairs in each section.  It allows for instanciating a
+have key=value key pairs in each section.  It allows for an instantiation of a
 section as a collection of keys as well as iterating over named sections and
 key collections. It can also be used to modify and re-write the key file with
 changed data.
@@ -112,7 +112,7 @@ introduced only very recently.
 
 ## sync.hpp
 
-Thread and sync templates. This includes special sync ptrs and container
+Thread and sync templates. This includes special sync pointer and container
 templates that offer public access objects to protected data only when a lock
 (mutex or shared) is being actively asserted. This behavior is very similar to
 rust locking access and gives stronger guarantees about access safety while
@@ -122,7 +122,7 @@ synchronization objects such as semaphores and barriers.
 
 ## templates.hpp
 
-Some very generic, universal, miscellanous templates and functions. This also
+Some very generic, universal, miscellaneous templates and functions. This also
 is used to introduce new language-like "features" like init and defer.
 
 ## linting

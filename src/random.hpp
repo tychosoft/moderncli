@@ -14,7 +14,7 @@
 #include <openssl/rand.h>
 
 namespace crypto {
-using key_t = std::pair<const uint8_t *, size_t>;
+using key_t = std::pair<const uint8_t *, std::size_t>;
 
 inline constexpr auto salt = 64UL;
 inline constexpr auto md5_key = 128UL;
@@ -25,7 +25,7 @@ inline constexpr auto sha512_key = 512UL;
 inline constexpr auto aes128_key = 128UL;
 inline constexpr auto aes256_key = 256UL;
 
-inline auto to_b64(const uint8_t *data, size_t size) {
+inline auto to_b64(const uint8_t *data, std::size_t size) {
     constexpr std::array<char, 64> base64_chars = {
         'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
         'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
@@ -35,9 +35,9 @@ inline auto to_b64(const uint8_t *data, size_t size) {
 
     std::string out;
 
-    for (size_t i = 0; i < size; i += 3) {
+    for (std::size_t i = 0; i < size; i += 3) {
         uint32_t c = 0;
-        for (size_t j = 0; j < 3; ++j) {
+        for (std::size_t j = 0; j < 3; ++j) {
             c <<= 8;
             if(i + j < size)
                 c |= static_cast<uint32_t>(data[i + j]);
@@ -79,7 +79,7 @@ constexpr auto base64_index(char c) {
 inline auto size_b64(std::string_view from) {
     auto size = from.size();
     if(!size)
-        return size_t(0);
+        return std::size_t(0);
 
     --size;
     while(size && from[size] == '=')
@@ -94,18 +94,18 @@ inline auto size_b64(std::string_view from) {
     case 2:
         return out - 1;
     default:
-        return size_t(0);
+        return std::size_t(0);
     }
 }
 
-inline auto from_b64(std::string_view from, uint8_t *to, size_t max) {
+inline auto from_b64(std::string_view from, uint8_t *to, std::size_t max) {
     auto out = size_b64(from);
 
     if(out > max)
-        return size_t(0);
+        return std::size_t(0);
 
     uint32_t val = 0;
-    size_t bits = 0, count = 0;
+    std::size_t bits = 0, count = 0;
 
     for (const auto &ch : from) {
         if(count >= out)
@@ -131,7 +131,7 @@ inline void rand(T& data) {
     ::RAND_bytes(ptr, static_cast<int>(sizeof(data)));
 }
 
-inline void rand(uint8_t *ptr, size_t size) {
+inline void rand(uint8_t *ptr, std::size_t size) {
     ::RAND_bytes(ptr, static_cast<int>(size));
 }
 
@@ -143,18 +143,18 @@ inline void zero(T& data) {
     memset(ptr, 0, sizeof(data));
 }
 
-inline void zero(uint8_t *ptr, size_t size) {
+inline void zero(uint8_t *ptr, std::size_t size) {
     memset(ptr, 0, size);
 }
 
 inline auto random_dist(int min, int max) {
     std::random_device rd;
-    std::mt19937 rgen(rd());
+    std::mt19937 rand_gen(rd());
     std::uniform_int_distribution<> dist(min, max);
-    return dist(rgen);
+    return dist(rand_gen);
 }
 
-inline auto make_key(const uint8_t *data, size_t size) -> key_t {
+inline auto make_key(const uint8_t *data, std::size_t size) -> key_t {
     return std::make_pair(data, size);
 }
 
@@ -166,7 +166,7 @@ inline auto to_b64(const key_t& key) {
     return to_b64(key.first, key.second);
 }
 
-template <size_t S>
+template <std::size_t S>
 class random_t final {
 public:
     random_t() {
@@ -238,7 +238,7 @@ public:
         return data_;
     }
 
-    auto size() const noexcept -> size_t {
+    auto size() const noexcept -> std::size_t {
         return sizeof(data_);
     }
 
@@ -256,17 +256,17 @@ private:
     uint8_t data_[S / 8]{0};
 };
 
-template <size_t S>
+template <std::size_t S>
 inline auto shared_key() {
     return std::make_shared<random_t<S>>();
 }
 
-template <size_t S>
+template <std::size_t S>
 inline auto unique_key() {
     return std::make_unique<random_t<S>>();
 }
 
-template <size_t S>
+template <std::size_t S>
 inline auto shared_key(const std::string_view& b64) {
     return std::make_shared<random_t<S>>(b64);
 }

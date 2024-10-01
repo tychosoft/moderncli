@@ -157,7 +157,7 @@ public:
     }
 
     template<class... Args>
-    [[noreturn]] void fail(int excode, std::string_view fmt, const Args&... args) {
+    [[noreturn]] void fail(int exit_code, std::string_view fmt, const Args&... args) {
         if(fmt.back() == '\n')
             fmt.remove_suffix(1);
         auto msg = format(fmt, args...);
@@ -169,11 +169,11 @@ public:
         if(logging_)
             print(std::cerr, "fail: {}\n", msg);
         std::cerr << std::ends;
-        ::exit(excode);
+        ::exit(exit_code);
     }
 
     template<class... Args>
-    [[noreturn]] void crit(int excode, std::string_view fmt, const Args&... args) {
+    [[noreturn]] void crit(int exit_code, std::string_view fmt, const Args&... args) {
         if(fmt.back() == '\n')
             fmt.remove_suffix(1);
         auto msg = format(fmt, args...);
@@ -185,7 +185,7 @@ public:
         if(logging_)
             print(std::cerr, "crit: {}\n", msg);
         std::cerr << std::ends;
-        quick_exit(excode);
+        quick_exit(exit_code);
     }
 
     void set(unsigned level, notify_t notify = [](const std::string& str, const char *type){}) {

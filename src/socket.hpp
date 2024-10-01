@@ -293,7 +293,7 @@ private:
         }
     }
 
-    static auto zero_(const void *addr, size_t size) -> bool {
+    static auto zero_(const void *addr, std::size_t size) -> bool {
         auto ptr = static_cast<const std::byte *>(addr);
         while(size--) {
             if(*ptr != std::byte(0))
@@ -528,7 +528,7 @@ public:
             return count_ == 0;
         }
 
-        auto operator[](size_t index) const noexcept -> const struct sockaddr *{
+        auto operator[](std::size_t index) const noexcept -> const struct sockaddr *{
             if(index >= count_)
                 return nullptr;
             auto entry = list_;
@@ -564,7 +564,7 @@ public:
             return nullptr;
         }
 
-        auto mask(size_t index) const noexcept {
+        auto mask(std::size_t index) const noexcept {
             if(index >= count_)
                 return 0;
             auto entry = list_;
@@ -580,7 +580,7 @@ public:
             return 0;
         }
 
-        auto name(size_t index) const noexcept -> std::string {
+        auto name(std::size_t index) const noexcept -> std::string {
             if(index >= count_)
                 return {};
             auto entry = list_;
@@ -614,7 +614,7 @@ public:
 
     private:
         PIP_ADAPTER_ADDRESSES list_{nullptr};
-        size_t count_{0};
+        std::size_t count_{0};
     };
 
 #else
@@ -643,7 +643,7 @@ public:
             return count_ == 0;
         }
 
-        auto operator[](size_t index) const noexcept -> const struct sockaddr *{
+        auto operator[](std::size_t index) const noexcept -> const struct sockaddr *{
             if(index >= count_)
                 return nullptr;
             auto entry = list_;
@@ -670,7 +670,7 @@ public:
             return nullptr;
         }
 
-        auto mask(size_t index) const noexcept {
+        auto mask(std::size_t index) const noexcept {
             if(index >= count_)
                 return 0;
 
@@ -695,7 +695,7 @@ public:
             }
         }
 
-        auto name(size_t index) const noexcept -> std::string {
+        auto name(std::size_t index) const noexcept -> std::string {
             if(index >= count_)
                 return {};
             auto entry = list_;
@@ -718,7 +718,7 @@ public:
 
     private:
         struct ifaddrs *list_{nullptr};
-        size_t count_{0};
+        std::size_t count_{0};
 
         static auto prefix_ipv4(uint32_t mask) noexcept -> int {
             auto count = 0;
@@ -1025,26 +1025,26 @@ public:
         return addr;
     }
 
-    auto send(const void *from, size_t size, int flags = 0) const noexcept {
+    auto send(const void *from, std::size_t size, int flags = 0) const noexcept {
         if(so_ == -1)
             return io_error(-EBADF);
         return io_error(::send(so_, static_cast<const char *>(from), int(size), flags));
     }
 
-    auto recv(void *to, size_t size, int flags = 0) const noexcept {
+    auto recv(void *to, std::size_t size, int flags = 0) const noexcept {
         if(so_ == -1)
             return io_error(-EBADF);
         return io_error(::recv(so_, static_cast<char *>(to), int(size), flags));
     }
 
-    auto send(const void *from, size_t size, const address_t addr, int flags = 0) const noexcept {
+    auto send(const void *from, std::size_t size, const address_t addr, int flags = 0) const noexcept {
         if(so_ == -1)
             return io_error(-EBADF);
 
         return io_error(::sendto(so_, static_cast<const char *>(from), int(size), flags, addr.data(), addr.size()));
     }
 
-    auto recv(void *to, size_t size, address_t& addr, int flags = 0) const noexcept {
+    auto recv(void *to, std::size_t size, address_t& addr, int flags = 0) const noexcept {
         auto len = address_t::maxsize;
         if(so_ == -1)
             return io_error(-EBADF);
@@ -1053,7 +1053,7 @@ public:
     }
 
 #ifdef USE_CLOSESOCKET
-    static auto poll(struct pollfd *fds, size_t count, int timeout) noexcept -> int {
+    static auto poll(struct pollfd *fds, std::size_t count, int timeout) noexcept -> int {
         return WSAPoll(fds, count, timeout);
     }
 
@@ -1077,7 +1077,7 @@ public:
         static_cast<void>(WSACleanup());
     }
 #else
-    static auto poll(struct pollfd *fds, size_t count, int timeout) noexcept -> int {
+    static auto poll(struct pollfd *fds, std::size_t count, int timeout) noexcept -> int {
         return ::poll(fds, count, timeout);
     }
 
@@ -1096,7 +1096,7 @@ protected:
     volatile int so_{-1};
     mutable int err_{0};
 
-    auto io_error(ssize_t size) const noexcept -> size_t {
+    auto io_error(ssize_t size) const noexcept -> std::size_t {
         if(size == -1) {
             size = 0;
             err_ = errno;
@@ -1107,7 +1107,7 @@ protected:
         }
         else
             err_ = 0;
-        return size_t(size);
+        return std::size_t(size);
     }
 
     auto set_error(int code) const noexcept -> int {
@@ -1249,7 +1249,7 @@ inline auto inet_host(const struct sockaddr *addr) noexcept -> std::string {
     return {};
 }
 
-inline auto inet_host(const std::string& host = "") {
+inline auto inet_host(const std::string& host = "", int type = SOCK_STREAM) {
     struct addrinfo hints{0}, *info{nullptr};
     auto fqdn = host;
     if(fqdn.empty())
@@ -1261,7 +1261,7 @@ inline auto inet_host(const std::string& host = "") {
     auto hostid = fqdn.c_str();
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;    // either IPV4 or IPV6
-    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_socktype = type;
     hints.ai_flags = AI_CANONNAME;
 
     if(getaddrinfo(hostid, nullptr, &hints, &info) == 0 && info) {

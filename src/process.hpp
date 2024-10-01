@@ -145,7 +145,7 @@ public:
     map_t(const map_t&) = delete;
     auto operator=(const map_t&) -> auto& = delete;
 
-    map_t(handle_t h, size_t size, bool rw = true, [[maybe_unused]] bool priv = false, off_t offset = 0) noexcept : size_(size) {
+    map_t(handle_t h, std::size_t size, bool rw = true, [[maybe_unused]] bool priv = false, off_t offset = 0) noexcept : size_(size) {
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable: 4293)
@@ -205,7 +205,7 @@ public:
         return (static_cast<uint8_t *>(addr_))[pos];
     }
 
-    auto operator[](size_t pos) const -> const uint8_t& {
+    auto operator[](std::size_t pos) const -> const uint8_t& {
         if(addr_ == MAP_FAILED)
             throw std::runtime_error("no mapped handle");
         if(pos >= size_)
@@ -248,7 +248,7 @@ public:
         return false;
     }
 
-    auto set(handle_t h, size_t size, bool rw = true, [[maybe_unused]]bool priv = false, off_t offset = 0) noexcept -> void *{
+    auto set(handle_t h, std::size_t size, bool rw = true, [[maybe_unused]]bool priv = false, off_t offset = 0) noexcept -> void *{
         if(addr_ != MAP_FAILED)
             UnmapViewOfFile(addr_);
         addr_ = MAP_FAILED;
@@ -288,7 +288,7 @@ public:
 
 private:
     void *addr_{MAP_FAILED};
-    size_t size_{0};
+    std::size_t size_{0};
 };
 
 inline auto page_size() noexcept -> off_t {
@@ -494,7 +494,7 @@ public:
     map_t(const map_t&) = delete;
     auto operator=(const map_t&) -> auto& = delete;
 
-    map_t(handle_t fd, size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept : addr_(::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset)), size_(size) {}
+    map_t(handle_t fd, std::size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept : addr_(::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset)), size_(size) {}
 
     ~map_t() {
         if(addr_ != MAP_FAILED)
@@ -516,7 +516,7 @@ public:
         return addr_;
     }
 
-    auto operator[](size_t pos) -> uint8_t& {
+    auto operator[](std::size_t pos) -> uint8_t& {
         if(addr_ == MAP_FAILED)
             throw std::runtime_error("no mapped handle");
         if(pos >= size_)
@@ -524,7 +524,7 @@ public:
         return (static_cast<uint8_t *>(addr_))[pos];
     }
 
-    auto operator[](size_t pos) const -> const uint8_t& {
+    auto operator[](std::size_t pos) const -> const uint8_t& {
         if(addr_ == MAP_FAILED)
             throw std::runtime_error("no mapped handle");
         if(pos >= size_)
@@ -552,7 +552,7 @@ public:
         return (addr_ == MAP_FAILED) ? false : ::munlock(addr_, size_) == 0;
     }
 
-    auto set(handle_t fd, size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept {
+    auto set(handle_t fd, std::size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept {
         if(addr_ != MAP_FAILED)
             munmap(addr_, size_);
 
@@ -563,7 +563,7 @@ public:
 
 private:
     void *addr_{MAP_FAILED};
-    size_t size_{0};
+    std::size_t size_{0};
 };
 
 inline auto page_size() noexcept -> off_t {
@@ -692,7 +692,7 @@ inline auto detach(const std::string& path, char *const *argv) -> id_t {
         // FlawFinder: ignore
         auto fd = open("/dev/tty", O_RDWR);
         if(fd >= 0) {
-            ::ioctl(fd, TIOCNOTTY, NULL);
+            ::ioctl(fd, TIOCNOTTY, nullptr);
             ::close(fd);
         }
 #else
@@ -728,7 +728,7 @@ inline auto detach(const std::string& path, char *const *argv, char *const *env)
         // FlawFinder: ignore
         auto fd = open("/dev/tty", O_RDWR);
         if(fd >= 0) {
-            ::ioctl(fd, TIOCNOTTY, NULL);
+            ::ioctl(fd, TIOCNOTTY, nullptr);
             ::close(fd);
         }
 #else
@@ -773,7 +773,7 @@ inline auto on_exit(void(*handler)()) {
     return at_quick_exit(handler) == 0;
 }
 
-inline auto env(const std::string& id, size_t max = 256) noexcept -> std::optional<std::string> {
+inline auto env(const std::string& id, std::size_t max = 256) noexcept -> std::optional<std::string> {
     auto buf = std::make_unique<char []>(max);
     // FlawFinder: ignore
     const char *out = getenv(id.c_str());

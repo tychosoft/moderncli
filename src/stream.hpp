@@ -43,19 +43,19 @@ using ssize_t = SSIZE_T;
 #endif
 
 namespace tycho {
-template <size_t S = 536>
+template <std::size_t S = 536>
 class socket_stream : protected std::streambuf, public std::iostream {
 public:
     inline static const auto maxsize = S;
 
     // typically used to accept a tcp session from a listener socket
-    socket_stream(int from, const struct sockaddr *peer, size_t size = S) :
+    socket_stream(int from, const struct sockaddr *peer, std::size_t size = S) :
     std::iostream(static_cast<std::streambuf *>(this)), so_(from), family_(peer ? peer->sa_family : AF_UNSPEC) {
         allocate(size);
     }
 
     // typically used to connect a tcp session to a remote service
-    explicit socket_stream(const struct sockaddr *peer, size_t size = S) :
+    explicit socket_stream(const struct sockaddr *peer, std::size_t size = S) :
     std::iostream(static_cast<std::streambuf *>(this)), family_(peer ? peer->sa_family : AF_UNSPEC) {
         socklen_t plen = sizeof(sockaddr_storage);
         if(peer)
@@ -130,7 +130,7 @@ public:
         return bufsize;
     }
 
-    void stop() {           // may be called from another thread context
+    void stop() {                       // may be called from another thread
         auto so = so_;
         so_ = -1;
         close_socket(so);
@@ -173,20 +173,20 @@ protected:
             switch(error) {
             case EAGAIN:
             case EINTR:
-                return size_t(0);
+                return std::size_t(0);
             case EPIPE: {
                 auto so = so_;
                 so_ = -1;
                 close_socket(so);
                 setstate(std::ios::eofbit);     // FlawFinder: ignore
-                return size_t(0);
+                return std::size_t(0);
             }
             default:
                 setstate(std::ios::failbit);    // FlawFinder: ignore
                 throw std::system_error(errno, std::generic_category(), "Stream i/o error");
             }
         }
-        return size_t(result);
+        return std::size_t(result);
     }
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
@@ -212,11 +212,11 @@ protected:
         return status;
     }
 
-    auto send_socket(const void *buffer, size_t size) {
+    auto send_socket(const void *buffer, std::size_t size) {
         return io_err(::send(so_, static_cast<const char *>(buffer), int(size), MSG_NOSIGNAL));
     }
 
-    auto recv_socket(void *buffer, size_t size) {
+    auto recv_socket(void *buffer, std::size_t size) {
         return io_err(::recv(so_, static_cast<char *>(buffer), int(size), 0));
     }
 #else
@@ -236,23 +236,24 @@ protected:
             auto so = so_;
             so_ = -1;
             close_socket(so);
+            setstate(std::ios::eofbit);     // FlawFinder: ignore
             return 0;
         }
         return status;
     }
 
-    auto send_socket(const void *buffer, size_t size) {
+    auto send_socket(const void *buffer, std::size_t size) {
         return io_err(::send(so_, buffer, size, MSG_NOSIGNAL));
     }
 
-    auto recv_socket(void *buffer, size_t size) {
+    auto recv_socket(void *buffer, std::size_t size) {
         return io_err(::recv(so_, buffer, size, 0));
     }
 #endif
 
     char gbuf[S]{0}, pbuf[S]{0};
     // cppcheck-suppress unusedStructMember
-    size_t bufsize{0}, getsize{0};
+    std::size_t bufsize{0}, getsize{0};
 
     void allocate(size_t size) {
         if(!size)

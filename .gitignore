@@ -3,6 +3,7 @@ CPack*
 CMakeFiles/
 CMakeScripts/
 CMakeSettings.json
+CMakeUserPresets.json
 Testing/
 cmake/custom.cmake
 build/
@@ -13,6 +14,7 @@ out/
 compile_commands.json
 .cmake
 .clangd
+.cache
 
 .ninja*
 *.ninja
@@ -29,6 +31,7 @@ coverage.info
 core
 *.a
 *.so
+*.idx
 *.obj
 *.exe
 *.dll

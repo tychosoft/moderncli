@@ -43,8 +43,8 @@ private:
 
     bad_arg(const std::string& text, char code) : msg(dup((text + " -" + code).c_str())) {}
 
-    static auto str_size(const char *cp, size_t max = 255) {
-        size_t count = 0;
+    static auto str_size(const char *cp, std::size_t max = 255) {
+        std::size_t count = 0;
         while(cp && *cp && count++ <= max)
             ++cp;
 
@@ -226,10 +226,10 @@ public:
             else
                 arg.remove_prefix(1);
 
-            auto keysplit = arg.find('=');
+            auto key_split = arg.find('=');
             auto keyword = arg;
-            if(keysplit != std::string_view::npos)
-                keyword = arg.substr(0, keysplit);
+            if(key_split != std::string_view::npos)
+                keyword = arg.substr(0, key_split);
 
             auto op = option::first_;
             while(op) {
@@ -250,15 +250,15 @@ public:
                     throw bad_arg("already used", keyword);
 
                 if(!op->usage_) {
-                    if(keysplit != std::string_view::npos)
+                    if(key_split != std::string_view::npos)
                         throw bad_arg("invalid value", keyword);
 
                     op->value_ = true;
                     break;
                 }
 
-                if(keysplit != std::string_view::npos) {
-                    op->value_ = arg.substr(keysplit + 1).data();
+                if(key_split != std::string_view::npos) {
+                    op->value_ = arg.substr(key_split + 1).data();
                     break;
                 }
 
@@ -337,7 +337,7 @@ public:
                 continue;
             }
 
-            size_t hp = 0;
+            std::size_t hp = 0;
             if(op->code_ && op->id_) {
                 std::cout << "  -" << op->code_ << ", ";
                 hp = 6;

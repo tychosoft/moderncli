@@ -74,7 +74,7 @@ private:
     mutable std::atomic<bool> flag_{true};
 };
 
-template<typename T, size_t S>
+template<typename T, std::size_t S>
 class stack_t final {
 public:
     stack_t() = default;
@@ -97,10 +97,10 @@ public:
         return push(item);
     }
 
-    auto size() const noexcept -> size_t {
+    auto size() const noexcept -> std::size_t {
         auto count = count_.load();
         if(count < 0)
-            return 0;
+            return std::size_t(0);
         if(count > S)
             return S;
         return count;
@@ -150,7 +150,7 @@ private:
     T data_[S];
 };
 
-template<typename T, size_t S>
+template<typename T, std::size_t S>
 class buffer_t final {
 public:
     buffer_t() = default;

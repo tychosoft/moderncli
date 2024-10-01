@@ -9,6 +9,7 @@
 #include "templates.hpp"
 #include "output.hpp"       // IWYU pragma: keep
 
+// cspell:disable-next-line
 // Test of init trick, a "kind of" atinit() function or golang init().
 namespace {
 int value = 0;

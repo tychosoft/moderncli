@@ -21,15 +21,15 @@ public:
     die(const die&) = delete;
     auto operator=(const die&) -> auto& = delete;
 
-    explicit die(int code) noexcept : excode_(code) {}
+    explicit die(int code) noexcept : exit_code_(code) {}
     [[noreturn]] ~die() final {
         std::cerr << str() << std::endl;
         std::cerr.flush();
-        ::exit(excode_);
+        ::exit(exit_code_);
     }
 
 private:
-    int excode_{-1};
+    int exit_code_{-1};
 };
 
 class crit final : public std::ostringstream {
@@ -37,15 +37,15 @@ public:
     crit(const crit&) = delete;
     auto operator=(const crit&) -> auto& = delete;
 
-    explicit crit(int code) noexcept : excode_(code) {}
+    explicit crit(int code) noexcept : exit_code_(code) {}
     [[noreturn]] ~crit() final {
         std::cerr << str() << std::endl;
         std::cerr.flush();
-        quick_exit(excode_);
+        quick_exit(exit_code_);
     }
 
 private:
-    int excode_{-1};
+    int exit_code_{-1};
 };
 
 class output final : public std::ostringstream {
