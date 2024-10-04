@@ -100,7 +100,7 @@ template<typename S = std::string>
 constexpr auto join(const std::vector<S>& list, const std::string_view& delim = ",") -> S {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
-    S separator, result;
+    S separator{}, result;
     for(const auto& str : list) {
         result = result + separator + str;
         separator = delim;
@@ -302,7 +302,7 @@ inline auto from_hex(std::string_view from, uint8_t *to, std::size_t size) {
         max = from.size();
 
     for(auto pos = std::size_t(0); pos < max; pos += 2) {
-        char buf[3];
+        char buf[3]{};
         buf[0] = hex[pos];
         buf[1] = hex[pos + 1];
         buf[2] = 0;

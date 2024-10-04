@@ -122,7 +122,7 @@ public:
 private:
     EVP_MD_CTX *ctx_{nullptr};
     unsigned size_{0};
-    uint8_t data_[EVP_MAX_MD_SIZE]{0};
+    uint8_t data_[EVP_MAX_MD_SIZE]{};
 };
 
 #if OPENSSL_API_LEVEL >= 30000

@@ -63,7 +63,7 @@ public:
 
     auto flatten(const std::string& id = "_") const {
         std::string result;
-        auto list = ptr_->fetch(id);
+        const auto& list = ptr_->fetch(id);
         for(const auto& [key, value] : list)
             result += key + "='" + value + "' ";
         return result;

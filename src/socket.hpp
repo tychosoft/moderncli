@@ -803,7 +803,7 @@ public:
         return static_cast<SOCKET>(so_);
     }
 
-;   auto err() const noexcept {
+    auto err() const noexcept {
         return err_;
     }
 
@@ -950,7 +950,7 @@ public:
     }
 
     auto wait(short events, int timeout = -1) const noexcept -> int {
-        struct pollfd pfd{0};
+        struct pollfd pfd{};
         pfd.fd = so_;
         pfd.events = events;
         pfd.revents = 0;
@@ -1251,7 +1251,7 @@ inline auto inet_host(const struct sockaddr *addr) noexcept -> std::string {
 
 inline auto inet_host(const std::string& host = "", int type = SOCK_STREAM) {
     struct addrinfo hints{0}, *info{nullptr};
-    auto fqdn = host;
+    auto fqdn(host);
     if(fqdn.empty())
         fqdn = system_hostname();
 

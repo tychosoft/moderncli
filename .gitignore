@@ -21,6 +21,7 @@ compile_commands.json
 *.user.*
 *.user
 
+cpp.hint
 moderncli.pc
 cmake_*.cmake
 Makefile

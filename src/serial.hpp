@@ -617,7 +617,7 @@ public:
         if(device_ == invalid_)
             return std::size_t(0);
 
-        COMMTIMEOUTS timed{0};
+        COMMTIMEOUTS timed{};
         timed.WriteTotalTimeoutMultiplier = 0;
         timed.WriteTotalTimeoutConstant = 0;
         timed.ReadTotalTimeoutMultiplier = 0;

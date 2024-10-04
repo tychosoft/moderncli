@@ -251,7 +251,7 @@ protected:
     }
 #endif
 
-    char gbuf[S]{0}, pbuf[S]{0};
+    char gbuf[S]{}, pbuf[S]{};
     // cppcheck-suppress unusedStructMember
     std::size_t bufsize{0}, getsize{0};
 
