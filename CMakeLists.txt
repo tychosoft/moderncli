@@ -51,6 +51,10 @@ add_executable(test_sync test/sync.cpp src/sync.hpp)
 add_test(NAME test-sync COMMAND test_sync)
 target_link_libraries(test_sync PRIVATE Threads::Threads)
 
+add_executable(test_tasks test/tasks.cpp src/tasks.hpp)
+add_test(NAME test-tasks COMMAND test_tasks)
+target_link_libraries(test_tasks PRIVATE Threads::Threads)
+
 add_executable(test_atomics test/atomics.cpp src/atomics.hpp)
 add_test(NAME test-atomics COMMAND test_atomics)
 target_link_libraries(test_atomics PRIVATE Threads::Threads)
