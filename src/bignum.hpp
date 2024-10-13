@@ -74,6 +74,9 @@ public:
     }
 
     auto operator=(const bignum_t& copy) noexcept -> auto& {
+        if(&copy == this)
+            return *this;
+
         release();
         if(ctx_)
             BN_CTX_free(ctx_);
@@ -116,14 +119,14 @@ public:
         return *this;
     }
 
-    auto operator++(int) noexcept {
-        bignum_t current(*this);
+    auto operator++(int) noexcept { // NOLINT
+        const bignum_t current(*this);
         BN_add_word(num_, 1);
         return current;
     }
 
-    auto operator--(int) noexcept {
-        bignum_t current(*this);
+    auto operator--(int) noexcept { // NOLINT
+        const bignum_t current(*this);
         BN_sub_word(num_, 1);
         return current;
     }
@@ -147,7 +150,7 @@ public:
     }
 
     auto operator+=(const bignum_t& add) const noexcept -> auto& {
-        bignum_t tmp(*this);
+        const bignum_t tmp(*this);
         BN_add(num_, tmp.num_, add.num_);
         return *this;
     }
@@ -170,7 +173,7 @@ public:
     }
 
     auto operator-=(const bignum_t& sub) const noexcept -> auto& {
-        bignum_t tmp(*this);
+        const bignum_t tmp(*this);
         BN_sub(num_, tmp.num_, sub.num_);
         return *this;
     }
@@ -193,7 +196,7 @@ public:
     }
 
     auto operator*=(const bignum_t& mul) const noexcept -> auto& {
-        bignum_t tmp(*this);
+        const bignum_t tmp(*this);
         BN_mul(num_, tmp.num_, mul.num_, mul.ctx_);
         return *this;
     }
@@ -216,7 +219,7 @@ public:
     }
 
     auto operator/=(const bignum_t& div) const noexcept -> auto& {
-        bignum_t tmp(*this);
+        const bignum_t tmp(*this);
         BN_div(num_, nullptr, tmp.num_, div.num_, div.ctx_);
         return *this;
     }
@@ -239,7 +242,7 @@ public:
     }
 
     auto operator%=(const bignum_t& mod) const noexcept -> auto& {
-        bignum_t tmp(*this);
+        const bignum_t tmp(*this);
         BN_div(nullptr, num_, tmp.num_, mod.num_, mod.ctx_);
         return *this;
     }
@@ -273,7 +276,7 @@ public:
         return BN_cmp(num_, r.num_) >= 0;
     }
 
-    auto operator>>(std::size_t bits) const noexcept {
+    auto operator>>(int bits) const noexcept {
         bignum_t result(*this);
         BN_rshift(result.num_, result.num_, bits);
         return result;
@@ -281,11 +284,11 @@ public:
 
     auto operator>>(const bignum_t& bits) const noexcept {
         bignum_t result(*this);
-        BN_rshift(result.num_, result.num_, btol(bits));
+        BN_rshift(result.num_, result.num_, btoi(bits));
         return result;
     }
 
-    auto operator<<(std::size_t bits) const noexcept {
+    auto operator<<(int bits) const noexcept {
         bignum_t result(*this);
         BN_lshift(result.num_, result.num_, bits);
         return result;
@@ -293,13 +296,13 @@ public:
 
     auto operator<<(const bignum_t& bits) const noexcept {
         bignum_t result(*this);
-        BN_lshift(result.num_, result.num_, btol(bits));
+        BN_lshift(result.num_, result.num_, btoi(bits));
         return result;
     }
 
-    auto operator^(std::size_t exp) const noexcept {
+    auto operator^(long exp) const noexcept {
         bignum_t result(*this);
-        bignum_t exponent(exp);
+        const bignum_t exponent(exp);
         BN_exp(result.num_, num_, exponent.num_, exponent.ctx_);
         return result;
     }
@@ -315,8 +318,8 @@ public:
         return *this;
     }
 
-    auto operator^=(std::size_t exp) const noexcept -> auto& {
-        bignum_t exponent(exp);
+    auto operator^=(long exp) const noexcept -> auto& {
+        const bignum_t exponent(exp);
         BN_exp(num_, num_, exponent.num_, exponent.ctx_);
         return *this;
     }
@@ -354,19 +357,20 @@ public:
         BN_clear(num_);
     }
 
-    static auto make_rand(unsigned bits, int top = BN_RAND_TOP_ANY, int bottom = BN_RAND_BOTTOM_ANY) noexcept {
+    static auto make_rand(int bits, int top = BN_RAND_TOP_ANY, int bottom = BN_RAND_BOTTOM_ANY) noexcept {
         bignum_t result;
         BN_rand(result.num_, bits, top, bottom);
         return result;
     }
 
-    static auto make_priv(unsigned bits, unsigned strength, int top = BN_RAND_TOP_ANY, int bottom = BN_RAND_BOTTOM_ANY) noexcept {
+    static auto make_priv(int bits, int strength, int top = BN_RAND_TOP_ANY, int bottom = BN_RAND_BOTTOM_ANY) noexcept {
         bignum_t result;
         BN_priv_rand_ex(result.num_, bits, top, bottom, strength, result.ctx_);
         return result;
     }
 
 private:
+    friend auto btoi(const bignum_t& bn) noexcept -> int;
     friend auto btol(const bignum_t& bn) noexcept -> long;
     friend auto abs(const bignum_t& bn) noexcept -> bignum_t;
     friend auto pow(const bignum_t& base, const bignum_t& exp) noexcept -> bignum_t;
@@ -405,10 +409,16 @@ private:
 
 using bitnum = bignum_t;
 
+inline auto btoi(const bignum_t& bn) noexcept -> int {
+    if(bn.is_negative())
+        return static_cast<int>(-BN_get_word(bn.num_));
+    return static_cast<int>(BN_get_word(bn.num_));
+}
+
 inline auto btol(const bignum_t& bn) noexcept -> long {
     if(bn.is_negative())
-        return -BN_get_word(bn.num_);
-    return BN_get_word(bn.num_);
+        return static_cast<long>(-BN_get_word(bn.num_));
+    return static_cast<long>(BN_get_word(bn.num_));
 }
 
 inline auto abs(const bignum_t& bn) noexcept -> bignum_t {
