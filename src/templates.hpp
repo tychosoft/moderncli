@@ -96,7 +96,7 @@ public:
     init(const init&) = delete;
     auto operator=(const init&) -> auto& = delete;
 
-    explicit init(run_t start, run_t stop = {[](){}}) : exit_(stop) {
+    explicit init(const run_t start, const run_t stop = {[](){}}) : exit_(stop) {
         (start)();
     }
 
@@ -105,7 +105,7 @@ public:
     }
 
 private:
-    run_t exit_{[](){}};
+    const run_t exit_{[](){}};
 };
 
 class defer final {
@@ -114,11 +114,11 @@ public:
     defer(const defer&) = delete;
     auto operator=(const defer&) = delete;
 
-    explicit defer(const std::function<void()>& func) : action_(std::move(func)) {}
+    explicit defer(const std::function<void()>& func) : action_(func) {}
     ~defer() {action_();}
 
 private:
-    std::function<void()> action_;
+    const std::function<void()> action_;
 };
 
 // some commonly forwarded classes...
