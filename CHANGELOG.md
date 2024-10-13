@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.9.4
+- Big integer math support
+- Task and function thread queue dispatch
+- Optimized code
+
 ## v0.9.3
 - Simplify socket and serial errors
 - Acceptor lambda for listener sockets

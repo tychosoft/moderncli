@@ -15,6 +15,11 @@ help text. Support for a kind of golang init() thru init\_t also introduced.
 
 Atomic / lockfree data structures and features.
 
+## bignum.hpp
+
+Arbitrary precision integer math. This will eventually be extended to support
+core cryptograhic services including signing and key exchange.
+
 ## cipher.hpp
 
 Encode and decode encrypted data. Create cipher keys from passphrases using
@@ -119,6 +124,15 @@ rust locking access and gives stronger guarantees about access safety while
 also associating the actual lock with the data being protected rather than as
 completely unrelated data structures. Sync also includes other kinds of thread
 synchronization objects such as semaphores and barriers.
+
+## tasks.hpp
+
+A task and function queue dispatch system. This is used to queue and dispatch
+arbitration actor lambdas with function arguments wrapped in an outer service
+function inside the scope of a service thread. This makes it easy to write
+service components that offers ordered execute in a thread queue without
+requiring locking. This is a generic and reusable representation of basic
+Coventry server architecture.
 
 ## templates.hpp
 

@@ -17,7 +17,7 @@ public:
     bignum_t() noexcept :
     ctx_(BN_CTX_new()), num_(BN_new()) {}
 
-    bignum_t(long value) noexcept :
+    explicit bignum_t(long value) noexcept :
     ctx_(BN_CTX_new()), num_(BN_new()) {
         if(value < 0) {
             BN_set_word(num_, -value);
@@ -35,10 +35,10 @@ public:
     bignum_t(const bignum_t& copy) noexcept :
     ctx_(BN_CTX_new()), num_(BN_dup(copy.num_)) {}
 
-    bignum_t(const key_t& key) noexcept :
+    explicit bignum_t(const key_t& key) noexcept :
     ctx_(BN_CTX_new()), num_(BN_bin2bn(key.first, int(key.second), nullptr)) {}
 
-    bignum_t(const std::string& text) noexcept :
+    explicit bignum_t(const std::string& text) noexcept :
     ctx_(BN_CTX_new()) {
         BN_dec2bn(&num_, text.c_str());
         if(!num_)
@@ -75,7 +75,10 @@ public:
 
     auto operator=(const bignum_t& copy) noexcept -> auto& {
         release();
+        if(ctx_)
+            BN_CTX_free(ctx_);
         num_ = BN_dup(copy.num_);
+        ctx_ = BN_CTX_new();
         return *this;
     }
 
@@ -383,9 +386,11 @@ private:
         return BN_is_negative(num_);
     }
 
+/*
     void zero() noexcept {
         BN_zero(num_);
     }
+*/
 
     void release() noexcept {
         if(num_) {

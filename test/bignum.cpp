@@ -18,7 +18,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     v1 += v2;
     assert(*v1 == "-23451234567865");
 
-    v1++;
+    ++v1;
     assert(*v1 == "-23451234567864");
 
     auto a = abs(v1);
