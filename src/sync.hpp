@@ -297,13 +297,65 @@ private:
     unsigned count_{0}, ending_{0}, limit_;
 };
 
-class wait_t {
+class event_sync {
 public:
-    explicit wait_t(unsigned init) noexcept : count_(init) {}
-    wait_t(const wait_t&) = delete;
-    wait_t() = default;
-    ~wait_t() = default;
-    auto operator=(const wait_t&) noexcept -> auto& = delete;
+    explicit event_sync(bool reset = true) noexcept : auto_reset_(reset) {}
+    event_sync(const event_sync&) = delete;
+    event_sync() = default;
+    ~event_sync() = default;
+    auto operator=(const event_sync&) noexcept -> auto& = delete;
+
+    void set() noexcept {
+        const std::lock_guard lock(lock_);
+        signaled_ = true;
+        if(auto_reset_)
+            cond_.notify_one();
+        else
+            cond_.notify_all();
+    }
+
+    void reset() noexcept {
+        const std::lock_guard lock(lock_);
+        signaled_ = false;
+    }
+
+    void wait() noexcept {
+        std::unique_lock lock(lock_);
+        cond_.wait(lock, [this]{return signaled_;});
+        if(auto_reset_)
+            signaled_ = false;
+    }
+
+    auto wait_for(const std::chrono::milliseconds& timeout) noexcept {
+        std::unique_lock lock(lock_);
+        auto result = cond_.wait_for(lock, timeout, [this]{return signaled_;});
+        if(result && auto_reset_)
+            signaled_ = false;
+        return result;
+    }
+
+    auto wait_until(const std::chrono::steady_clock::time_point& time_point) noexcept {
+        std::unique_lock lock(lock_);
+        auto result = cond_.wait_until(lock, time_point, [this]{return signaled_;});
+        if(result && auto_reset_)
+            signaled_ = false;
+        return result;
+    }
+
+private:
+    std::mutex lock_;
+    std::condition_variable cond_;
+    bool auto_reset_{true};
+    bool signaled_{false};
+};
+
+class wait_group {
+public:
+    explicit wait_group(unsigned init) noexcept : count_(init) {}
+    wait_group(const wait_group&) = delete;
+    wait_group() = default;
+    ~wait_group() = default;
+    auto operator=(const wait_group&) noexcept -> auto& = delete;
 
     auto operator++() noexcept -> auto& {
         add(1);
@@ -342,7 +394,7 @@ public:
         return cond_.wait_for(lock, timeout, [this]{return !count_ ;});
     }
 
-    auto wait_for(const std::chrono::steady_clock::time_point& time_point) noexcept {
+    auto wait_until(const std::chrono::steady_clock::time_point& time_point) noexcept {
         std::unique_lock lock(lock_);
         return cond_.wait_until(lock, time_point, [this]{return !count_ ;});
     }
