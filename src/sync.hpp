@@ -296,5 +296,66 @@ private:
     std::condition_variable cond_;
     unsigned count_{0}, ending_{0}, limit_;
 };
+
+class wait_t {
+public:
+    explicit wait_t(unsigned init) noexcept : count_(init) {}
+    wait_t(const wait_t&) = delete;
+    wait_t() = default;
+    ~wait_t() = default;
+    auto operator=(const wait_t&) noexcept -> auto& = delete;
+
+    auto operator++() noexcept -> auto& {
+        add(1);
+        return *this;
+    }
+
+    auto operator+=(unsigned count) noexcept -> auto& {
+        add(count);
+        return *this;
+    }
+
+    void add(unsigned count) noexcept {
+        const std::lock_guard lock(lock_);
+        count_ += count;
+    }
+
+    auto done() noexcept {
+        const std::lock_guard lock(lock_);
+        if(!count_)
+            return true;
+
+        if(--count_ == 0) {
+            cond_.notify_all();
+            return true;
+        }
+        return false;
+    }
+
+    void wait() noexcept {
+        std::unique_lock lock(lock_);
+        cond_.wait(lock, [this]{return !count_ ;});
+    }
+
+    auto wait_for(const std::chrono::milliseconds& timeout) noexcept {
+        std::unique_lock lock(lock_);
+        return cond_.wait_for(lock, timeout, [this]{return !count_ ;});
+    }
+
+    auto wait_for(const std::chrono::steady_clock::time_point& time_point) noexcept {
+        std::unique_lock lock(lock_);
+        return cond_.wait_until(lock, time_point, [this]{return !count_ ;});
+    }
+
+    auto count() noexcept {
+        const std::lock_guard lock(lock_);
+        return count_;
+    }
+
+private:
+    unsigned count_{0};
+    std::mutex lock_;
+    std::condition_variable cond_;
+};
 } // end namespace
 #endif
