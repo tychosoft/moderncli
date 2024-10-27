@@ -254,50 +254,61 @@ private:
 
 class barrier_t final {
 public:
+    explicit barrier_t(unsigned limit) noexcept : count_(limit), limit_(limit) {}
     barrier_t(const barrier_t&) = delete;
     auto operator=(const barrier_t&) = delete;
 
-    explicit barrier_t(unsigned limit = 1) : limit_(limit) {}
-
-    ~barrier_t() {
-        release();
-    }
-
-    void release() {
-        const std::unique_lock lock(lock_);
-        if(count_)
-            cond_.notify_all();
-    }
-
-    void wait() {
+    void wait() noexcept {
         std::unique_lock lock(lock_);
-        if(++count_ >= limit_) {
+        auto sequence = sequence_;
+        if (--count_ == 0) {
+            sequence_++;
+            count_ = limit_;
             cond_.notify_all();
-            return;
         }
-        cond_.wait(lock);
-        if(++ending_ < limit_)
-            return;
-        count_ = ending_ = 0;
+        else {
+            cond_.wait(lock, [this, sequence]{return sequence != sequence_;});
+        }
     }
 
-    auto count() const {
-        const std::unique_lock lock(lock_);
+    auto wait_for(const std::chrono::milliseconds& timeout) noexcept {
+        std::unique_lock lock(lock_);
+        auto sequence = sequence_;
+
+        if (--count_ == 0) {
+            sequence_++;
+            count_ = limit_;
+            cond_.notify_all();
+            return true;
+        }
+        return cond_.wait_for(lock, timeout, [this, sequence]{return sequence != sequence_;});
+    }
+
+    auto wait_until(const std::chrono::steady_clock::time_point& time_point) noexcept {
+        std::unique_lock lock(lock_);
+        auto sequence = sequence_;
+
+        if (--count_ == 0) {
+            sequence_++;
+            count_ = limit_;
+            cond_.notify_all();
+            return true;
+        }
+        return cond_.wait_until(lock, time_point, [this, sequence]{return sequence != sequence_;});
+    }
+
+    auto count() noexcept {
+        const std::lock_guard lock(lock_);
         return count_;
-    }
-
-    auto pending() const {
-        const std::unique_lock lock(lock_);
-        return count_ - ending_;
     }
 
 private:
     mutable std::mutex lock_;
     std::condition_variable cond_;
-    unsigned count_{0}, ending_{0}, limit_;
+    unsigned count_{0}, sequence_{0}, limit_{0};
 };
 
-class event_sync {
+class event_sync final {
 public:
     explicit event_sync(bool reset = true) noexcept : auto_reset_(reset) {}
     event_sync(const event_sync&) = delete;
@@ -349,7 +360,7 @@ private:
     bool signaled_{false};
 };
 
-class wait_group {
+class wait_group final {
 public:
     explicit wait_group(unsigned init) noexcept : count_(init) {}
     wait_group(const wait_group&) = delete;
