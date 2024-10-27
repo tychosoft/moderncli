@@ -207,12 +207,18 @@ public:
         store_ = from;
     }
 
-    void set(const std::string& str, uint16_t in_port = 0) noexcept {
+    void set(const std::string& str, uint16_t in_port = 0, int any = AF_INET) noexcept {
         memset(&store_, 0, sizeof(store_));
         auto cp = str.c_str();
-        if(strchr(cp, ':') != nullptr) {
+        if(str == "*" && any == AF_INET6) {
             auto ipv6 = reinterpret_cast<struct sockaddr_in6*>(&store_);
-            if(str == "::*")
+            make_any(AF_INET6);
+            ipv6->sin6_family = AF_INET6;
+            ipv6->sin6_port = htons(in_port);
+        }
+        else if(strchr(cp, ':') != nullptr) {
+            auto ipv6 = reinterpret_cast<struct sockaddr_in6*>(&store_);
+            if(str == "::*" || str == "::" || str == "[::]")
                 make_any(AF_INET6);
             else if(inet_pton(AF_INET6, cp, &(ipv6->sin6_addr)) < 1)
                 return;
@@ -1249,7 +1255,7 @@ inline auto inet_host(const struct sockaddr *addr) noexcept -> std::string {
     return {};
 }
 
-inline auto inet_host(const std::string& host = "", int type = SOCK_STREAM) {
+inline auto inet_host(const std::string& host = "", int type = SOCK_STREAM, int any = AF_UNSPEC) {
     struct addrinfo hints{0}, *info{nullptr};
     auto fqdn(host);
     if(fqdn.empty())
@@ -1258,9 +1264,17 @@ inline auto inet_host(const std::string& host = "", int type = SOCK_STREAM) {
     if(fqdn.empty())
         return fqdn;
 
+    if(fqdn.size() > 2 && fqdn[0] == '[' && fqdn[fqdn.size() - 1] == ']') {
+        fqdn.erase(0, 1);
+        fqdn.erase(fqdn.size() - 1, 1);
+        any = AF_INET6;
+    }
+    else if(fqdn.find(':') != std::string::npos)
+        any = AF_INET6;
+
     auto hostid = fqdn.c_str();
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;    // either IPV4 or IPV6
+    hints.ai_family = any;              // either IPV4 or IPV6
     hints.ai_socktype = type;
     hints.ai_flags = AI_CANONNAME;
 
@@ -1269,6 +1283,67 @@ inline auto inet_host(const std::string& host = "", int type = SOCK_STREAM) {
         freeaddrinfo(info);
     }
     return fqdn;
+}
+
+inline auto inet_family(const std::string& host, int any = AF_UNSPEC) {
+    int dots = 0;
+#ifdef  AF_UNIX
+    if(host.find('/') != std::string::npos)
+        return AF_UNIX;
+#endif
+    if(host[0] == '[' || host.find(':') != std::string::npos)
+        return AF_INET6;
+    for(const auto ch : host) {
+        if(ch == '.') {
+            ++dots;
+            continue;
+        }
+        if(ch < '0' || ch > '9')
+            return any;
+    }
+    if(dots == 3)
+        return AF_INET;
+    return AF_UNSPEC;
+}
+
+inline auto inet_store(struct sockaddr_storage& addr, const std::string& host, const std::string& service = "", int any = AF_UNSPEC) {
+    struct addrinfo hints{}, *list = nullptr;                                       memset(&hints, 0, sizeof(hints));
+    memset(&addr, 0, sizeof(addr));
+    hints.ai_family = inet_family(host, any);
+    auto svc = service.c_str();
+    if(service.empty())
+        svc = nullptr;
+    if(getaddrinfo(host.c_str(), svc, &hints, &list))
+        list = nullptr;
+
+    if(list) {
+        auto asize = inet_size(list->ai_addr);
+        memcpy(&addr, list->ai_addr, asize); // FlawFinder: size valid
+        freeaddrinfo(list);
+        return true;
+    }
+    return false;
+}
+
+inline auto inet_in4(struct sockaddr_storage& store) {
+    return store.ss_family == AF_INET ? reinterpret_cast<struct sockaddr_in *>(&store) : nullptr;
+}
+
+inline auto inet_in6(struct sockaddr_storage& store) {
+    return store.ss_family == AF_INET6 ? reinterpret_cast<struct sockaddr_in6 *>(&store) : nullptr;
+}
+
+inline auto inet_any(const std::string& host, int any = AF_INET) {
+    if(host == "*")
+        return any;
+
+    if(host == "0.0.0.0")
+        return AF_INET;
+
+    if(host == "[*]" || host == "::" || host == "[::]")
+        return AF_INET6;
+
+    return AF_UNSPEC;
 }
 } // end namespace
 
