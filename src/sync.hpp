@@ -13,16 +13,17 @@
 
 namespace tycho {
 using sync_timepoint = std::chrono::steady_clock::time_point;
+using sync_millisecs = std::chrono::milliseconds;
 
 inline auto system_clock(std::time_t offset = 0) {
     return std::time(nullptr) + offset;
 }
 
 inline auto sync_clock(long timeout = 0) {
-    return std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
+    return std::chrono::steady_clock::now() + sync_millisecs(timeout);
 }
 
-inline auto sync_sleep(sync_timepoint timepoint) {
+inline auto sync_sleep(const sync_timepoint& timepoint) {
     std::this_thread::sleep_until(timepoint);
 }
 
@@ -31,15 +32,15 @@ inline auto sync_yield() {
 }
 
 inline auto sync_duration(const sync_timepoint& start, const sync_timepoint& end) {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    return std::chrono::duration_cast<sync_millisecs>(end - start);
 }
 
 inline auto sync_elapsed(const sync_timepoint& start) {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(sync_clock() - start);
+    return std::chrono::duration_cast<sync_millisecs>(sync_clock() - start);
 }
 
 inline auto sync_remains(const sync_timepoint& end) {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(end - sync_clock());
+    return std::chrono::duration_cast<sync_millisecs>(end - sync_clock());
 }
 
 template <typename T>
@@ -185,71 +186,49 @@ private:
 
 class semaphore_t final {
 public:
+    explicit semaphore_t(unsigned count = 0) noexcept : count_(count) {}
     semaphore_t(const semaphore_t&) = delete;
     auto operator=(const semaphore_t&) = delete;
 
-    explicit semaphore_t(unsigned limit = 1) : limit_(limit) {}
-
-    ~semaphore_t() {
-        release();
-        std::this_thread::yield();
-        while(count_) {
-            std::this_thread::yield();
-        }
-    }
-
-    void release() {
+    void post() noexcept {
         const std::unique_lock lock(lock_);
-        release_ = true;
-        if(count_ > limit_)
-            cond_.notify_all();
+        ++count_;
+        cond_.notify_one();
     }
 
-    void post() {
-        const std::unique_lock lock(lock_);
-        if(--count_ >= limit_)
-            cond_.notify_one();
-    }
-
-    void wait() {
+    void wait() noexcept {
         std::unique_lock lock(lock_);
-        while(!release_ && count_ > limit_)
-            cond_.wait(lock);
+        cond_.wait(lock, [this]{return count_ > 0;});
+        --count_;
     }
 
-    auto wait_until(sync_timepoint timepoint) {
+    auto wait_for(const sync_millisecs& timeout) noexcept {
         std::unique_lock lock(lock_);
-        while(!release_ && count_ > limit_) {
-            if(cond_.wait_until(lock, timepoint) == std::cv_status::timeout)
-                return false;
+        if(cond_.wait_for(lock, timeout, [this]{return count_ > 0;})) {
+            --count_;
+            return true;
         }
-        return true;
+        return false;
     }
 
-    auto pending() const {
-        const std::unique_lock lock(lock_);
-        if(count_ > limit_)
-            return limit_ - count_;
-        return 0U;
+    auto wait_until(const sync_timepoint& time_point) noexcept {
+        std::unique_lock lock(lock_);
+        if(cond_.wait_until(lock, time_point, [this]{return count_ > 0;})) {
+            --count_;
+            return true;
+        }
+        return false;
     }
 
-    auto count() const {
-        const std::unique_lock lock(lock_);
+    auto count() noexcept {
+        const std::lock_guard lock(lock_);
         return count_;
-    }
-
-    auto active() const {
-        const std::unique_lock lock(lock_);
-        if(count_ <= limit_)
-            return count_;
-        return limit_;
     }
 
 private:
     mutable std::mutex lock_;
     std::condition_variable cond_;
-    unsigned count_{0}, limit_;
-    bool release_{false};
+    unsigned count_{0};
 };
 
 class barrier_t final {
@@ -271,7 +250,7 @@ public:
         }
     }
 
-    auto wait_for(const std::chrono::milliseconds& timeout) noexcept {
+    auto wait_for(const sync_millisecs& timeout) noexcept {
         std::unique_lock lock(lock_);
         auto sequence = sequence_;
 
@@ -284,7 +263,7 @@ public:
         return cond_.wait_for(lock, timeout, [this, sequence]{return sequence != sequence_;});
     }
 
-    auto wait_until(const std::chrono::steady_clock::time_point& time_point) noexcept {
+    auto wait_until(const sync_timepoint& time_point) noexcept {
         std::unique_lock lock(lock_);
         auto sequence = sequence_;
 
@@ -337,7 +316,7 @@ public:
             signaled_ = false;
     }
 
-    auto wait_for(const std::chrono::milliseconds& timeout) noexcept {
+    auto wait_for(const sync_millisecs& timeout) noexcept {
         std::unique_lock lock(lock_);
         auto result = cond_.wait_for(lock, timeout, [this]{return signaled_;});
         if(result && auto_reset_)
@@ -345,7 +324,7 @@ public:
         return result;
     }
 
-    auto wait_until(const std::chrono::steady_clock::time_point& time_point) noexcept {
+    auto wait_until(const sync_timepoint& time_point) noexcept {
         std::unique_lock lock(lock_);
         auto result = cond_.wait_until(lock, time_point, [this]{return signaled_;});
         if(result && auto_reset_)
@@ -400,12 +379,12 @@ public:
         cond_.wait(lock, [this]{return !count_ ;});
     }
 
-    auto wait_for(const std::chrono::milliseconds& timeout) noexcept {
+    auto wait_for(const sync_millisecs& timeout) noexcept {
         std::unique_lock lock(lock_);
         return cond_.wait_for(lock, timeout, [this]{return !count_ ;});
     }
 
-    auto wait_until(const std::chrono::steady_clock::time_point& time_point) noexcept {
+    auto wait_until(const sync_timepoint& time_point) noexcept {
         std::unique_lock lock(lock_);
         return cond_.wait_until(lock, time_point, [this]{return !count_ ;});
     }
