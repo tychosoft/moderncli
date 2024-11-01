@@ -220,7 +220,7 @@ public:
         return false;
     }
 
-    auto count() noexcept {
+    auto count() const noexcept {
         const std::lock_guard lock(lock_);
         return count_;
     }
@@ -276,7 +276,7 @@ public:
         return cond_.wait_until(lock, time_point, [this, sequence]{return sequence != sequence_;});
     }
 
-    auto count() noexcept {
+    auto count() const noexcept {
         const std::lock_guard lock(lock_);
         return count_;
     }
@@ -389,14 +389,14 @@ public:
         return cond_.wait_until(lock, time_point, [this]{return !count_ ;});
     }
 
-    auto count() noexcept {
+    auto count() const noexcept {
         const std::lock_guard lock(lock_);
         return count_;
     }
 
 private:
     unsigned count_{0};
-    std::mutex lock_;
+    mutable std::mutex lock_;
     std::condition_variable cond_;
 };
 } // end namespace

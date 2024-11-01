@@ -27,19 +27,19 @@
 #define USE_SYSLOG
 #include <syslog.h>
 #else
-inline constexpr auto LOG_AUTH = 0;
-inline constexpr auto LOG_AUTHPRIV = 0;
-inline constexpr auto LOG_DAEMON = 0;
-inline constexpr auto LOG_EMERG = 0;
-inline constexpr auto LOG_CRIT = 0;
-inline constexpr auto LOG_INFO = 0;
-inline constexpr auto LOG_WARNING = 0;
-inline constexpr auto LOG_NOTICE = 0;
-inline constexpr auto LOG_ERR = 0;
-inline constexpr auto LOG_NDELAY = 0;
-inline constexpr auto LOG_NOWAIT = 0;
-inline constexpr auto LOG_PERROR = 0;
-inline constexpr auto LOG_PID = 0;
+constexpr auto LOG_AUTH = 0;
+constexpr auto LOG_AUTHPRIV = 0;
+constexpr auto LOG_DAEMON = 0;
+constexpr auto LOG_EMERG = 0;
+constexpr auto LOG_CRIT = 0;
+constexpr auto LOG_INFO = 0;
+constexpr auto LOG_WARNING = 0;
+constexpr auto LOG_NOTICE = 0;
+constexpr auto LOG_ERR = 0;
+constexpr auto LOG_NDELAY = 0;
+constexpr auto LOG_NOWAIT = 0;
+constexpr auto LOG_PERROR = 0;
+constexpr auto LOG_PID = 0;
 #endif
 
 namespace tycho {

@@ -13,7 +13,9 @@ help text. Support for a kind of golang init() thru init\_t also introduced.
 
 ## atomics.hpp
 
-Atomic / lockfree data structures and features.
+Atomic types and lockfree data structures and features. This includes lockfree
+stack and buffer implimentations which perhaps something like C#
+ConcurrentStack and ConcurrentQueue.
 
 ## bignum.hpp
 
@@ -123,7 +125,8 @@ templates that offer public access objects to protected data only when a lock
 rust locking access and gives stronger guarantees about access safety while
 also associating the actual lock with the data being protected rather than as
 completely unrelated data structures. Sync also includes other kinds of thread
-synchronization objects such as semaphores and barriers.
+synchronization objects such as semaphores, windows style events, golang style
+wait groups, and barriers.
 
 ## tasks.hpp
 
@@ -133,6 +136,11 @@ function inside the scope of a service thread. This makes it easy to write
 service components that offers ordered execute in a thread queue without
 requiring locking. This is a generic and reusable representation of basic
 Coventry server architecture.
+
+Tasks includes timers. This allows timer context lambdas to be queued and dispatched
+at known times. Timers also support the idea of periodic tasks by auto restarting.
+Timers provide an application level cron service and have a private thread context to
+execute a timer in.
 
 ## templates.hpp
 

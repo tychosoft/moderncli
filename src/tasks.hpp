@@ -13,18 +13,151 @@
 #include <memory>
 #include <chrono>
 #include <any>
+#include <map>
 
 namespace tycho {
 // can be nullptr...
 using action_t = void (*)();
+using error_t = void (*)(const std::exception&);
 
-class task_queue {
+// We may derive a timer subsystem from a protected timer queue
+class timer_queue {
+public:
+    using task_t = std::function<void(std::any)>;
+    using period_t = std::chrono::milliseconds;
+    using timepoint_t = std::chrono::steady_clock::time_point;
+
+    explicit timer_queue(error_t handler = [](const std::exception& e){}) noexcept : thread_(std::thread(&timer_queue::run, this)), errors_(std::move(handler)) {}
+    timer_queue(const timer_queue&) = delete;
+    auto operator=(const timer_queue&) -> auto& = delete;
+
+    ~timer_queue() {
+        shutdown();
+    }
+
+    operator bool() noexcept {
+        const std::lock_guard lock(lock_);
+        return !stop_;
+    }
+
+    auto operator!() noexcept {
+        const std::lock_guard lock(lock_);
+        return stop_;
+    }
+
+    void shutdown() noexcept {
+        if(stop_)
+            return;
+
+        const std::lock_guard lock(lock_);
+        stop_ = true;
+        cond_.notify_all();
+        thread_.join();
+    }
+
+    auto at(const timepoint_t& expires, task_t task, std::any args) {
+        const std::lock_guard lock(lock_);
+        const auto id = next_++;
+        timers_.emplace(expires, std::make_tuple(id, period_t(0), task, args));
+        cond_.notify_all();
+        return id;
+    }
+
+    auto periodic(const period_t& period, task_t task, std::any args) {
+        const auto expires = std::chrono::steady_clock::now() + period;
+        const std::lock_guard lock(lock_);
+        const auto id = next_++;
+        timers_.emplace(expires, std::make_tuple(id, period, task, args));
+        cond_.notify_all();
+        return id;
+    }
+
+    auto cancel(uint64_t id) {
+        const std::lock_guard lock(lock_);
+        for(auto it = timers_.begin(); it != timers_.end(); ++it) {
+            if(std::get<0>(it->second) == id) {
+                timers_.erase(it);
+                cond_.notify_all();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    auto find(uint64_t id) noexcept {
+        const std::lock_guard lock(lock_);
+        for(const auto& [expires, item] : timers_) {
+            if(std::get<0>(item) == id)
+                return expires;
+        }
+        return timepoint_t::min();
+    }
+
+    void clear() noexcept {
+        const std::lock_guard lock(lock_);
+        timers_.clear();
+    }
+
+    auto empty() noexcept {
+        const std::lock_guard lock(lock_);
+        if(stop_)
+            return true;
+        return timers_.empty();
+    }
+
+private:
+    using timer_t = std::tuple<uint64_t, period_t, task_t, std::any>;
+    std::multimap<timepoint_t, timer_t> timers_;
+    std::mutex lock_;
+    std::condition_variable cond_;
+    std::thread thread_;
+    error_t errors_;
+    bool stop_{false};
+    uint64_t next_{0};
+
+    void run() noexcept {
+        for(;;) {
+            std::unique_lock lock(lock_);
+            if(stop_ && timers_.empty())
+                return;
+            if(timers_.empty()) {
+                cond_.wait(lock);
+                continue;
+            }
+            auto it = timers_.begin();
+            auto expires = it->first;
+            const auto now = std::chrono::steady_clock::now();
+            if(expires <= now) {
+                const auto item(std::move(it->second));
+                timers_.erase(it);
+                lock.unlock();
+                const auto& [id, period, task, args] = item;
+                try {
+                    task(args);
+                }
+                catch(const std::exception& e) {
+                    errors_(e);
+                }
+                lock.lock();
+                if(period != period_t(0)) {
+                    expires += period;
+                    timers_.emplace(expires, std::make_tuple(id, period, task, args));
+                    cond_.notify_all();
+                }
+            }
+            else
+                cond_.wait_until(lock, expires);
+        }
+    }
+};
+
+class task_queue final {
 public:
     using timeout_strategy = std::function<std::chrono::milliseconds()>;
     using shutdown_strategy = std::function<void()>;
     using task_t = std::function<void(std::any)>;
 
-    explicit task_queue(timeout_strategy timeout = &default_timeout, shutdown_strategy shutdown = [](){}) :
+    explicit task_queue(timeout_strategy timeout = &default_timeout, shutdown_strategy shutdown = [](){}) noexcept :
     timeout_(std::move(timeout)), shutdown_(std::move(shutdown)), thread_(std::thread(&task_queue::process, this)) {}
 
     task_queue(const task_queue&) = delete;
@@ -34,12 +167,12 @@ public:
         shutdown();
     };
 
-    operator bool() {
+    operator bool() noexcept {
         const std::lock_guard lock(mutex_);
         return running_;
     }
 
-    auto operator!() {
+    auto operator!() noexcept {
         const std::lock_guard lock(mutex_);
         return !running_;
     }
@@ -84,13 +217,17 @@ public:
         }, args_t{&timeout_, handler});
     }
 
-    void clear() {
+    void errors(error_t handler) {
+        errors_ = std::move(handler);
+    }
+
+    void clear() noexcept {
         const std::lock_guard lock(mutex_);
         while(!tasks_.empty())
             tasks_.pop();
     }
 
-    auto empty() {
+    auto empty() noexcept {
         const std::lock_guard lock(mutex_);
         if(!running_)
             return true;
@@ -105,12 +242,13 @@ private:
     std::condition_variable cvar_;
     std::thread thread_;
     bool running_{true};
+    error_t errors_ = [](const std::exception& e) {};
 
     static auto default_timeout() -> std::chrono::milliseconds {
         return std::chrono::minutes(1);
     }
 
-    void process() {
+    void process() noexcept {
         task_t task;
         std::any args;
         bool used{false};
@@ -130,12 +268,17 @@ private:
             if(tasks_.empty())
                 continue;
 
-            std::tie(task, args) = std::move(tasks_.front());
-            tasks_.pop();
+            try {
+                std::tie(task, args) = std::move(tasks_.front());
+                tasks_.pop();
 
-            // unlock before running task
-            lock.unlock();
-            task(args);
+                // unlock before running task
+                lock.unlock();
+                task(args);
+            }
+            catch(const std::exception& e) {
+                errors_(e);
+            }
             used = true;
         }
 
@@ -146,31 +289,30 @@ private:
 };
 
 // Optimized function queue
-class func_queue {
+class func_queue final {
 public:
     using timeout_strategy = std::chrono::milliseconds (*)();
     using task_t = void (*)(std::any);
 
-    explicit func_queue(timeout_strategy timeout = default_timeout, action_t shutdown = nullptr) :
+    explicit func_queue(timeout_strategy timeout = default_timeout, action_t shutdown = nullptr) noexcept :
     timeout_(timeout), shutdown_(shutdown), thread_(std::thread(&func_queue::process, this)) {}
 
     func_queue(const func_queue&) = delete;
-    auto operator=(const func_queue&) -> auto& = delete;
+    auto operator=(const func_queue&) noexcept -> auto& = delete;
 
     ~func_queue() {
         shutdown();
     };
 
-    operator bool() {
+    operator bool() noexcept {
         const std::lock_guard lock(mutex_);
         return running_;
     }
 
-    auto operator!() {
+    auto operator!() noexcept {
         const std::lock_guard lock(mutex_);
         return !running_;
     }
-
 
     auto dispatch(task_t task, std::any args) {
         std::unique_lock lock(mutex_);
@@ -212,13 +354,17 @@ public:
         }, args_t{&timeout_, handler});
     }
 
-    void clear() {
+    void errors(error_t handler) {
+        errors_ = std::move(handler);
+    }
+
+    void clear() noexcept {
         const std::lock_guard lock(mutex_);
         while(!tasks_.empty())
             tasks_.pop();
     }
 
-    auto empty() {
+    auto empty() noexcept {
         const std::lock_guard lock(mutex_);
         if(!running_)
             return true;
@@ -233,12 +379,13 @@ private:
     std::condition_variable cvar_;
     std::thread thread_;
     bool running_{true};
+    error_t errors_ = [](const std::exception& e){};
 
     static auto default_timeout() -> std::chrono::milliseconds {
         return std::chrono::minutes(1);
     }
 
-    void process() {
+    void process() noexcept {
         task_t task{};
         std::any args;
         bool used{false};
@@ -258,12 +405,17 @@ private:
             if(tasks_.empty())
                 continue;
 
-            std::tie(task, args) = std::move(tasks_.front());
-            tasks_.pop();
+            try {
+                std::tie(task, args) = std::move(tasks_.front());
+                tasks_.pop();
 
-            // unlock before running task
-            lock.unlock();
-            task(args);
+                // unlock before running task
+                lock.unlock();
+                task(args);
+            }
+            catch(const std::exception& e) {
+                errors_(e);
+            }
             used = true;
         }
 

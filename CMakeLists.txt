@@ -42,6 +42,7 @@ target_link_libraries(test_shell PRIVATE fmt::fmt)
 add_executable(test_keyfile test/keyfile.cpp src/keyfile.hpp test/test.conf)
 set_target_properties(test_keyfile PROPERTIES COMPILE_DEFINITIONS "TEST_DATA=\"${CMAKE_SOURCE_DIR}/test\"")
 add_test(NAME test-keyfile COMMAND test_keyfile)
+target_link_libraries(test_keyfile PRIVATE fmt::fmt)
 
 add_executable(test_strings test/strings.cpp src/strings.hpp src/datetime.hpp src/print.hpp)
 add_test(NAME test-strings COMMAND test_strings)
@@ -49,21 +50,23 @@ target_link_libraries(test_strings PRIVATE fmt::fmt)
 
 add_executable(test_sync test/sync.cpp src/sync.hpp)
 add_test(NAME test-sync COMMAND test_sync)
-target_link_libraries(test_sync PRIVATE Threads::Threads)
+target_link_libraries(test_sync PRIVATE fmt::fmt Threads::Threads)
 
 add_executable(test_tasks test/tasks.cpp src/tasks.hpp)
 add_test(NAME test-tasks COMMAND test_tasks)
-target_link_libraries(test_tasks PRIVATE Threads::Threads)
+target_link_libraries(test_tasks PRIVATE fmt::fmt Threads::Threads)
 
 add_executable(test_atomics test/atomics.cpp src/atomics.hpp)
 add_test(NAME test-atomics COMMAND test_atomics)
-target_link_libraries(test_atomics PRIVATE Threads::Threads)
+target_link_libraries(test_atomics PRIVATE fmt::fmt Threads::Threads)
 
 add_executable(test_endian test/endian.cpp src/endian.hpp)
 add_test(NAME test-endian COMMAND test_endian)
+target_link_libraries(test_endian PRIVATE fmt::fmt)
 
 add_executable(test_output test/output.cpp src/output.hpp)
 add_test(NAME test-output COMMAND test_output)
+target_link_libraries(test_output PRIVATE fmt::fmt)
 
 add_executable(test_socket test/socket.cpp src/socket.hpp)
 add_test(NAME test-socket COMMAND test_socket)
@@ -83,24 +86,26 @@ endif()
 
 add_executable(test_process test/process.cpp src/process.hpp)
 add_test(NAME test-process COMMAND test_process)
+target_link_libraries(test_process PRIVATE fmt::fmt)
 
 add_executable(test_expected test/expected.cpp src/expected.hpp)
 add_test(NAME test-expected COMMAND test_expected)
+target_link_libraries(test_expected PRIVATE fmt::fmt)
 
 add_executable(test_digest test/digest.cpp src/digest.hpp)
-target_link_libraries(test_digest PRIVATE OpenSSL::Crypto)
+target_link_libraries(test_digest PRIVATE OpenSSL::Crypto fmt::fmt)
 add_test(NAME test-digest COMMAND test_digest)
 
 add_executable(test_random test/random.cpp src/random.hpp)
-target_link_libraries(test_random PRIVATE OpenSSL::Crypto)
+target_link_libraries(test_random PRIVATE OpenSSL::Crypto fmt::fmt)
 add_test(NAME test-random COMMAND test_random)
 
 add_executable(test_bignum test/bignum.cpp src/bignum.hpp)
-target_link_libraries(test_bignum PRIVATE OpenSSL::Crypto)
+target_link_libraries(test_bignum PRIVATE OpenSSL::Crypto fmt::fmt)
 add_test(NAME test-bignum COMMAND test_bignum)
 
 add_executable(test_cipher test/cipher.cpp src/cipher.hpp src/random.hpp)
-target_link_libraries(test_cipher PRIVATE OpenSSL::Crypto)
+target_link_libraries(test_cipher PRIVATE OpenSSL::Crypto fmt::fmt)
 add_test(NAME test-cipher COMMAND test_cipher)
 
 add_executable(test_serial test/serial.cpp src/serial.hpp)
