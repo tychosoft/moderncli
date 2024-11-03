@@ -116,27 +116,5 @@ public:
 private:
     EVP_PKEY *key_{nullptr};
 };
-
-class ecsign_t final {
-    ~ecsign_t() {
-        if(ctx_) {
-            EVP_MD_CTX_free(ctx_);
-        }
-    }
-
-private:
-    EVP_MD_CTX *ctx_{nullptr};
-};
-
-class ecverify_t final {
-    ~ecverify_t() {
-        if(ctx_) {
-            EVP_MD_CTX_free(ctx_);
-        }
-    }
-
-private:
-    EVP_MD_CTX *ctx_{nullptr};
-};
 } // end namespace
 #endif
