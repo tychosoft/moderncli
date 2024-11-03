@@ -108,6 +108,10 @@ add_executable(test_cipher test/cipher.cpp src/cipher.hpp src/random.hpp)
 target_link_libraries(test_cipher PRIVATE OpenSSL::Crypto fmt::fmt)
 add_test(NAME test-cipher COMMAND test_cipher)
 
+add_executable(test_ecdsa test/ecdsa.cpp src/eckey.hpp src/sign.hpp)
+target_link_libraries(test_ecdsa PRIVATE OpenSSL::Crypto fmt::fmt)
+add_test(NAME test-ecdsa COMMAND test_cipher)
+
 add_executable(test_serial test/serial.cpp src/serial.hpp)
 add_test(NAME test-serial COMMAND test_serial)
 target_link_libraries(test_serial PRIVATE fmt::fmt)

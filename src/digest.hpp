@@ -103,7 +103,7 @@ public:
         return !ctx_ || size_ ? false : EVP_DigestUpdate(ctx_, cp, size) == 1;
     }
 
-    auto update(const std::string_view& view) {
+    auto update(const std::string_view& view) noexcept {
         update(view.data(), view.size());
     }
 

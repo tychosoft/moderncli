@@ -3,11 +3,11 @@
 
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
-#include "cipher.hpp"
-#include "random.hpp"
+#include "templates.hpp"
+#include "eckey.hpp"
+#include "sign.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
-    const crypto::keyphrase_t key("hello there");
-    assert(key.size() == 32);
-    assert(crypto::to_b64(key) == "EpmMAXBm6w0qcLlObtMZKYWFXOOQ8yG724MgIoiL0lE=");
+    const crypto::eckey_t keypair;
+    assert(is(keypair));
 }

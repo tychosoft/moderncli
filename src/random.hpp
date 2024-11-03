@@ -19,6 +19,7 @@ using key_t = std::pair<const uint8_t *, std::size_t>;
 inline constexpr auto salt = 64UL;
 inline constexpr auto md5_key = 128UL;
 inline constexpr auto sha1_key = 160UL;
+inline constexpr auto ecdsa_key = 256UL;
 inline constexpr auto sha256_key = 256UL;
 inline constexpr auto sha384_key = 384UL;
 inline constexpr auto sha512_key = 512UL;
