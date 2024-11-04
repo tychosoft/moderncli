@@ -4,12 +4,15 @@
 #ifndef TYCHO_PROCESS_HPP_
 #define TYCHO_PROCESS_HPP_
 
+#include <fstream>
 #include <memory>
+#include <string_view>
 #include <string>
 #include <cstdlib>
 #include <cstring>
 #include <optional>
 #include <stdexcept>
+#include <functional>
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 #if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
@@ -22,6 +25,7 @@
 #include <process.h>
 #include <handleapi.h>
 #include <io.h>
+#include <fcntl.h>
 #ifndef quick_exit
 #define quick_exit(x) ::exit(x)         // NOLINT
 #define at_quick_exit(x) ::atexit(x)    // NOLINT
@@ -37,6 +41,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 #ifndef RTLD_GLOBAL
 #define RTLD_GLOBAL 0
@@ -403,6 +408,52 @@ inline auto id() noexcept -> id_t {
 inline void env(const std::string& id, const std::string& value) {
     static_cast<void>(_putenv((id + "=" + value).c_str()));
 }
+
+inline void wait_fifo(const std::string& id, std::function<bool(std::string_view)> cmd) {
+    auto run = true;
+    auto path = R"(\\.\pipe\)" + id;
+    auto fifo = CreateNamedPipe(path.c_str(), PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT, PIPE_UNLIMITED_INSTANCES, 512, 512, 0, nullptr);
+    if(fifo == INVALID_HANDLE_VALUE) {
+        return;
+    }
+    while(run) {
+        auto conn = ConnectNamedPipe(fifo, nullptr);
+        if(!conn)
+            break;
+        auto fd = _open_osfhandle((intptr_t)fifo, _O_RDONLY);
+        if(fd == -1)
+            break;
+        auto fp = _fdopen(fd, "r");
+        if(!fp) {
+            _close(fd);
+            break;
+        }
+        char buf[512];
+        while(run && fgets(buf, sizeof(buf), fp)) {
+            run = cmd(std::string_view(buf));
+        }
+        fclose(fp);
+        _close(fd);
+        DisconnectNamedPipe(fifo);
+    }
+    CloseHandle(fifo);
+}
+
+inline auto open_fifo(const std::string& id) {
+    auto path = R"(\\.\pipe\)" + id;
+    return std::ofstream(path);
+}
+
+inline auto send_fifo(const std::string& id, const std::string& cmd) {
+    auto path = R"(\\.\pipe\)" + id;
+    auto fp = fopen(path.c_str(), "w");
+    if(!fp)
+        return false;
+    fprintf(fp, "%s\n", cmd.c_str());
+    fflush(fp);
+    fclose(fp);
+    return true;
+}
 #else
 using id_t = pid_t;
 using addr_t = void *;
@@ -761,6 +812,43 @@ inline auto id() noexcept -> id_t {
 
 inline void env(const std::string& id, const std::string& value) {
     setenv(id.c_str(), value.c_str(), 1);
+}
+
+inline void wait_fifo(const std::string& id, std::function<bool(std::string_view)> cmd) {
+    auto run = true;
+    auto path = "/var/run/" + id + "/control";
+    ::remove(path.c_str());
+    ::mkfifo(path.c_str(), 0660);
+    auto fd = open(path.c_str(), O_RDWR);
+    if(fd < 0)
+        return;
+
+    auto fp = fdopen(fd, "r");
+    if(!fp) {
+        close(fd);
+        return;
+    }
+    char buf[512];
+    while(run && fgets(buf, sizeof(buf), fp)) {
+        run = cmd(std::string_view(buf));
+    }
+    fclose(fp);
+}
+
+inline auto open_fifo(const std::string& id) {
+    auto path = "/var/run/" + id + "/control";
+    return std::ofstream(path);
+}
+
+inline auto send_fifo(const std::string& id, const std::string& cmd) {
+    auto path = "/var/run/" + id + "/control";
+    auto fp = fopen(path.c_str(), "w");
+    if(!fp)
+        return false;
+    fprintf(fp, "%s\n", cmd.c_str());
+    fflush(fp);
+    fclose(fp);
+    return true;
 }
 #endif
 
