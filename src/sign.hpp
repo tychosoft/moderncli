@@ -20,6 +20,12 @@ public:
         }
     }
 
+    explicit pubkey_t(X509 *cert) noexcept {
+        if(cert)
+            key_ = X509_get_pubkey(cert);
+        X509_free(cert);
+    }
+
     pubkey_t(const pubkey_t& other) noexcept :
     key_(other.key_) {
         EVP_PKEY_up_ref(key_);
@@ -55,7 +61,8 @@ public:
     }
 
     auto share() const noexcept {
-        EVP_PKEY_up_ref(key_);
+        if(key_)
+           EVP_PKEY_up_ref(key_);
         return key_;
     }
 
@@ -193,5 +200,17 @@ private:
     EVP_MD_CTX *ctx_{nullptr};
     EVP_PKEY *key_{nullptr};
 };
+
+inline auto sign_X509(const std::string& path) -> X509 * {
+    auto fp = fopen(path.c_str(), "r");
+    if(!fp)
+        return nullptr;
+    auto bp = BIO_new(BIO_s_file());
+    BIO_set_fp(bp, fp, BIO_NOCLOSE);
+    auto cert = PEM_read_bio_X509(bp, nullptr, nullptr, nullptr);
+    BIO_free(bp);
+    fclose(fp);
+    return cert;
+}
 } // end namespace
 #endif

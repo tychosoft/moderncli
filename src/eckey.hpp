@@ -23,7 +23,7 @@ class eckey_t final {
 public:
     eckey_t() : key_(EVP_EC_gen("secp521r1")) {}
 
-    explicit eckey_t(const std::string& path) {
+    explicit eckey_t(const std::string& path) noexcept {
         auto fp = fopen(path.c_str(), "r"); // FlawFinder: ignore
         if(fp != nullptr) {
             key_ = PEM_read_PrivateKey(fp, nullptr, nullptr, nullptr);
@@ -31,7 +31,7 @@ public:
         }
     }
 
-    explicit eckey_t(const key_t key, const std::string& curve = "secp521r1") :
+    explicit eckey_t(const key_t key, const std::string& curve = "secp521r1") noexcept :
     key_(EVP_EC_gen(curve.c_str())) {
         OSSL_PARAM params[] = {
             OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_PRIV_KEY, const_cast<uint8_t *>(key.first), key.second),
@@ -43,9 +43,10 @@ public:
         EVP_PKEY_CTX_free(ctx);
     }
 
-    eckey_t(const eckey_t& other) :
+    eckey_t(const eckey_t& other) noexcept :
     key_(other.key_) {
-        EVP_PKEY_up_ref(key_);
+        if(key_)
+            EVP_PKEY_up_ref(key_);
     }
 
     ~eckey_t() {
@@ -61,7 +62,7 @@ public:
         return !key_;
     }
 
-    auto operator=(const eckey_t& other) -> auto& {
+    auto operator=(const eckey_t& other) noexcept -> auto& {
         if(&other == this)
             return *this;
         if(key_ == other.key_)
@@ -69,7 +70,8 @@ public:
         if(key_)
             EVP_PKEY_free(key_);
         key_ = other.key_;
-        EVP_PKEY_up_ref(key_);
+        if(key_)
+            EVP_PKEY_up_ref(key_);
         return *this;
     }
 
@@ -78,7 +80,8 @@ public:
     }
 
     auto share() const noexcept {
-        EVP_PKEY_up_ref(key_);
+        if(key_)
+            EVP_PKEY_up_ref(key_);
         return key_;
     }
 
