@@ -60,10 +60,6 @@ public:
         return *this;
     }
 
-    auto key() const noexcept {
-        return key_;
-    }
-
     auto share() const noexcept -> EVP_PKEY * {
         if(key_)
            EVP_PKEY_up_ref(key_);
@@ -78,10 +74,9 @@ class sign_t final {
 public:
     explicit sign_t(EVP_PKEY *key, const EVP_MD *md = EVP_sha256()) noexcept :
     key_(key) {
-        if(key_) {
-            EVP_PKEY_up_ref(key_);
+        if(key_)
             ctx_ = EVP_MD_CTX_new();
-        }
+
         if(!ctx_)
             return;
 
@@ -151,10 +146,9 @@ private:
 class verify_t final {
 public:
     explicit verify_t(EVP_PKEY *key, const EVP_MD *md = EVP_sha256()) noexcept : key_(key) {
-        if(key_) {
-            EVP_PKEY_up_ref(key_);
+        if(key_)
             ctx_ = EVP_MD_CTX_new();
-        }
+
         if(!ctx_)
             return;
 
@@ -176,6 +170,7 @@ public:
     ~verify_t() {
         if(ctx_)
             EVP_MD_CTX_free(ctx_);
+
         if(key_)
              EVP_PKEY_free(key_);
     }

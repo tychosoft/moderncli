@@ -79,10 +79,6 @@ public:
         return *this;
     }
 
-    auto key() const noexcept {
-        return key_;
-    }
-
     auto share() const noexcept -> EVP_PKEY * {
         if(key_)
             EVP_PKEY_up_ref(key_);

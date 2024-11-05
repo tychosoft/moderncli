@@ -68,10 +68,6 @@ public:
         return *this;
     }
 
-    auto cert() const noexcept {
-        return cert_;
-    }
-
     auto share() const noexcept -> X509 * {
         if(cert_)
             X509_up_ref(cert_);
