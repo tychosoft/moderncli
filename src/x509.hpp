@@ -21,15 +21,8 @@ class x509_t final {
 public:
     x509_t() = default;
 
-    explicit x509_t(const std::string& path) noexcept {
-        auto fp = fopen(path.c_str(), "r");
-        if(!fp)
-            return;
-        auto bp = BIO_new(BIO_s_file());
-        BIO_set_fp(bp, fp, BIO_NOCLOSE);
-        cert_ = PEM_read_bio_X509(bp, nullptr, nullptr, nullptr);
-        BIO_free(bp);
-        fclose(fp);
+    explicit x509_t(X509 *cert) noexcept {
+        cert_ = cert;
     }
 
     x509_t(const x509_t& other) noexcept :
@@ -77,5 +70,24 @@ public:
 private:
     X509 *cert_{nullptr};
 };
+
+inline auto make_x509(const std::string& cert) {
+    auto bp = BIO_new_mem_buf(cert.c_str(), -1);
+    auto crt = PEM_read_bio_X509(bp, nullptr, nullptr, nullptr);
+    BIO_free(bp);
+    return x509_t(crt);
+}
+
+inline auto load_X509(const std::string& path) {
+    auto fp = fopen(path.c_str(), "r");
+    if(!fp)
+        return x509_t();
+    auto bp = BIO_new(BIO_s_file());
+    BIO_set_fp(bp, fp, BIO_NOCLOSE);
+    auto cert = PEM_read_bio_X509(bp, nullptr, nullptr, nullptr);
+    BIO_free(bp);
+    fclose(fp);
+    return x509_t(cert);
+}
 } // end namespace
 #endif

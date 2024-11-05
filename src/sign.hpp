@@ -199,17 +199,5 @@ private:
     EVP_MD_CTX *ctx_{nullptr};
     EVP_PKEY *key_{nullptr};
 };
-
-inline auto sign_X509(const std::string& path) -> X509 * {
-    auto fp = fopen(path.c_str(), "r");
-    if(!fp)
-        return nullptr;
-    auto bp = BIO_new(BIO_s_file());
-    BIO_set_fp(bp, fp, BIO_NOCLOSE);
-    auto cert = PEM_read_bio_X509(bp, nullptr, nullptr, nullptr);
-    BIO_free(bp);
-    fclose(fp);
-    return cert;
-}
 } // end namespace
 #endif
