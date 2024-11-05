@@ -21,9 +21,7 @@ class x509_t final {
 public:
     x509_t() = default;
 
-    explicit x509_t(X509 *cert) noexcept {
-        cert_ = cert;
-    }
+    explicit x509_t(X509 *cert) noexcept : cert_(cert) {}
 
     x509_t(const x509_t& other) noexcept :
     cert_(other.cert_) {
@@ -59,6 +57,14 @@ public:
         if(cert_)
             X509_up_ref(cert_);
         return *this;
+    }
+
+    auto subject() const noexcept {
+        return cert_ ? X509_get_subject_name(cert_) : nullptr;
+    }
+
+    auto issuer() const noexcept {
+        return cert_ ? X509_get_issuer_name(cert_) : nullptr;
     }
 
     auto share() const noexcept -> X509 * {
