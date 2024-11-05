@@ -35,6 +35,11 @@ Basic date / time processing and formatting functions.
 
 Uses openssl libcrypto to generate hash digests.
 
+## eckey.hpp
+
+Creation and management of Eliptical Curve key pairs for both public and
+private keys.
+
 ## endian.hpp
 
 Functions to store into and access memory pointer data by endian order.
@@ -87,6 +92,11 @@ Support serial I/O operations through a serial port or ptty device. Includes
 support for line buffered and timed input. Serial support is provided for both
 modern posix and windows platforms.
 
+## sign.hpp
+
+Public key signing and verification support using pem files and certificate
+objects.
+
 ## socket.hpp
 
 Generic C++ socket library. This stand-alone header deals with low level socket
@@ -137,15 +147,19 @@ service components that offers ordered execute in a thread queue without
 requiring locking. This is a generic and reusable representation of basic
 Coventry server architecture.
 
-Tasks includes timers. This allows timer context lambdas to be queued and dispatched
-at known times. Timers also support the idea of periodic tasks by auto restarting.
-Timers provide an application level cron service and have a private thread context to
-execute a timer in.
+Tasks includes timers. This allows timer context lambdas to be queued and
+dispatched at known times. Timers also support the idea of periodic tasks by
+auto restarting. Timers provide an application level cron service and have a
+private thread context to execute a timer in.
 
 ## templates.hpp
 
 Some very generic, universal, miscellaneous templates and functions. This also
 is used to introduce new language-like "features" like init and defer.
+
+## x509.hpp
+
+Basic support for x509 certificate objects.
 
 ## linting
 

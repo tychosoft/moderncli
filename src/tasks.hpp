@@ -122,6 +122,7 @@ private:
                 return;
             if(timers_.empty()) {
                 cond_.wait(lock);
+                lock.unlock();
                 continue;
             }
             auto it = timers_.begin();
@@ -147,6 +148,7 @@ private:
             }
             else
                 cond_.wait_until(lock, expires);
+            lock.unlock();
         }
     }
 };

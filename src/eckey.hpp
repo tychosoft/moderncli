@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <openssl/ec.h>
 #include <openssl/evp.h>
+#include <openssl/kdf.h>
 #include <openssl/bio.h>
 #include <openssl/pem.h>
 #include <openssl/ecdsa.h>
@@ -33,14 +34,17 @@ public:
 
     explicit eckey_t(const key_t key, const std::string& curve = "secp521r1") noexcept :
     key_(EVP_EC_gen(curve.c_str())) {
+        EVP_PKEY *new_key = nullptr;
         OSSL_PARAM params[] = {
             OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_PRIV_KEY, const_cast<uint8_t *>(key.first), key.second),
             OSSL_PARAM_construct_end()
         };
         auto ctx = EVP_PKEY_CTX_new_from_pkey(nullptr, key_, nullptr);
         EVP_PKEY_fromdata_init(ctx);
-        EVP_PKEY_fromdata(ctx, &key_, EVP_PKEY_KEYPAIR, params);
+        EVP_PKEY_fromdata(ctx, &new_key, EVP_PKEY_KEYPAIR, params);
         EVP_PKEY_CTX_free(ctx);
+        EVP_PKEY_free(key_);
+        key_ = new_key;
     }
 
     eckey_t(const eckey_t& other) noexcept :
@@ -52,6 +56,7 @@ public:
     ~eckey_t() {
         if(key_)
             EVP_PKEY_free(key_);
+        memset(aes_key, 0, sizeof(aes_key));
     }
 
     operator EVP_PKEY *() const noexcept {
@@ -116,8 +121,35 @@ public:
         return result;
     }
 
+    auto derive(EVP_PKEY *peer, std::string_view info, std::size_t keysize = 32, key_t salt = key_t{nullptr, 0}, const EVP_MD *md = EVP_sha256()) {
+        auto ctx = EVP_PKEY_CTX_new(key_, nullptr);
+        if(!ctx)
+            return key_t{nullptr, 0};
+        EVP_PKEY_derive_init(ctx);
+        EVP_PKEY_derive_set_peer(ctx, peer);
+        std::size_t size;
+        EVP_PKEY_derive(ctx, nullptr, &size);
+        auto secret = std::make_unique<uint8_t[]>(size);
+        EVP_PKEY_derive(ctx, &secret[0], &size);
+        EVP_PKEY_CTX_free(ctx);
+
+        ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr);
+        if(!ctx)
+            return key_t{nullptr, 0};
+        EVP_PKEY_derive_init(ctx);
+        EVP_PKEY_CTX_hkdf_mode(ctx, EVP_PKEY_HKDEF_MODE_EXTRACT_AND_EXPAND);
+        EVP_PKEY_CTX_set_hkdf_md(ctx, md);
+        EVP_PKEY_CTX_set1_hkdf_salt(ctx, salt.first, salt.second);
+        EVP_PKEY_CTX_set1_hkdf_key(ctx, &secret[0], size);
+        EVP_PKEY_CTX_add1_hkdf_info(ctx, reinterpret_cast<const uint8_t*>(info.data()), info.size());
+        EVP_PKEY_derive(ctx, aes_key, &keysize);
+        EVP_PKEY_CTX_free(ctx);
+        return key_t{aes_key, keysize};
+    }
+
 private:
     EVP_PKEY *key_{nullptr};
+    uint8_t aes_key[64];
 };
 } // end namespace
 #endif

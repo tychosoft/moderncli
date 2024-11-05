@@ -439,6 +439,32 @@ inline void wait_fifo(const std::string& id, std::function<bool(std::string_view
     CloseHandle(fifo);
 }
 
+template<typename T>
+inline void make_fifo(const std::string& id, std::function<bool(T&)> cmd) noexcept {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    auto run = true;
+    auto path = R"(\\.\pipe\)" + id;
+    auto fifo = CreateNamedPipe(path.c_str(), PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT, PIPE_UNLIMITED_INSTANCES, 512, 512, 0, nullptr);
+    if(fifo == INVALID_HANDLE_VALUE) {
+        return;
+    }
+    while(run) {
+        auto conn = ConnectNamedPipe(fifo, nullptr);
+        if(!conn)
+            break;
+        auto fd = _open_osfhandle((intptr_t)fifo, _O_RDONLY);
+        if(fd == -1)
+            break;
+        T buf;
+        while(run && _read(fd, &buf, sizeof(T)) == sizeof(T)) {
+            run = cmd(buf);
+        }
+        _close(fd);
+        DisconnectNamedPipe(fifo);
+    }
+    CloseHandle(fifo);
+}
+
 inline auto open_fifo(const std::string& id) {
     auto path = R"(\\.\pipe\)" + id;
     return std::ofstream(path);
@@ -446,13 +472,25 @@ inline auto open_fifo(const std::string& id) {
 
 inline auto send_fifo(const std::string& id, const std::string& cmd) {
     auto path = R"(\\.\pipe\)" + id;
-    auto fp = fopen(path.c_str(), "w");
+    auto fp = fopen(path.c_str(), "w"); // FlawFinder: ignore
     if(!fp)
         return false;
     fprintf(fp, "%s\n", cmd.c_str());
     fflush(fp);
     fclose(fp);
     return true;
+}
+
+template<typename T>
+inline auto send_fifo(const std::string& id, const T& data) noexcept {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    auto path = "/var/run/" + id + "/control";
+    auto fd = _open(path.c_str(), O_WRONLY);
+    if(fd < 0)
+        return false;
+    auto result = (_write(fd, &data, sizeof(T)) == sizeof(T));
+    _close(fd);
+    return result;
 }
 #else
 using id_t = pid_t;
@@ -819,7 +857,7 @@ inline void wait_fifo(const std::string& id, std::function<bool(std::string_view
     auto path = "/var/run/" + id + "/control";
     ::remove(path.c_str());
     ::mkfifo(path.c_str(), 0660);
-    auto fd = open(path.c_str(), O_RDWR);
+    auto fd = open(path.c_str(), O_RDWR);   // FlawFinder: ignore
     if(fd < 0)
         return;
 
@@ -842,13 +880,43 @@ inline auto open_fifo(const std::string& id) {
 
 inline auto send_fifo(const std::string& id, const std::string& cmd) {
     auto path = "/var/run/" + id + "/control";
-    auto fp = fopen(path.c_str(), "w");
+    auto fp = fopen(path.c_str(), "w"); // FlawFinder: ignore
     if(!fp)
         return false;
     fprintf(fp, "%s\n", cmd.c_str());
     fflush(fp);
     fclose(fp);
     return true;
+}
+
+template<typename T>
+inline void make_fifo(const std::string& id, std::function<bool(T&)> cmd) noexcept {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    auto run = true;
+    auto path = "/var/run/" + id + "/control";
+    ::remove(path.c_str());
+    ::mkfifo(path.c_str(), 0660);
+    auto fd = open(path.c_str(), O_RDWR);   // FlawFinder: ignore
+    if(fd < 0)
+        return;
+
+    T buf;
+    while(run && read(fd, &buf, sizeof(buf)) == sizeof(buf)) {  // FlawFinder: ignore
+        run = cmd(buf);
+    }
+    close(fd);
+}
+
+template<typename T>
+inline auto send_fifo(const std::string& id, const T& data) noexcept {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    auto path = "/var/run/" + id + "/control";
+    auto fd = open(path.c_str(), O_WRONLY); // FlawFinder: ignore
+    if(fd < 0)
+        return false;
+    auto result = (write(fd, &data, sizeof(T)) == sizeof(T));
+    close(fd);
+    return result;
 }
 #endif
 

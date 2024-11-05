@@ -85,7 +85,7 @@ inline auto make_x509(const std::string& cert) {
 }
 
 inline auto load_X509(const std::string& path) {
-    auto fp = fopen(path.c_str(), "r");
+    auto fp = fopen(path.c_str(), "r"); // FlawFinder: ignore
     if(!fp)
         return x509_t();
     auto bp = BIO_new(BIO_s_file());

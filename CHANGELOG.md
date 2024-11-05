@@ -1,5 +1,17 @@
 # Release Notes
 
+## v0.9.5
+- Added generic x509 type
+- Add x509 certificate verification
+- Cross-platform fifo client and server
+- Elliptical key pairs and signing support
+- Introduce timer queue
+- Fix and simplify semaphore
+- Fix and improve barrier
+- Extend sync with events
+- Add C++ waitgroup to sync
+- Expand socket functionality
+
 ## v0.9.4
 - Big integer math support
 - Task and function thread queue dispatch
