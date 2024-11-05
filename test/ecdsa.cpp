@@ -6,6 +6,7 @@
 #include "templates.hpp"
 #include "eckey.hpp"
 #include "sign.hpp"
+#include "x509.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     const crypto::eckey_t keypair;

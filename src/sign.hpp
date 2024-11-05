@@ -36,6 +36,10 @@ public:
             EVP_PKEY_free(key_);
     }
 
+    operator EVP_PKEY *() const noexcept {
+        return share();
+    }
+
     operator bool() const noexcept {
         return key_ != nullptr;
     }
@@ -60,7 +64,7 @@ public:
         return key_;
     }
 
-    auto share() const noexcept {
+    auto share() const noexcept -> EVP_PKEY * {
         if(key_)
            EVP_PKEY_up_ref(key_);
         return key_;
