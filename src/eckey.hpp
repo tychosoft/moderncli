@@ -8,6 +8,7 @@
 #include <string>
 #include <cstdio>
 #include <cstdint>
+#include <cstring>
 #include <openssl/ec.h>
 #include <openssl/evp.h>
 #include <openssl/kdf.h>
@@ -51,12 +52,15 @@ public:
     key_(other.key_) {
         if(key_)
             EVP_PKEY_up_ref(key_);
+        aes_size = other.aes_size;
+        memcpy(aes_key, other.aes_key, sizeof(aes_key));// FLawFinder: ignore
     }
 
     ~eckey_t() {
         if(key_)
             EVP_PKEY_free(key_);
         memset(aes_key, 0, sizeof(aes_key));
+        aes_size = 0;
     }
 
     operator EVP_PKEY *() const noexcept {
@@ -79,6 +83,8 @@ public:
         if(key_)
             EVP_PKEY_free(key_);
         key_ = other.key_;
+        memcpy(aes_key, other.aes_key, sizeof(aes_key));// FLawFinder: ignore
+        aes_size = other.aes_size;
         if(key_)
             EVP_PKEY_up_ref(key_);
         return *this;
@@ -121,14 +127,27 @@ public:
         return result;
     }
 
-    auto derive(EVP_PKEY *peer, std::string_view info, std::size_t keysize = 32, key_t salt = key_t{nullptr, 0}, const EVP_MD *md = EVP_sha256()) {
+    auto derive() const noexcept {
+        if(!aes_size)
+            return key_t{nullptr, 0};
+        return key_t{aes_key, aes_size};
+    }
+
+    auto derive(EVP_PKEY *peer, std::string_view info, std::size_t keysize = 0, key_t salt = key_t{nullptr, 0}, const EVP_MD *md = EVP_sha256()) noexcept {
+        if(!peer || !md || keysize > sizeof(aes_key))
+            return key_t{nullptr, 0};
         auto ctx = EVP_PKEY_CTX_new(key_, nullptr);
         if(!ctx)
             return key_t{nullptr, 0};
+        aes_size = 0;
+        std::size_t size = 0;
+        if(!keysize)
+            keysize = EVP_MD_get_size(md);
         EVP_PKEY_derive_init(ctx);
-        EVP_PKEY_derive_set_peer(ctx, peer);
-        std::size_t size;
-        EVP_PKEY_derive(ctx, nullptr, &size);
+        if((EVP_PKEY_derive_set_peer(ctx, peer) <= 0) || (EVP_PKEY_derive(ctx, nullptr, &size) <= 0) || (size < 1)) {
+            EVP_PKEY_CTX_free(ctx);
+            return key_t{nullptr, 0};
+        }
         auto secret = std::make_unique<uint8_t[]>(size);
         EVP_PKEY_derive(ctx, &secret[0], &size);
         EVP_PKEY_CTX_free(ctx);
@@ -144,12 +163,16 @@ public:
         EVP_PKEY_CTX_add1_hkdf_info(ctx, reinterpret_cast<const uint8_t*>(info.data()), info.size());
         EVP_PKEY_derive(ctx, aes_key, &keysize);
         EVP_PKEY_CTX_free(ctx);
+        if(keysize < 8)
+            return key_t{nullptr, 0};
+        aes_size = keysize;
         return key_t{aes_key, keysize};
     }
 
 private:
     EVP_PKEY *key_{nullptr};
-    uint8_t aes_key[64];
+    std::size_t aes_size{0};
+    uint8_t aes_key[64]{};
 };
 } // end namespace
 #endif
