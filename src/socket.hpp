@@ -1242,17 +1242,8 @@ inline auto inet_host(const struct sockaddr *addr) noexcept -> std::string {
     if(!addr)
         return {};
 
-    char buf[INET6_ADDRSTRLEN + 1];
-    switch(addr->sa_family) {
-    case AF_INET:
-    case AF_INET6:
-        if(inet_ntop(addr->sa_family, addr, buf, sizeof(buf)))
-            return {buf};
-        break;
-    default:
-        break;
-    }
-    return {};
+    address_t address(addr);
+    return address.to_string();
 }
 
 inline auto inet_host(const std::string& host = "", int type = SOCK_STREAM, int any = AF_UNSPEC) {
