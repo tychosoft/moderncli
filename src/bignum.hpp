@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <openssl/bn.h>
 
-namespace crypto {
+namespace tycho::crypto {
 using key_t = std::pair<const uint8_t *, std::size_t>;
 
 class bignum_t final {

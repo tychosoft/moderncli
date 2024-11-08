@@ -9,7 +9,7 @@
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 
-namespace cipher {
+namespace tycho::cipher {
 class pubkey_t final {
 public:
     explicit pubkey_t(const std::string& pem) noexcept {

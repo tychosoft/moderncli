@@ -16,7 +16,7 @@
 #include <openssl/obj_mac.h>
 #include <openssl/core_names.h>
 
-namespace crypto {
+namespace tycho::crypto {
 class x509_t final {
 public:
     x509_t() = default;

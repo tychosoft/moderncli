@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <openssl/ec.h>
 #include <openssl/evp.h>
 #include <openssl/kdf.h>
@@ -18,7 +19,7 @@
 #include <openssl/obj_mac.h>
 #include <openssl/core_names.h>
 
-namespace crypto {
+namespace tycho::crypto {
 using key_t = std::pair<const uint8_t *, std::size_t>;
 
 class eckey_t final {
@@ -127,7 +128,7 @@ public:
         return result;
     }
 
-    auto derive() const noexcept {
+    auto derived() const noexcept {
         if(!aes_size)
             return key_t{nullptr, 0};
         return key_t{aes_key, aes_size};
@@ -158,9 +159,9 @@ public:
         EVP_PKEY_derive_init(ctx);
         EVP_PKEY_CTX_hkdf_mode(ctx, EVP_PKEY_HKDEF_MODE_EXTRACT_AND_EXPAND);
         EVP_PKEY_CTX_set_hkdf_md(ctx, md);
-        EVP_PKEY_CTX_set1_hkdf_salt(ctx, salt.first, salt.second);
-        EVP_PKEY_CTX_set1_hkdf_key(ctx, &secret[0], size);
-        EVP_PKEY_CTX_add1_hkdf_info(ctx, reinterpret_cast<const uint8_t*>(info.data()), info.size());
+        EVP_PKEY_CTX_set1_hkdf_salt(ctx, salt.first, int(salt.second));
+        EVP_PKEY_CTX_set1_hkdf_key(ctx, &secret[0], int(size));
+        EVP_PKEY_CTX_add1_hkdf_info(ctx, reinterpret_cast<const uint8_t*>(info.data()), int(info.size()));
         EVP_PKEY_derive(ctx, aes_key, &keysize);
         EVP_PKEY_CTX_free(ctx);
         if(keysize < 8)

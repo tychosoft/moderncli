@@ -1,6 +1,7 @@
 # Release Notes
 
 ## v0.9.5
+- Fixed crypto namespace
 - Added generic x509 type
 - Add x509 certificate verification
 - Cross-platform fifo client and server

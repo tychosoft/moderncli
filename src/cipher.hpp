@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <openssl/evp.h>
 
-namespace crypto {
+namespace tycho::crypto {
 using key_t = std::pair<const uint8_t *, std::size_t>;
 
 inline constexpr auto nosalt = key_t{nullptr, 64};
@@ -389,7 +389,5 @@ private:
     EVP_CIPHER_CTX *ctx_{nullptr};
     const EVP_CIPHER *algo_{nullptr};
 };
-
-
 } // end namespace
 #endif

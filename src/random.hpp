@@ -13,7 +13,7 @@
 #include <cstring>
 #include <openssl/rand.h>
 
-namespace crypto {
+namespace tycho::crypto {
 using key_t = std::pair<const uint8_t *, std::size_t>;
 
 inline constexpr auto salt = 64UL;
@@ -276,21 +276,21 @@ using salt_t = random_t<salt>;
 } // end namespace
 
 #ifdef  TYCHO_PRINT_HPP_
-template <> class fmt::formatter<crypto::key_t const> {
+template <> class fmt::formatter<tycho::crypto::key_t const> {
 public:
     static constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
 
     template <typename Context>
-    constexpr auto format(crypto::key_t const& key, Context& ctx) const {
-        return format_to(ctx.out(), "{}", crypto::to_b64(key));
+    constexpr auto format(tycho::crypto::key_t const& key, Context& ctx) const {
+        return format_to(ctx.out(), "{}", tycho::crypto::to_b64(key));
     }
 };
 #endif
 
-inline auto operator<<(std::ostream& out, const crypto::key_t& key) -> std::ostream& {
-    out << crypto::to_b64(key);
+inline auto operator<<(std::ostream& out, const tycho::crypto::key_t& key) -> std::ostream& {
+    out << tycho::crypto::to_b64(key);
     return out;
 }
 #endif

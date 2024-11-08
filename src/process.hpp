@@ -409,7 +409,9 @@ inline void env(const std::string& id, const std::string& value) {
     static_cast<void>(_putenv((id + "=" + value).c_str()));
 }
 
-inline void wait_fifo(const std::string& id, std::function<bool(std::string_view)> cmd) {
+inline void wait_fifo(std::string id, std::function<bool(std::string_view)> cmd) {
+    if(id[0] == '/' || id[0] == '\\')
+        id.erase(0, 1);
     auto run = true;
     auto path = R"(\\.\pipe\)" + id;
     auto fifo = CreateNamedPipe(path.c_str(), PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT, PIPE_UNLIMITED_INSTANCES, 512, 512, 0, nullptr);
@@ -440,8 +442,10 @@ inline void wait_fifo(const std::string& id, std::function<bool(std::string_view
 }
 
 template<typename T>
-inline void make_fifo(const std::string& id, std::function<bool(T&)> cmd) noexcept {
+inline void make_fifo(std::string id, std::function<bool(T&)> cmd) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    if(id[0] == '/' || id[0] == '\\')
+        id.erase(0, 1);
     auto run = true;
     auto path = R"(\\.\pipe\)" + id;
     auto fifo = CreateNamedPipe(path.c_str(), PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT, PIPE_UNLIMITED_INSTANCES, 512, 512, 0, nullptr);
@@ -465,12 +469,16 @@ inline void make_fifo(const std::string& id, std::function<bool(T&)> cmd) noexce
     CloseHandle(fifo);
 }
 
-inline auto open_fifo(const std::string& id) {
+inline auto open_fifo(std::string id) {
+    if(id[0] == '/' || id[0] == '\\')
+        id.erase(0, 1);
     auto path = R"(\\.\pipe\)" + id;
     return std::ofstream(path);
 }
 
-inline auto send_fifo(const std::string& id, const std::string& cmd) {
+inline auto send_fifo(std::string id, const std::string& cmd) {
+    if(id[0] == '/' || id[0] == '\\')
+        id.erase(0, 1);
     auto path = R"(\\.\pipe\)" + id;
     auto fp = fopen(path.c_str(), "w"); // FlawFinder: ignore
     if(!fp)
@@ -482,8 +490,11 @@ inline auto send_fifo(const std::string& id, const std::string& cmd) {
 }
 
 template<typename T>
-inline auto send_fifo(const std::string& id, const T& data) noexcept {
+inline auto send_fifo(std::string id, const T& data) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    if(id[0] == '/' || id[0] == '\\')
+        id.erase(0, 1);
+
     auto path = "/var/run/" + id + "/control";
     auto fd = _open(path.c_str(), O_WRONLY);
     if(fd < 0)
@@ -852,7 +863,9 @@ inline void env(const std::string& id, const std::string& value) {
     setenv(id.c_str(), value.c_str(), 1);
 }
 
-inline void wait_fifo(const std::string& id, std::function<bool(std::string_view)> cmd) {
+inline void wait_fifo(std::string id, std::function<bool(std::string_view)> cmd) {
+    if(id[0] == '/')
+        id = id.substr(1);
     auto run = true;
     auto path = "/var/run/" + id + "/control";
     ::remove(path.c_str());
@@ -873,12 +886,16 @@ inline void wait_fifo(const std::string& id, std::function<bool(std::string_view
     fclose(fp);
 }
 
-inline auto open_fifo(const std::string& id) {
+inline auto open_fifo(std::string id) {
+    if(id[0] == '/')
+        id = id.substr(1);
     auto path = "/var/run/" + id + "/control";
     return std::ofstream(path);
 }
 
-inline auto send_fifo(const std::string& id, const std::string& cmd) {
+inline auto send_fifo(std::string id, const std::string& cmd) {
+    if(id[0] == '/')
+        id = id.substr(1);
     auto path = "/var/run/" + id + "/control";
     auto fp = fopen(path.c_str(), "w"); // FlawFinder: ignore
     if(!fp)
@@ -890,8 +907,10 @@ inline auto send_fifo(const std::string& id, const std::string& cmd) {
 }
 
 template<typename T>
-inline void make_fifo(const std::string& id, std::function<bool(T&)> cmd) noexcept {
+inline void make_fifo(std::string id, std::function<bool(T&)> cmd) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    if(id[0] == '/')
+        id = id.substr(1);
     auto run = true;
     auto path = "/var/run/" + id + "/control";
     ::remove(path.c_str());
@@ -908,8 +927,10 @@ inline void make_fifo(const std::string& id, std::function<bool(T&)> cmd) noexce
 }
 
 template<typename T>
-inline auto send_fifo(const std::string& id, const T& data) noexcept {
+inline auto send_fifo(std::string id, const T& data) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    if(id[0] == '/')
+        id = id.substr(1);
     auto path = "/var/run/" + id + "/control";
     auto fd = open(path.c_str(), O_WRONLY); // FlawFinder: ignore
     if(fd < 0)

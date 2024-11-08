@@ -9,7 +9,7 @@
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 
-namespace crypto {
+namespace tycho::crypto {
 class digest_t final {
 public:
     explicit digest_t(const EVP_MD *md = EVP_sha256()) noexcept : ctx_(EVP_MD_CTX_create()) {
