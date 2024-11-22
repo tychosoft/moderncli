@@ -4,6 +4,8 @@
 #ifndef TYCHO_PRINT_HPP_
 #define TYCHO_PRINT_HPP_
 
+#include "encoding.hpp"
+
 #include <iostream>
 #include <string_view>
 #include <mutex>

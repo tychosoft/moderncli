@@ -5,6 +5,7 @@
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "random.hpp"
 #include "strings.hpp"
+#include "encoding.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     const crypto::random_t<crypto::sha512_key> key1, key2;
@@ -18,11 +19,11 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     uint8_t msg[8];
     msg[7] = 0;
     // cspell:disable-next-line
-    assert(crypto::to_b64(txt, sizeof(txt)) == "QUJDRFoxMg==");
+    assert(to_b64(txt, sizeof(txt)) == "QUJDRFoxMg==");
     // cspell:disable-next-line
-    assert(crypto::size_b64("QUJDRFoxMg==") == 7);
+    assert(size_b64("QUJDRFoxMg==") == 7);
     // cspell:disable-next-line
-    assert(crypto::from_b64("QUJDRFoxMg==", msg, sizeof(msg)) == 7);
+    assert(from_b64("QUJDRFoxMg==", msg, sizeof(msg)) == 7);
     // cspell:disable-next-line
     assert(eq("ABCDZ12", reinterpret_cast<const char *>(msg)));
 }

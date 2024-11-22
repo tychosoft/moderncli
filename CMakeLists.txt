@@ -44,7 +44,7 @@ set_target_properties(test_keyfile PROPERTIES COMPILE_DEFINITIONS "TEST_DATA=\"$
 add_test(NAME test-keyfile COMMAND test_keyfile)
 target_link_libraries(test_keyfile PRIVATE fmt::fmt)
 
-add_executable(test_strings test/strings.cpp src/strings.hpp src/datetime.hpp src/print.hpp)
+add_executable(test_strings test/strings.cpp src/strings.hpp src/encoding.hpp src/datetime.hpp src/print.hpp)
 add_test(NAME test-strings COMMAND test_strings)
 target_link_libraries(test_strings PRIVATE fmt::fmt)
 
@@ -96,7 +96,7 @@ add_executable(test_digest test/digest.cpp src/digest.hpp)
 target_link_libraries(test_digest PRIVATE OpenSSL::Crypto fmt::fmt)
 add_test(NAME test-digest COMMAND test_digest)
 
-add_executable(test_random test/random.cpp src/random.hpp)
+add_executable(test_random test/random.cpp src/encoding.hpp src/random.hpp)
 target_link_libraries(test_random PRIVATE OpenSSL::Crypto fmt::fmt)
 add_test(NAME test-random COMMAND test_random)
 

@@ -279,42 +279,6 @@ inline auto str_append(char *cp, std::size_t max, ...) {  // NOLINT
     return pos < max;
 }
 
-inline auto to_hex(const uint8_t *from, std::size_t size) {
-    std::string out;
-    out.resize(size * 2);
-    auto hex = out.data();
-
-    for(auto pos = std::size_t(0); pos < size; ++pos) {
-        snprintf(hex, 3, "%02x", from[pos]);
-        hex += 2;
-    }
-    return out;
-}
-
-inline auto to_hex(const std::string_view str) {
-    return to_hex(reinterpret_cast<const uint8_t *>(str.data()), str.size());
-}
-
-inline auto from_hex(std::string_view from, uint8_t *to, std::size_t size) {
-    auto hex = from.data();
-    auto max = size * 2;
-    if(from.size() <= max)
-        max = from.size();
-
-    for(auto pos = std::size_t(0); pos < max; pos += 2) {
-        char buf[3]{};
-        buf[0] = hex[pos];
-        buf[1] = hex[pos + 1];
-        buf[2] = 0;
-        char *end = nullptr;
-        auto value = strtoul(buf, &end, 16);
-        if(*end != 0)
-            return pos / 2;
-        *(to++) = static_cast<uint8_t>(value);
-    }
-    return max / 2;
-}
-
 inline void clobber(std::string& str, char fill = '*') {
     for(auto pos = std::size_t(0); pos < str.size(); ++pos) {
         str[pos] = fill;

@@ -40,6 +40,10 @@ Uses openssl libcrypto to generate hash digests.
 Creation and management of Eliptical Curve key pairs for both public and
 private keys.
 
+## encoding.hpp
+
+Various common character encoding formats, starting with b64 and hex.
+
 ## endian.hpp
 
 Functions to store into and access memory pointer data by endian order.

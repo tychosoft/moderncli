@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "strings.hpp"
+#include "encoding.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     const std::string text = "hi,bye,gone";

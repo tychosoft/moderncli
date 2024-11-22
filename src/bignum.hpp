@@ -461,7 +461,7 @@ public:
 };
 #endif
 
-inline auto operator<<(std::ostream& out, const crypto::bignum_t& bn) -> std::ostream& {
+inline auto operator<<(std::ostream& out, const tycho::crypto::bignum_t& bn) -> std::ostream& {
     out << bn.to_string();
     return out;
 }

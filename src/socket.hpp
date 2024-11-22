@@ -1242,7 +1242,7 @@ inline auto inet_host(const struct sockaddr *addr) noexcept -> std::string {
     if(!addr)
         return {};
 
-    address_t address(addr);
+    const address_t address(addr);
     return address.to_string();
 }
 

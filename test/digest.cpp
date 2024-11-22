@@ -5,6 +5,7 @@
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "digest.hpp"
 #include "strings.hpp"
+#include "encoding.hpp"
 #include "templates.hpp"
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
