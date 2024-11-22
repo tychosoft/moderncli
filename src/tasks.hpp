@@ -35,12 +35,12 @@ public:
         shutdown();
     }
 
-    operator bool() noexcept {
+    operator bool() const noexcept {
         const std::lock_guard lock(lock_);
         return !stop_;
     }
 
-    auto operator!() noexcept {
+    auto operator!() const noexcept {
         const std::lock_guard lock(lock_);
         return stop_;
     }
@@ -84,7 +84,7 @@ public:
         return false;
     }
 
-    auto find(uint64_t id) noexcept {
+    auto find(uint64_t id) const noexcept {
         const std::lock_guard lock(lock_);
         for(const auto& [expires, item] : timers_) {
             if(std::get<0>(item) == id)
@@ -98,7 +98,7 @@ public:
         timers_.clear();
     }
 
-    auto empty() noexcept {
+    auto empty() const noexcept {
         const std::lock_guard lock(lock_);
         if(stop_)
             return true;
@@ -108,7 +108,7 @@ public:
 private:
     using timer_t = std::tuple<uint64_t, period_t, task_t, std::any>;
     std::multimap<timepoint_t, timer_t> timers_;
-    std::mutex lock_;
+    mutable std::mutex lock_;
     std::condition_variable cond_;
     std::thread thread_;
     error_t errors_;
@@ -153,6 +153,7 @@ private:
     }
 };
 
+// Generic task queue, matches other languages
 class task_queue final {
 public:
     using timeout_strategy = std::function<std::chrono::milliseconds()>;
@@ -169,12 +170,12 @@ public:
         shutdown();
     };
 
-    operator bool() noexcept {
+    operator bool() const noexcept {
         const std::lock_guard lock(mutex_);
         return running_;
     }
 
-    auto operator!() noexcept {
+    auto operator!() const noexcept {
         const std::lock_guard lock(mutex_);
         return !running_;
     }
@@ -202,25 +203,28 @@ public:
             thread_.join();
     }
 
-    void shutdown(shutdown_strategy handler) {
+    auto shutdown(shutdown_strategy handler) -> auto& {
         // set shutdown from inside thread context
         using args_t = std::pair<shutdown_strategy *, shutdown_strategy>;
         dispatch([](std::any args) {
             auto [ptr, act] = std::any_cast<args_t>(args);
             *ptr = act;
         }, args_t{&shutdown_, handler});
+        return *this;
     }
 
-    void timeout(timeout_strategy handler) {
+    auto timeout(timeout_strategy handler) -> auto& {
         using args_t = std::pair<timeout_strategy *, timeout_strategy>;
         dispatch([](std::any args) {
             auto [ptr, act] = std::any_cast<args_t>(args);
             *ptr = act;
         }, args_t{&timeout_, handler});
+        return *this;
     }
 
-    void errors(error_t handler) {
+    auto errors(error_t handler) -> auto& {
         errors_ = std::move(handler);
+        return *this;
     }
 
     void clear() noexcept {
@@ -229,7 +233,7 @@ public:
             tasks_.pop();
     }
 
-    auto empty() noexcept {
+    auto empty() const noexcept {
         const std::lock_guard lock(mutex_);
         if(!running_)
             return true;
@@ -240,7 +244,7 @@ private:
     timeout_strategy timeout_;
     shutdown_strategy shutdown_;
     std::queue<std::pair<task_t, std::any>> tasks_;
-    std::mutex mutex_;
+    mutable std::mutex mutex_;
     std::condition_variable cvar_;
     std::thread thread_;
     bool running_{true};
@@ -290,7 +294,7 @@ private:
     }
 };
 
-// Optimized function queue
+// Optimized function queue for C++ components
 class func_queue final {
 public:
     using timeout_strategy = std::chrono::milliseconds (*)();
@@ -306,14 +310,24 @@ public:
         shutdown();
     };
 
-    operator bool() noexcept {
+    operator bool() const noexcept {
         const std::lock_guard lock(mutex_);
         return running_;
     }
 
-    auto operator!() noexcept {
+    auto operator!() const noexcept {
         const std::lock_guard lock(mutex_);
         return !running_;
+    }
+
+    auto max() const noexcept {
+        const std::lock_guard lock(mutex_);
+        return tasks_.max_size();
+    }
+
+    auto size() const noexcept {
+        const std::lock_guard lock(mutex_);
+        return tasks_.max_size();
     }
 
     auto dispatch(task_t task, std::any args) {
@@ -321,7 +335,18 @@ public:
         if(!running_)
             return false;
 
-        tasks_.emplace(std::move(task), std::move(args));
+        tasks_.emplace_back(std::move(task), std::move(args));
+        lock.unlock();
+        cvar_.notify_one();
+        return true;
+    }
+
+;   auto priority(task_t task, std::any args) {
+        std::unique_lock lock(mutex_);
+        if(!running_)
+            return false;
+
+        tasks_.emplace_front(std::move(task), std::move(args));
         lock.unlock();
         cvar_.notify_one();
         return true;
@@ -339,34 +364,39 @@ public:
             thread_.join();
     }
 
-    void shutdown(action_t handler) {
+    auto shutdown(action_t handler) -> auto& {
         // set shutdown from inside thread context
         using args_t = std::pair<action_t *, action_t>;
         dispatch([](std::any args) {
             auto [ptr, act] = std::any_cast<args_t>(args);
             *ptr = act;
         }, args_t{&shutdown_, handler});
+        return *this;
     }
 
-    void timeout(timeout_strategy handler) {
+    auto timeout(timeout_strategy handler) -> auto& {
         using args_t = std::pair<timeout_strategy *, timeout_strategy>;
         dispatch([](std::any args) {
             auto [ptr, act] = std::any_cast<args_t>(args);
             *ptr = act;
         }, args_t{&timeout_, handler});
+        return *this;
     }
 
-    void errors(error_t handler) {
+    auto errors(error_t handler) -> auto& {
         errors_ = std::move(handler);
+        return *this;
     }
 
     void clear() noexcept {
-        const std::lock_guard lock(mutex_);
-        while(!tasks_.empty())
-            tasks_.pop();
+        tasks_.clear();
     }
 
-    auto empty() noexcept {
+    void clean() noexcept {
+        tasks_.shrink_to_fit();
+    }
+
+    auto empty() const noexcept {
         const std::lock_guard lock(mutex_);
         if(!running_)
             return true;
@@ -376,8 +406,8 @@ public:
 private:
     timeout_strategy timeout_;
     action_t shutdown_{nullptr};
-    std::queue<std::pair<task_t, std::any>> tasks_;
-    std::mutex mutex_;
+    std::deque<std::pair<task_t, std::any>> tasks_;
+    mutable std::mutex mutex_;
     std::condition_variable cvar_;
     std::thread thread_;
     bool running_{true};
@@ -409,7 +439,7 @@ private:
 
             try {
                 std::tie(task, args) = std::move(tasks_.front());
-                tasks_.pop();
+                tasks_.pop_front();
 
                 // unlock before running task
                 lock.unlock();

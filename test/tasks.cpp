@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "tasks.hpp"
+#include "print.hpp"
 
 #include <string>
 #include <tuple>
@@ -18,7 +19,7 @@ func_queue fq;
 
 auto process_command(const std::string& text, int number) {
     using args_t = std::tuple<std::string, int>;
-    return tq.dispatch([](std::any args) {
+    return fq.dispatch([](std::any args) {
         const auto& [text, num] = std::any_cast<args_t>(args);
         str = text;
         count += num;
@@ -29,10 +30,10 @@ auto process_command(const std::string& text, int number) {
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(process_command("test", 42));
     assert(process_command("more", 10));
-    while(!tq.empty()) {
+    while(!fq.empty()) {
          std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
-    tq.shutdown();
+    fq.shutdown();
     assert(count == 52);
     assert(str == "more");
 

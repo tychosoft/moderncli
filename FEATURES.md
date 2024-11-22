@@ -147,10 +147,11 @@ service components that offers ordered execute in a thread queue without
 requiring locking. This is a generic and reusable representation of basic
 Coventry server architecture.
 
-Tasks includes timers. This allows timer context lambdas to be queued and
-dispatched at known times. Timers also support the idea of periodic tasks by
-auto restarting. Timers provide an application level cron service and have a
-private thread context to execute a timer in.
+The function queue implimentation is optimized for C++ and Coventry, while the
+task queue is more generic and more closely matches task queue implimentations
+in other languages, such as for golang. Tasks also includes generic timers that
+also match behaviors elsewhere. This allows timer context lambdas to be queued
+and dispatched at known times and periodic intervals.
 
 ## templates.hpp
 
