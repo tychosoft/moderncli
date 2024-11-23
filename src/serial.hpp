@@ -644,22 +644,22 @@ public:
         return std::size_t(0U);
     }
 
-    void flush() {
+    void flush() const {
         if(device_ != invalid_)
             PurgeComm(device_, PURGE_TXABORT | PURGE_TXCLEAR);
     }
 
-    void purge() {
+    void purge() const {
         if(device_ != invalid_)
             PurgeComm(device_, PURGE_RXABORT | PURGE_RXCLEAR);
     }
 
-    void sync() {
+    void sync() const {
         if(device_ != invalid_)
             FlushFileBuffers(device_);
     }
 
-    void hup() {
+    void hup() const {
         if(device_ == invalid_)
             return;
 

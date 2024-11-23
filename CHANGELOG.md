@@ -1,5 +1,10 @@
 # Release Notes
 
+## v0.9.6
+- Introduce memory header
+- Separate character encoding from random
+- Optimize and differentiate function from task queues
+
 ## v0.9.5
 - Fixed inet host for sockaddr
 - Fixed crypto namespace

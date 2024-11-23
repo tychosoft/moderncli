@@ -460,7 +460,7 @@ inline void make_fifo(std::string id, std::function<bool(T&)> cmd) noexcept {
         auto fd = _open_osfhandle((intptr_t)fifo, _O_RDONLY);
         if(fd == -1)
             break;
-        T buf;
+        T buf{};
         while(run && _read(fd, &buf, sizeof(T)) == sizeof(T)) {
             run = cmd(buf);
         }

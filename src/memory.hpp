@@ -270,6 +270,9 @@ inline void mem_alloc(T **mem, std::size_t size, std::size_t align = 0) {
         ::free(*mem);   // NOLINT
         *mem = nullptr;
     }
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+    *mem = static_cast<T*>(::malloc(size));  // NOLINT
+#else
     if(!align)
         *mem = static_cast<T *>(::malloc(size));  // NOLINT
     else
@@ -277,6 +280,7 @@ inline void mem_alloc(T **mem, std::size_t size, std::size_t align = 0) {
         posix_memalign(reinterpret_cast<void **>(mem), align, size);
 #else
         *mem = static_cast<T *>(::aligned_alloc(align, size));
+#endif
 #endif
 }
 

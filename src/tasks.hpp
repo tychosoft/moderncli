@@ -118,7 +118,7 @@ private:
     void run() noexcept {
         for(;;) {
             std::unique_lock lock(lock_);
-            if(stop_ && timers_.empty())
+            if (stop_ && timers_.empty())
                 return;
             if(timers_.empty()) {
                 cond_.wait(lock);
