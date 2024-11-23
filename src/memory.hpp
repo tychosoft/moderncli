@@ -30,7 +30,6 @@ class bytes_array final {
 public:
     bytes_array() = default;
     bytes_array(const bytes_array& other) = default;
-    auto operator=(const bytes_array& other) -> auto& = default;
 
     explicit bytes_array(std::size_t size) :
     array_(std::make_shared<T[]>(size)), size_(size) {}
@@ -435,6 +434,11 @@ public:
         return *this;
     }
 
+    template<typename T>
+    auto make(std::size_t adjust = 0) {
+        return static_cast<T*>(alloc(sizeof(T) + adjust));
+    }
+
     auto alloc(std::size_t size) -> void * {
         while(size % sizeof(void *))
             ++size;
@@ -486,6 +490,10 @@ public:
 
     auto pages() const noexcept {
         return count_;
+    }
+
+    auto size() const noexcept {
+        return count_ * size_;
     }
 
 private:
