@@ -255,7 +255,7 @@ protected:
     // cppcheck-suppress unusedStructMember
     std::size_t bufsize{0}, getsize{0};
 
-    void allocate(size_t size) {
+    void allocate(std::size_t size) {
         if(!size)
             ++size;
 

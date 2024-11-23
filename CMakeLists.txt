@@ -44,7 +44,7 @@ set_target_properties(test_keyfile PROPERTIES COMPILE_DEFINITIONS "TEST_DATA=\"$
 add_test(NAME test-keyfile COMMAND test_keyfile)
 target_link_libraries(test_keyfile PRIVATE fmt::fmt)
 
-add_executable(test_strings test/strings.cpp src/strings.hpp src/encoding.hpp src/datetime.hpp src/print.hpp)
+add_executable(test_strings test/strings.cpp src/strings.hpp src/encoding.hpp src/datetime.hpp src/print.hpp src/memory.hpp)
 add_test(NAME test-strings COMMAND test_strings)
 target_link_libraries(test_strings PRIVATE fmt::fmt)
 

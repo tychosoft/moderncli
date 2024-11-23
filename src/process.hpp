@@ -13,6 +13,7 @@
 #include <optional>
 #include <stdexcept>
 #include <functional>
+#include <type_traits>
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 #if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
@@ -202,7 +203,7 @@ public:
         return addr_;
     }
 
-    auto operator[](size_t pos) -> uint8_t& {
+    auto operator[](std::size_t pos) -> uint8_t& {
         if(addr_ == MAP_FAILED)
             throw std::runtime_error("no mapped handle");
         if(pos >= size_)

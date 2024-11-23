@@ -65,6 +65,11 @@ section as a collection of keys as well as iterating over named sections and
 key collections. It can also be used to modify and re-write the key file with
 changed data.
 
+## memory.hpp
+
+Low level memory operations, allocator schemes, and byte array classes. This
+includes safe low level memory functions.
+
 ## output.hpp
 
 Older stream based output that pre-dates print. By not requiring format() it

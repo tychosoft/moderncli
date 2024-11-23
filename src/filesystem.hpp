@@ -5,6 +5,7 @@
 #define TYCHO_FILESYSTEM_HPP_
 
 #include <filesystem>
+#include <type_traits>
 #include <functional>
 #include <algorithm>
 #include <iostream>

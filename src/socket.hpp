@@ -1134,7 +1134,7 @@ private:
         return static_cast<int>(so);
     }
 
-    static auto make_socklen(size_t size) noexcept -> socklen_t {
+    static auto make_socklen(std::size_t size) noexcept -> socklen_t {
         return static_cast<socklen_t>(size);
     }
 #else
