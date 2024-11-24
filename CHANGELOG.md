@@ -1,6 +1,7 @@
 # Release Notes
 
 ## v0.9.6
+- Introduce ssl streaming
 - Introduce memory header
 - Separate character encoding from random
 - Optimize and differentiate function from task queues

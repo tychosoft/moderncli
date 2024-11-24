@@ -86,7 +86,7 @@ public:
 
     socket_stream(socket_stream&& from) noexcept : std::iostream(static_cast<std::streambuf *>(this)), so_(from.so_), family_(from.family_) {
         from.so_ = -1;
-        from.release();
+        from.allocate(0);
         allocate(S);
     }
 
@@ -167,6 +167,14 @@ public:
     }
 
 protected:
+    char gbuf[S]{}, pbuf[S]{};
+    // cppcheck-suppress unusedStructMember
+    std::size_t bufsize{0}, getsize{0};
+
+    auto io_socket() const noexcept {
+        return so_;
+    }
+
     auto io_err(ssize_t result) {
         if(result == -1) {
             auto error = errno;
@@ -188,6 +196,63 @@ protected:
         }
         return std::size_t(result);
     }
+
+    void allocate(std::size_t size) {
+        if(!size)
+            ++size;
+
+        if(size > maxsize)
+            size = maxsize;
+
+        setg(gbuf, gbuf, gbuf);
+        setp(pbuf, pbuf + size);
+        bufsize = getsize = size;
+    }
+
+    auto underflow() -> int override {
+        if(gptr() == egptr()) {
+            auto len = recv_socket(gbuf, getsize);
+            if(!len)
+                return EOF;
+            setg(gbuf, gbuf, gbuf + len);
+        }
+        return get_type(*gptr());
+    }
+
+    auto overflow(int c) -> int override {
+        if(c == EOF) {
+            if(sync() == 0)
+                return not_eof(c);
+            return EOF;
+        }
+
+        if(pptr() == epptr() && sync() != 0)
+            return EOF;
+
+        *pptr() = put_type(c);
+        pbump(1);
+        return c;
+    }
+
+    static auto constexpr is_eof(char x) {
+        return std::streambuf::traits_type::eq_int_type(x, EOF);
+    }
+
+    static auto constexpr not_eof(int x) {
+        return std::streambuf::traits_type::not_eof(x);
+    }
+
+    static auto constexpr get_type(char x) {
+        return std::streambuf::traits_type::to_int_type(x);
+    }
+
+    static auto constexpr put_type(int x) {
+        return std::streambuf::traits_type::to_char_type(x);
+    }
+
+private:
+    volatile int so_{-1};
+    int family_{AF_UNSPEC};
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
     using socket_t = SOCKET;
@@ -251,66 +316,6 @@ protected:
     }
 #endif
 
-    char gbuf[S]{}, pbuf[S]{};
-    // cppcheck-suppress unusedStructMember
-    std::size_t bufsize{0}, getsize{0};
-
-    void allocate(std::size_t size) {
-        if(!size)
-            ++size;
-
-        if(size > maxsize)
-            size = maxsize;
-
-        setg(gbuf, gbuf, gbuf);
-        setp(pbuf, pbuf + size);
-        bufsize = getsize = size;
-    }
-
-    auto underflow() -> int override {
-        if(gptr() == egptr()) {
-            auto len = recv_socket(gbuf, getsize);
-            if(!len)
-                return EOF;
-            setg(gbuf, gbuf, gbuf + len);
-        }
-        return get_type(*gptr());
-    }
-
-    auto overflow(int c) -> int override {
-        if(c == EOF) {
-            if(sync() == 0)
-                return not_eof(c);
-            return EOF;
-        }
-
-        if(pptr() == epptr() && sync() != 0)
-            return EOF;
-
-        *pptr() = put_type(c);
-        pbump(1);
-        return c;
-    }
-
-    static auto constexpr is_eof(char x) {
-        return std::streambuf::traits_type::eq_int_type(x, EOF);
-    }
-
-    static auto constexpr not_eof(int x) {
-        return std::streambuf::traits_type::not_eof(x);
-    }
-
-    static auto constexpr get_type(char x) {
-        return std::streambuf::traits_type::to_int_type(x);
-    }
-
-    static auto constexpr put_type(int x) {
-        return std::streambuf::traits_type::to_char_type(x);
-    }
-
-private:
-    volatile int so_{-1};
-    int family_{AF_UNSPEC};
 };
 
 using tcpstream = socket_stream<536>;

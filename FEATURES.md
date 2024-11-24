@@ -128,7 +128,10 @@ often would also be used with socket.hpp for servers or useful utility
 functions. Being stand-alone it could be combined with other kinds of C++
 networking libraries easily without a lot of overlap.
 
-In the future this will include secure socket support.
+## secure.hpp
+
+Secure socket support (ssl) as C++ streams. This is based on the streams
+class, but, of course must be linked with libssl to use.
 
 ## strings.hpp
 
