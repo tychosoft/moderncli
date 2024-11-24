@@ -105,6 +105,14 @@ public:
         }
     }
 
+    secure_stream(secure_stream&& from) noexcept :
+    socket_stream<S>(from), peer_cert(from.peer_cert), ctx_(from.ctx_), accepted(from.accepted), verified(from.verified), bio_(from.bio_), ssl_(from.ssl_) {
+        from.ctx_ = nullptr;
+        from.ssl_ = nullptr;
+        from.bio_ = nullptr;
+        from.peer_cert = nullptr;
+    }
+
     ~secure_stream() override {
         if(bio_)
             SSL_shutdown(ssl_);
