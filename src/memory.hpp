@@ -469,11 +469,11 @@ public:
     }
 
     auto dup(const std::string_view& str) -> char * {
-        auto size = str.size();
-        auto mem = static_cast<char *>(alloc(size + 1));
+        auto len = str.size();
+        auto mem = static_cast<char *>(alloc(len + 1));
         if(mem) {
-            memcpy(mem, str.data(), size); // FlawFinder: ignore
-            mem[size] = 0;
+            memcpy(mem, str.data(), len); // FlawFinder: ignore
+            mem[len] = 0;
         }
         return mem;
     }
@@ -528,4 +528,36 @@ inline auto operator new(std::size_t size, tycho::mempager_t& pager) -> void * {
 }
 
 inline void operator delete([[maybe_unused]] void *page, [[maybe_unused]] tycho::mempager_t& pager) {}
+
+#ifdef  TYCHO_PRINT_HPP_
+namespace tycho {
+template<typename T>
+inline auto hex_bytes(const bytes_array<T>& bytes) {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
+    return to_hex(*bytes, bytes.size());
+}
+} // end namespace
+
+template <typename T> class fmt::formatter<tycho::bytes_array<T> const> {
+public:
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
+    static constexpr auto parse(format_parse_context& ctx) {
+        return ctx.begin();
+    }
+
+    template <typename Context>
+    constexpr auto format(tycho::bytes_array<T> const& bytes, Context& ctx) const {
+        return format_to(ctx.out(), "{}", tycho::hex_bytes(bytes));
+    }
+};
+
+template <typename T>
+inline auto operator<<(std::ostream& out, const tycho::bytes_array<T>& bin) -> std::ostream& {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    out << tycho::hex_bytes(bin);
+    return out;
+}
+#endif
 #endif
