@@ -306,7 +306,7 @@ inline auto mem_index(const uint8_t *mem, std::size_t size) -> unsigned {
     return val;
 }
 
-inline auto mem_size(const char *cp, std::size_t max) -> std::size_t {
+inline auto mem_size(const char *cp, std::size_t max = 128) -> std::size_t {
     if(!cp)
         throw std::runtime_error("memory size for null");
 
