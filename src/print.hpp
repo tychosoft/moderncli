@@ -10,6 +10,7 @@
 #include <string_view>
 #include <mutex>
 #include <cstdlib>
+#include <cstdio>
 
 #include <fmt/ranges.h>
 #include <fmt/format.h>
@@ -45,8 +46,6 @@ constexpr auto LOG_PID = 0;
 #endif
 
 namespace tycho {
-using namespace fmt;
-
 template<class... Args>
 [[noreturn]] void die(int code, std::string_view fmt, const Args&... args) {
     std::cerr << fmt::format(fmt, args...);
@@ -60,8 +59,29 @@ template<class... Args>
 }
 
 template<class... Args>
+auto format(std::string_view fmt, const Args&... args) {
+    return fmt::format(fmt, args...);
+}
+
+template<class... Args>
+auto format(std::ostream& out, std::string_view fmt, const Args&... args) -> auto& {
+    out << fmt::format(fmt, args...);
+    return out;
+}
+
+template<class... Args>
+void print(std::string_view fmt, const Args&... args) {
+    std::cout << fmt::format(fmt, args...);
+}
+
+template<class... Args>
 void print(std::ostream& out, std::string_view fmt, const Args&... args) {
     out << fmt::format(fmt, args...);
+}
+
+template<class... Args>
+void print(FILE *fp, std::string_view fmt, const Args&... args) {
+    fputs(fmt::format(fmt, args...).c_str(), fp);
 }
 
 template<class... Args>
@@ -72,6 +92,11 @@ void println(std::ostream& out, std::string_view fmt, const Args&... args) {
 template<class... Args>
 void println(std::string_view fmt, const Args&... args) {
     std::cout << fmt::format(fmt, args...) << std::endl;
+}
+
+template<class... Args>
+void println(FILE *fp, std::string_view fmt, const Args&... args) {
+    fprintf(fp, "%s\n", fmt::format(fmt, args...).c_str());
 }
 
 class system_logger final {

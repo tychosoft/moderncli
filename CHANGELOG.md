@@ -1,6 +1,7 @@
 # Release Notes
 
 ## v0.9.6
+- Narrow scope of tycho print and format
 - Introduce ssl streaming
 - Introduce memory header
 - Separate character encoding from random
