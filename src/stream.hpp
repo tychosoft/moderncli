@@ -265,7 +265,7 @@ private:
     }
 
     static void block_socket(SOCKET so, bool enable) noexcept {
-        DWIRD mode = enable ? 1 : 0;
+        DWORD mode = enable ? 1 : 0;
         ioctlsocket(so, FIONBIO, &mode);
     }
 
