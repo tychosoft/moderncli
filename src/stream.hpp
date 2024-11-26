@@ -197,6 +197,10 @@ protected:
         return std::size_t(result);
     }
 
+    void set_blocking(bool enable) {
+        block_socket(so_, enable);
+    }
+
     void allocate(std::size_t size) {
         if(!size)
             ++size;
@@ -260,6 +264,11 @@ private:
         return int(so);
     }
 
+    static void block_socket(SOCKET so, bool enable) noexcept {
+        DWIRD mode = enable ? 1 : 0;
+        ioctlsocket(so, FIONBIO, &mode);
+    }
+
     static void close_socket(socket_t so) noexcept {
         ::shutdown(so, SD_BOTH);
         closesocket(so);
@@ -295,6 +304,14 @@ private:
         ::close(so);
     }
 
+    static void block_socket(int so, bool enable) noexcept {
+        auto flags = fcntl(so, F_GETFL, 0);
+        if(enable)
+            fcntl(so, F_SETFL, flags & ~O_NONBLOCK);
+        else
+            fcntl(so, F_SETFL, flags | O_NONBLOCK);
+    }
+
     auto wait_socket(struct pollfd *pfd, int timeout) noexcept {
         auto status = ::poll(pfd, 1, timeout);
         if(pfd->revents & (POLLNVAL|POLLHUP)) {
@@ -315,7 +332,6 @@ private:
         return io_err(::recv(so_, buffer, size, 0));
     }
 #endif
-
 };
 
 using tcpstream = socket_stream<536>;
