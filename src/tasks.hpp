@@ -191,6 +191,11 @@ public:
         return true;
     }
 
+    void notify() {
+        if(running_)
+            cvar_.notify_one();
+    }
+
     void shutdown() {
         std::unique_lock lock(mutex_);
         if(!running_)
@@ -350,6 +355,11 @@ public:
         lock.unlock();
         cvar_.notify_one();
         return true;
+    }
+
+    void notify() {
+        if(running_)
+            cvar_.notify_one();
     }
 
     void shutdown() {
