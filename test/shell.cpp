@@ -30,7 +30,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     auto out = format("X{}Y", val);
     assert(out == "X23Y");
     fsys::remove("/tmp/xyz");
-    fsys::path path = "/here";
+    const fsys::path path = "/here";
     assert(format("!{}!", path) == "!/here!");
     assert(value == 1);
 

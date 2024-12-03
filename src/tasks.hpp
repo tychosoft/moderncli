@@ -27,7 +27,7 @@ public:
     using period_t = std::chrono::milliseconds;
     using timepoint_t = std::chrono::steady_clock::time_point;
 
-    explicit timer_queue(error_t handler = [](const std::exception& e){}) noexcept : thread_(std::thread(&timer_queue::run, this)), errors_(std::move(handler)) {}
+    explicit timer_queue(error_t handler = [](const std::exception& e){}) noexcept : errors_(std::move(handler)), thread_(std::thread(&timer_queue::run, this)) {}
     timer_queue(const timer_queue&) = delete;
     auto operator=(const timer_queue&) -> auto& = delete;
 
@@ -107,11 +107,11 @@ public:
 
 private:
     using timer_t = std::tuple<uint64_t, period_t, task_t, std::any>;
+    error_t errors_{[](const std::exception& e) {}};
     std::multimap<timepoint_t, timer_t> timers_;
     mutable std::mutex lock_;
     std::condition_variable cond_;
     std::thread thread_;
-    error_t errors_;
     bool stop_{false};
     uint64_t next_{0};
 
@@ -158,7 +158,7 @@ class task_queue final {
 public:
     using timeout_strategy = std::function<std::chrono::milliseconds()>;
     using shutdown_strategy = std::function<void()>;
-    using task_t = std::function<void(std::any)>;
+    using task_t = std::function<void()>;
 
     explicit task_queue(timeout_strategy timeout = &default_timeout, shutdown_strategy shutdown = [](){}) noexcept :
     timeout_(std::move(timeout)), shutdown_(std::move(shutdown)), thread_(std::thread(&task_queue::process, this)) {}
@@ -180,12 +180,23 @@ public:
         return !running_;
     }
 
-    auto dispatch(task_t task, std::any args) {
+    auto priority(task_t task) {
         std::unique_lock lock(mutex_);
         if(!running_)
             return false;
 
-        tasks_.emplace(std::move(task), std::move(args));
+        tasks_.emplace_front(std::move(task));
+        lock.unlock();
+        cvar_.notify_one();
+        return true;
+    }
+
+    auto dispatch(task_t task) {
+        std::unique_lock lock(mutex_);
+        if(!running_)
+            return false;
+
+        tasks_.emplace_back(std::move(task));
         lock.unlock();
         cvar_.notify_one();
         return true;
@@ -210,20 +221,16 @@ public:
 
     auto shutdown(shutdown_strategy handler) -> auto& {
         // set shutdown from inside thread context
-        using args_t = std::pair<shutdown_strategy *, shutdown_strategy>;
-        dispatch([](std::any args) {
-            auto [ptr, act] = std::any_cast<args_t>(args);
-            *ptr = act;
-        }, args_t{&shutdown_, handler});
+        dispatch([this, handler] {
+            shutdown_ = handler;
+        });
         return *this;
     }
 
     auto timeout(timeout_strategy handler) -> auto& {
-        using args_t = std::pair<timeout_strategy *, timeout_strategy>;
-        dispatch([](std::any args) {
-            auto [ptr, act] = std::any_cast<args_t>(args);
-            *ptr = act;
-        }, args_t{&timeout_, handler});
+        dispatch([this, handler] {
+            timeout_ = handler;
+        });
         return *this;
     }
 
@@ -234,8 +241,7 @@ public:
 
     void clear() noexcept {
         const std::lock_guard lock(mutex_);
-        while(!tasks_.empty())
-            tasks_.pop();
+        tasks_.clear();
     }
 
     auto empty() const noexcept {
@@ -246,14 +252,14 @@ public:
     }
 
 private:
-    timeout_strategy timeout_;
-    shutdown_strategy shutdown_;
-    std::queue<std::pair<task_t, std::any>> tasks_;
+    timeout_strategy timeout_{default_timeout};
+    shutdown_strategy shutdown_{[](){}};
+    error_t errors_{[](const std::exception& e) {}};
+    std::deque<task_t> tasks_;
     mutable std::mutex mutex_;
     std::condition_variable cvar_;
     std::thread thread_;
     bool running_{true};
-    error_t errors_ = [](const std::exception& e) {};
 
     static auto default_timeout() -> std::chrono::milliseconds {
         return std::chrono::minutes(1);
@@ -280,12 +286,12 @@ private:
                 continue;
 
             try {
-                std::tie(task, args) = std::move(tasks_.front());
-                tasks_.pop();
+                auto task(std::move(tasks_.front()));
+                tasks_.pop_front();
 
                 // unlock before running task
                 lock.unlock();
-                task(args);
+                task();
             }
             catch(const std::exception& e) {
                 errors_(e);
@@ -335,7 +341,7 @@ public:
         return tasks_.max_size();
     }
 
-    auto dispatch(task_t task, std::any args) {
+    auto dispatch(task_t task, std::any args = std::any()) {
         std::unique_lock lock(mutex_);
         if(!running_)
             return false;
@@ -346,7 +352,7 @@ public:
         return true;
     }
 
-;   auto priority(task_t task, std::any args) {
+;   auto priority(task_t task, std::any args = std::any()) {
         std::unique_lock lock(mutex_);
         if(!running_)
             return false;
@@ -414,14 +420,14 @@ public:
     }
 
 private:
-    timeout_strategy timeout_;
-    action_t shutdown_{nullptr};
+    timeout_strategy timeout_{default_timeout};
+    action_t shutdown_{[](){}};
+    error_t errors_ = {[](const std::exception& e){}};
     std::deque<std::pair<task_t, std::any>> tasks_;
     mutable std::mutex mutex_;
     std::condition_variable cvar_;
     std::thread thread_;
     bool running_{true};
-    error_t errors_ = [](const std::exception& e){};
 
     static auto default_timeout() -> std::chrono::milliseconds {
         return std::chrono::minutes(1);
