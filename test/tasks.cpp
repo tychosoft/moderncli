@@ -8,6 +8,7 @@
 
 #include <string>
 #include <tuple>
+#include <memory>
 
 using namespace tycho;
 
@@ -37,8 +38,17 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(count == 52);
     assert(str == "more");
 
-    // fq destructor should shutdown and join the thread on its own on exit...
-    //fq.shutdown();
+    const std::shared_ptr<int> ptr = std::make_shared<int>(count);
+    auto use = ptr.use_count();
+    tq.startup();
+    tq.dispatch([ptr, &use] {
+        use = ptr.use_count();
+        ++count;
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    tq.shutdown();
+    assert(count == 53);
+    assert(use == 2);
 }
 
 

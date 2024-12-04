@@ -9,6 +9,7 @@
 #include <thread>
 #include <condition_variable>
 #include <functional>
+#include <stdexcept>
 #include <atomic>
 #include <memory>
 #include <chrono>
@@ -161,7 +162,7 @@ public:
     using task_t = std::function<void()>;
 
     explicit task_queue(timeout_strategy timeout = &default_timeout, shutdown_strategy shutdown = [](){}) noexcept :
-    timeout_(std::move(timeout)), shutdown_(std::move(shutdown)), thread_(std::thread(&task_queue::process, this)) {}
+    timeout_(std::move(timeout)), shutdown_(std::move(shutdown)) {}
 
     task_queue(const task_queue&) = delete;
     auto operator=(const task_queue&) -> auto& = delete;
@@ -185,7 +186,7 @@ public:
         if(!running_)
             return false;
 
-        tasks_.emplace_front(std::move(task));
+        tasks_.push_front(std::move(task));
         lock.unlock();
         cvar_.notify_one();
         return true;
@@ -196,45 +197,62 @@ public:
         if(!running_)
             return false;
 
-        tasks_.emplace_back(std::move(task));
+        tasks_.push_back(std::move(task));
         lock.unlock();
         cvar_.notify_one();
         return true;
     }
 
     void notify() {
+        const std::unique_lock lock(mutex_);
         if(running_)
             cvar_.notify_one();
+    }
+
+    void startup() {
+        const std::unique_lock lock(mutex_);
+        if(running_)
+            return;
+
+        running_ = true;
+        thread_ = std::thread(&task_queue::process, this);
     }
 
     void shutdown() {
         std::unique_lock lock(mutex_);
         if(!running_)
             return;
-        running_ = false;
 
+        running_ = false;
         lock.unlock();
+
         cvar_.notify_all();
         if(thread_.joinable())
             thread_.join();
     }
 
     auto shutdown(shutdown_strategy handler) -> auto& {
-        // set shutdown from inside thread context
-        dispatch([this, handler] {
-            shutdown_ = handler;
-        });
+        const std::lock_guard lock(mutex_);
+        if(running_)
+            throw std::runtime_error("cannot modify running task queue");
+        shutdown_ = handler;
         return *this;
     }
 
     auto timeout(timeout_strategy handler) -> auto& {
-        dispatch([this, handler] {
-            timeout_ = handler;
-        });
+        const std::lock_guard lock(mutex_);
+        if(running_)
+            throw std::runtime_error("cannot modify running task queue");
+
+        timeout_ = handler;
         return *this;
     }
 
     auto errors(error_t handler) -> auto& {
+        const std::lock_guard lock(mutex_);
+        if(running_)
+            throw std::runtime_error("cannot modify running task queue");
+
         errors_ = std::move(handler);
         return *this;
     }
@@ -259,49 +277,39 @@ private:
     mutable std::mutex mutex_;
     std::condition_variable cvar_;
     std::thread thread_;
-    bool running_{true};
+    bool running_{false};
 
     static auto default_timeout() -> std::chrono::milliseconds {
         return std::chrono::minutes(1);
     }
 
     void process() noexcept {
-        task_t task;
-        std::any args;
-        bool used{false};
-
         for(;;) {
             std::unique_lock lock(mutex_);
             if(!running_)
                 break;
 
-            if(tasks_.empty()) {
-                if(!used)
-                    cvar_.wait(lock);
-                else
-                    cvar_.wait_for(lock, timeout_());
-            }
+            if(tasks_.empty())
+                cvar_.wait_for(lock, timeout_());
 
             if(tasks_.empty())
                 continue;
 
             try {
-                auto task(std::move(tasks_.front()));
+                auto func(std::move(tasks_.front()));
                 tasks_.pop_front();
 
                 // unlock before running task
                 lock.unlock();
-                task();
+                func();
             }
             catch(const std::exception& e) {
                 errors_(e);
             }
-            used = true;
         }
 
         // run shutdown strategy in this context before joining...
-        if(used)
-            shutdown_();
+        shutdown_();
     }
 };
 
