@@ -24,7 +24,7 @@ using error_t = void (*)(const std::exception&);
 // We may derive a timer subsystem from a protected timer queue
 class timer_queue {
 public:
-    using task_t = std::function<void(std::any)>;
+    using task_t = std::function<void()>;
     using period_t = std::chrono::milliseconds;
     using timepoint_t = std::chrono::steady_clock::time_point;
 
@@ -56,19 +56,19 @@ public:
         thread_.join();
     }
 
-    auto at(const timepoint_t& expires, task_t task, std::any args) {
+    auto at(const timepoint_t& expires, task_t task) {
         const std::lock_guard lock(lock_);
         const auto id = next_++;
-        timers_.emplace(expires, std::make_tuple(id, period_t(0), task, args));
+        timers_.emplace(expires, std::make_tuple(id, period_t(0), task));
         cond_.notify_all();
         return id;
     }
 
-    auto periodic(const period_t& period, task_t task, std::any args) {
+    auto periodic(const period_t& period, task_t task) {
         const auto expires = std::chrono::steady_clock::now() + period;
         const std::lock_guard lock(lock_);
         const auto id = next_++;
-        timers_.emplace(expires, std::make_tuple(id, period, task, args));
+        timers_.emplace(expires, std::make_tuple(id, period, task));
         cond_.notify_all();
         return id;
     }
@@ -107,7 +107,7 @@ public:
     }
 
 private:
-    using timer_t = std::tuple<uint64_t, period_t, task_t, std::any>;
+    using timer_t = std::tuple<uint64_t, period_t, task_t>;
     error_t errors_{[](const std::exception& e) {}};
     std::multimap<timepoint_t, timer_t> timers_;
     mutable std::mutex lock_;
@@ -133,9 +133,9 @@ private:
                 const auto item(std::move(it->second));
                 timers_.erase(it);
                 lock.unlock();
-                const auto& [id, period, task, args] = item;
+                const auto& [id, period, task] = item;
                 try {
-                    task(args);
+                    task();
                 }
                 catch(const std::exception& e) {
                     errors_(e);
@@ -143,7 +143,7 @@ private:
                 lock.lock();
                 if(period != period_t(0)) {
                     expires += period;
-                    timers_.emplace(expires, std::make_tuple(id, period, task, args));
+                    timers_.emplace(expires, std::make_tuple(id, period, task));
                     cond_.notify_all();
                 }
             }
