@@ -153,17 +153,12 @@ wait groups, and barriers.
 ## tasks.hpp
 
 A task and function queue dispatch system. This is used to queue and dispatch
-arbitration actor lambdas with function arguments wrapped in an outer service
-function inside the scope of a service thread. This makes it easy to write
-service components that offers ordered execute in a thread queue without
-requiring locking. This is a generic and reusable representation of basic
-Coventry server architecture.
-
-The function queue implimentation is optimized for C++ and Coventry, while the
-task queue is more generic and more closely matches task queue implimentations
-in other languages, such as for golang. Tasks also includes generic timers that
-also match behaviors elsewhere. This allows timer context lambdas to be queued
-and dispatched at known times and periodic intervals.
+arbitrary anonymous lambda captures wrapped that will run inside the scope of a
+single service dispatch thread or scheduled and ran from a timer thread. The
+use of a single service dispatch thread makes it easy to write service
+components offering ordered execution that can alteres private object states
+without requiring thread locking. This is a generic and reusable representation
+of the original Coventry server component dispatch architecture.
 
 ## templates.hpp
 

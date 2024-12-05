@@ -16,37 +16,36 @@ namespace {
 auto count = 0;
 std::string str;
 task_queue tq;
-func_queue fq;
 
 auto process_command(const std::string& text, int number) {
-    using args_t = std::tuple<std::string, int>;
-    return fq.dispatch([](std::any args) {
-        const auto& [text, num] = std::any_cast<args_t>(args);
+    return tq.dispatch([text, number] {
         str = text;
-        count += num;
-    }, args_t{text, number});
+        count += number;
+    });
 }
 } // end namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
+    tq.startup();
     assert(process_command("test", 42));
     assert(process_command("more", 10));
-    while(!fq.empty()) {
-         std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    while(!tq.empty()) {
+         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    fq.shutdown();
+    tq.shutdown();
     assert(count == 52);
     assert(str == "more");
 
+    task_queue tq1; // NOLINT
     const std::shared_ptr<int> ptr = std::make_shared<int>(count);
     auto use = ptr.use_count();
-    tq.startup();
-    tq.dispatch([ptr, &use] {
+    tq1.startup();
+    tq1.dispatch([ptr, &use] {
         use = ptr.use_count();
         ++count;
     });
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    tq.shutdown();
+    tq1.shutdown();
     assert(count == 53);
     assert(use == 2);
 }
