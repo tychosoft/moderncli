@@ -47,55 +47,58 @@ constexpr auto LOG_PID = 0;
 
 namespace tycho {
 template<class... Args>
-[[noreturn]] void die(int code, std::string_view fmt, const Args&... args) {
+using format_str = const char *;
+
+template<class... Args>
+[[noreturn]] void die(int code, format_str<Args...> fmt, const Args&... args) {
     std::cerr << fmt::format(fmt, args...);
     ::exit(code);
 }
 
 template<class... Args>
-[[noreturn]] void crit(int code, std::string_view fmt, const Args&... args) {
+[[noreturn]] void crit(int code, format_str<Args...> fmt, const Args&... args) {
     std::cerr << fmt::format(fmt, args...);
     quick_exit(code);
 }
 
 template<class... Args>
-auto format(std::string_view fmt, const Args&... args) {
+auto format(format_str<Args...> fmt, const Args&... args) {
     return fmt::format(fmt, args...);
 }
 
 template<class... Args>
-auto format(std::ostream& out, std::string_view fmt, const Args&... args) -> auto& {
+auto format(std::ostream& out, format_str<Args...> fmt, const Args&... args) -> auto& {
     out << fmt::format(fmt, args...);
     return out;
 }
 
 template<class... Args>
-void print(std::string_view fmt, const Args&... args) {
+void print(format_str<Args...> fmt, const Args&... args) {
     std::cout << fmt::format(fmt, args...);
 }
 
 template<class... Args>
-void print(std::ostream& out, std::string_view fmt, const Args&... args) {
+void print(std::ostream& out, format_str<Args...> fmt, const Args&... args) {
     out << fmt::format(fmt, args...);
 }
 
 template<class... Args>
-void print(FILE *fp, std::string_view fmt, const Args&... args) {
+void print(FILE *fp, format_str<Args...> fmt, const Args&... args) {
     fputs(fmt::format(fmt, args...).c_str(), fp);
 }
 
 template<class... Args>
-void println(std::ostream& out, std::string_view fmt, const Args&... args) {
+void println(std::ostream& out, format_str<Args...> fmt, const Args&... args) {
     out << fmt::format(fmt, args...) << std::endl;
 }
 
 template<class... Args>
-void println(std::string_view fmt, const Args&... args) {
+void println(format_str<Args...> fmt, const Args&... args) {
     std::cout << fmt::format(fmt, args...) << std::endl;
 }
 
 template<class... Args>
-void println(FILE *fp, std::string_view fmt, const Args&... args) {
+void println(FILE *fp, format_str<Args...> fmt, const Args&... args) {
     fprintf(fp, "%s\n", fmt::format(fmt, args...).c_str());
 }
 
@@ -108,12 +111,10 @@ public:
     auto operator=(const system_logger&) -> auto& = delete;
 
     template<class... Args>
-    void debug(unsigned level, std::string_view fmt, const Args&... args) {
+    void debug(unsigned level, format_str<Args...> fmt, const Args&... args) {
 #ifndef NDEBUG
         if(level <= logging_) {
             try {
-                if(fmt.back() == '\n')
-                    fmt.remove_suffix(1);
                 auto msg = format(fmt, args...);
                 const std::lock_guard lock(locking_);
                 print(std::cerr, "debug: {}\n", msg);
@@ -128,9 +129,7 @@ public:
     }
 
     template<class... Args>
-    void info(std::string_view fmt, const Args&... args) {
-        if(fmt.back() == '\n')
-            fmt.remove_suffix(1);
+    void info(format_str<Args...> fmt, const Args&... args) {
         auto msg = format(fmt, args...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
@@ -142,9 +141,7 @@ public:
     }
 
     template<class... Args>
-    void notice(std::string_view fmt, const Args&... args) {
-        if(fmt.back() == '\n')
-            fmt.remove_suffix(1);
+    void notice(format_str<Args...> fmt, const Args&... args) {
         auto msg = format(fmt, args...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
@@ -156,9 +153,7 @@ public:
     }
 
     template<class... Args>
-    void warn(std::string_view fmt, const Args&... args) {
-        if(fmt.back() == '\n')
-            fmt.remove_suffix(1);
+    void warn(format_str<Args...> fmt, const Args&... args) {
         auto msg = format(fmt, args...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
@@ -170,9 +165,7 @@ public:
     }
 
     template<class... Args>
-    void error(std::string_view fmt, const Args&... args) {
-        if(fmt.back() == '\n')
-            fmt.remove_suffix(1);
+    void error(format_str<Args...> fmt, const Args&... args) {
         auto msg = format(fmt, args...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
@@ -184,9 +177,7 @@ public:
     }
 
     template<class... Args>
-    [[noreturn]] void fail(int exit_code, std::string_view fmt, const Args&... args) {
-        if(fmt.back() == '\n')
-            fmt.remove_suffix(1);
+    [[noreturn]] void fail(int exit_code, format_str<Args...> fmt, const Args&... args) {
         auto msg = format(fmt, args...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
@@ -200,9 +191,7 @@ public:
     }
 
     template<class... Args>
-    [[noreturn]] void crit(int exit_code, std::string_view fmt, const Args&... args) {
-        if(fmt.back() == '\n')
-            fmt.remove_suffix(1);
+    [[noreturn]] void crit(int exit_code, format_str<Args...> fmt, const Args&... args) {
         auto msg = format(fmt, args...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
