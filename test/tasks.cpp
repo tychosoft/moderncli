@@ -25,6 +25,11 @@ auto process_command(const std::string& text, int number) {
 }
 } // end namespace
 
+auto test_async(int x) -> int {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    return x;
+}
+
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     tq.startup();
     assert(process_command("test", 42));
@@ -48,6 +53,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     tq1.shutdown();
     assert(count == 53);
     assert(use == 2);
-}
 
+    auto future = tycho::await(test_async, 42);
+    assert(future.get() == 42);
+}
 

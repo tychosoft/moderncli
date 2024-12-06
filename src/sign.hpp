@@ -5,11 +5,14 @@
 #define TYCHO_SIGN_HPP_
 
 #include <string>
+#include <memory.hpp>
 #include <string_view>
+#include <openssl/ec.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
+#include <openssl/core_names.h>
 
-namespace tycho::cipher {
+namespace tycho::crypto {
 class pubkey_t final {
 public:
     explicit pubkey_t(const std::string& pem) noexcept {
@@ -24,6 +27,41 @@ public:
         if(cert)
             key_ = X509_get_pubkey(cert);
         X509_free(cert);
+    }
+
+    explicit pubkey_t(const BIGNUM *bignum, const std::string& curve = "secp521r1") noexcept : key_(EVP_EC_gen(curve.c_str())) {
+        if(!key_)
+            return;
+
+        auto bytes = BN_num_bytes(bignum);
+        auto temp = std::make_unique<uint8_t[]>(bytes);
+        auto ptr = &temp[0];
+        BN_bn2binpad(bignum, ptr, bytes);
+
+        OSSL_PARAM params[] = {
+            OSSL_PARAM_construct_BN(OSSL_PKEY_PARAM_PUB_KEY, ptr, bytes),
+            OSSL_PARAM_construct_end()
+        };
+
+        auto ctx = EVP_PKEY_CTX_new(key_, nullptr);
+        EVP_PKEY_fromdata_init(ctx);
+        EVP_PKEY_fromdata(ctx, &key_, EVP_PKEY_PUBLIC_KEY, params);
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    explicit pubkey_t(const key_t key, const std::string& curve = "secp521r1") noexcept : key_(EVP_EC_gen(curve.c_str())) {
+        if(!key_)
+            return;
+
+        OSSL_PARAM params[] = {
+            OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_PUB_KEY, const_cast<uint8_t *>(key.first), key.second),
+            OSSL_PARAM_construct_end()
+        };
+
+        auto ctx = EVP_PKEY_CTX_new(key_, nullptr);
+        EVP_PKEY_fromdata_init(ctx);
+        EVP_PKEY_fromdata(ctx, &key_, EVP_PKEY_PUBLIC_KEY, params);
+        EVP_PKEY_CTX_free(ctx);
     }
 
     pubkey_t(const pubkey_t& other) noexcept :

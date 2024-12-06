@@ -151,7 +151,7 @@ inline auto unique_key() {
 using salt_t = random_t<salt>;
 } // end namespace
 
-#ifdef  TYCHO_PRINT_HPP_
+#ifdef  TYCHO_ENCODING_HPP_
 namespace tycho::crypto {
 inline auto to_b64(const uint8_t *from, size_t size) {
 	return tycho::to_b64(from, size);
@@ -162,6 +162,7 @@ inline auto to_b64(const key_t& key) {
 }
 } // end namespace
 
+#ifdef  TYCHO_PRINT_HPP_
 template <> class fmt::formatter<tycho::crypto::key_t const> {
 public:
     static constexpr auto parse(format_parse_context& ctx) {
@@ -173,6 +174,7 @@ public:
         return format_to(ctx.out(), "{}", tycho::crypto::to_b64(key));
     }
 };
+#endif
 
 inline auto operator<<(std::ostream& out, const tycho::crypto::key_t& key) -> std::ostream& {
     out << tycho::crypto::to_b64(key);

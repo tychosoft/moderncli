@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.9.7
+- Prepare print header for future C++20 format behaviors
+- Remove older function dispatch in favor of lambda tasks
+- Simplify and use captures only for timer tasks
+- Simplify task queue to use lambda capture only
+- Add function queue notify method
+
 ## v0.9.6
 - Narrow scope of tycho print and format
 - Introduce ssl streaming

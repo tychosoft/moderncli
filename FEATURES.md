@@ -152,13 +152,14 @@ wait groups, and barriers.
 
 ## tasks.hpp
 
-A task and function queue dispatch system. This is used to queue and dispatch
-arbitrary anonymous lambda captures wrapped that will run inside the scope of a
-single service dispatch thread or scheduled and ran from a timer thread. The
-use of a single service dispatch thread makes it easy to write service
-components offering ordered execution that can alteres private object states
-without requiring thread locking. This is a generic and reusable representation
-of the original Coventry server component dispatch architecture.
+This provides a task and function queue dispatch system. This is used to queue
+and dispatch arbitrary anonymous lambda captures wrapped that will run inside
+the scope of a single service dispatch thread, or scheduled and ran from a
+timer thread. The use of a single service dispatch thread makes it easy to
+write service components offering ordered execution that can alteres private
+object states without requiring thread locking. Async provides calling
+functions with detached threads and await provides futures much like what
+await does for asynchronous methods in C#.
 
 ## templates.hpp
 

@@ -4,6 +4,8 @@
 #ifndef TYCHO_OUTPUT_HPP_
 #define TYCHO_OUTPUT_HPP_
 
+#include "encoding.hpp"
+
 #include <sstream>
 #include <iostream>
 #include <cstdlib>

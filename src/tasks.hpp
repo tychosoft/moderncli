@@ -7,6 +7,8 @@
 #include <queue>
 #include <utility>
 #include <thread>
+#include <future>
+#include <type_traits>
 #include <condition_variable>
 #include <functional>
 #include <stdexcept>
@@ -18,6 +20,18 @@ namespace tycho {
 // can be nullptr...
 using action_t = void (*)();
 using error_t = void (*)(const std::exception&);
+
+template<typename Func, typename... Args>
+inline auto await(Func&& func, Args&&... args) -> std::future<typename std::invoke_result_t<Func, Args...>> {
+    return std::async(std::launch::async, std::forward<Func>(func), std::forward<Args>(args)...);
+}
+
+template<typename Func, typename... Args>
+inline void async(Func&& func, Args&&... args) {
+    std::thread([func = std::forward<Func>(func), tuple = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+        std::apply(func, std::move(tuple));
+    }).detach();
+}
 
 // We may derive a timer subsystem from a protected timer queue
 class timer_queue {
@@ -153,7 +167,7 @@ private:
 };
 
 // Generic task queue, matches other languages
-class task_queue final {
+class task_queue {
 public:
     using timeout_strategy = std::function<std::chrono::milliseconds()>;
     using shutdown_strategy = std::function<void()>;

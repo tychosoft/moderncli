@@ -50,19 +50,19 @@ template<class... Args>
 using format_str = const char *;
 
 template<class... Args>
-[[noreturn]] void die(int code, format_str<Args...> fmt, const Args&... args) {
+[[noreturn]] constexpr void die(int code, format_str<Args...> fmt, const Args&... args) {
     std::cerr << fmt::format(fmt, args...);
     ::exit(code);
 }
 
 template<class... Args>
-[[noreturn]] void crit(int code, format_str<Args...> fmt, const Args&... args) {
+[[noreturn]] constexpr void crit(int code, format_str<Args...> fmt, const Args&... args) {
     std::cerr << fmt::format(fmt, args...);
     quick_exit(code);
 }
 
 template<class... Args>
-auto format(format_str<Args...> fmt, const Args&... args) {
+constexpr auto format(format_str<Args...> fmt, const Args&... args) {
     return fmt::format(fmt, args...);
 }
 
@@ -73,32 +73,32 @@ auto format(std::ostream& out, format_str<Args...> fmt, const Args&... args) -> 
 }
 
 template<class... Args>
-void print(format_str<Args...> fmt, const Args&... args) {
+constexpr void print(format_str<Args...> fmt, const Args&... args) {
     std::cout << fmt::format(fmt, args...);
 }
 
 template<class... Args>
-void print(std::ostream& out, format_str<Args...> fmt, const Args&... args) {
+constexpr void print(std::ostream& out, format_str<Args...> fmt, const Args&... args) {
     out << fmt::format(fmt, args...);
 }
 
 template<class... Args>
-void print(FILE *fp, format_str<Args...> fmt, const Args&... args) {
+constexpr void print(FILE *fp, format_str<Args...> fmt, const Args&... args) {
     fputs(fmt::format(fmt, args...).c_str(), fp);
 }
 
 template<class... Args>
-void println(std::ostream& out, format_str<Args...> fmt, const Args&... args) {
+constexpr void println(std::ostream& out, format_str<Args...> fmt, const Args&... args) {
     out << fmt::format(fmt, args...) << std::endl;
 }
 
 template<class... Args>
-void println(format_str<Args...> fmt, const Args&... args) {
+constexpr void println(format_str<Args...> fmt, const Args&... args) {
     std::cout << fmt::format(fmt, args...) << std::endl;
 }
 
 template<class... Args>
-void println(FILE *fp, format_str<Args...> fmt, const Args&... args) {
+constexpr void println(FILE *fp, format_str<Args...> fmt, const Args&... args) {
     fprintf(fp, "%s\n", fmt::format(fmt, args...).c_str());
 }
 

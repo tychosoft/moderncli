@@ -553,6 +553,9 @@ public:
     }
 };
 
+#endif
+
+#ifdef TYCHO_ENCODING_HPP_
 template <typename T>
 inline auto operator<<(std::ostream& out, const tycho::bytes_array<T>& bin) -> std::ostream& {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");

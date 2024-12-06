@@ -17,6 +17,9 @@ public:
     bignum_t() noexcept :
     ctx_(BN_CTX_new()), num_(BN_new()) {}
 
+    explicit bignum_t(BIGNUM *bn) noexcept :
+    ctx_(BN_CTX_new()), num_(bn) {}
+
     explicit bignum_t(long value) noexcept :
     ctx_(BN_CTX_new()), num_(BN_new()) {
         if(value < 0) {
@@ -49,6 +52,10 @@ public:
         release();
         if(ctx_)
             BN_CTX_free(ctx_);
+    }
+
+    operator BIGNUM *() const noexcept {
+        return get();
     }
 
     operator bool() const noexcept {
@@ -324,6 +331,10 @@ public:
         return *this;
     }
 
+    auto get() const noexcept -> BIGNUM * {
+        return num_;
+    }
+
     auto size() const noexcept {
         return std::size_t(BN_num_bytes(num_));
     }
@@ -389,12 +400,6 @@ private:
     auto is_negative() const noexcept -> bool {
         return BN_is_negative(num_);
     }
-
-/*
-    void zero() noexcept {
-        BN_zero(num_);
-    }
-*/
 
     void release() noexcept {
         if(num_) {

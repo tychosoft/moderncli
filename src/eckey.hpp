@@ -32,21 +32,45 @@ public:
             key_ = PEM_read_PrivateKey(fp, nullptr, nullptr, nullptr);
             fclose(fp);
         }
+        if(!is_eckey(key_)) {
+            EVP_PKEY_free(key_);
+            key_ = nullptr;
+        }
     }
 
-    explicit eckey_t(const key_t key, const std::string& curve = "secp521r1") noexcept :
-    key_(EVP_EC_gen(curve.c_str())) {
-        EVP_PKEY *new_key = nullptr;
+    explicit eckey_t(const BIGNUM *bignum, const std::string& curve = "secp521r1") noexcept : key_(EVP_EC_gen(curve.c_str())) {
+        if(!key_)
+            return;
+
+        auto bytes = BN_num_bytes(bignum);
+        auto temp = std::make_unique<uint8_t[]>(bytes);
+        auto ptr = &temp[0];
+        BN_bn2binpad(bignum, ptr, bytes);
+
+        OSSL_PARAM params[] = {
+            OSSL_PARAM_construct_BN(OSSL_PKEY_PARAM_PRIV_KEY, ptr, bytes),
+            OSSL_PARAM_construct_end()
+        };
+
+        auto ctx = EVP_PKEY_CTX_new(key_, nullptr);
+        EVP_PKEY_fromdata_init(ctx);
+        EVP_PKEY_fromdata(ctx, &key_, EVP_PKEY_KEYPAIR, params);
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    explicit eckey_t(const key_t key, const std::string& curve = "secp521r1") noexcept : key_(EVP_EC_gen(curve.c_str())) {
+        if(!key_)
+            return;
+
         OSSL_PARAM params[] = {
             OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_PRIV_KEY, const_cast<uint8_t *>(key.first), key.second),
             OSSL_PARAM_construct_end()
         };
-        auto ctx = EVP_PKEY_CTX_new_from_pkey(nullptr, key_, nullptr);
+
+        auto ctx = EVP_PKEY_CTX_new(key_, nullptr);
         EVP_PKEY_fromdata_init(ctx);
-        EVP_PKEY_fromdata(ctx, &new_key, EVP_PKEY_KEYPAIR, params);
+        EVP_PKEY_fromdata(ctx, &key_, EVP_PKEY_KEYPAIR, params);
         EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(key_);
-        key_ = new_key;
     }
 
     eckey_t(const eckey_t& other) noexcept :
@@ -95,6 +119,20 @@ public:
         if(key_)
             EVP_PKEY_up_ref(key_);
         return key_;
+    }
+
+    auto bn() const noexcept {
+        BIGNUM *key_bn{nullptr};
+        if (EVP_PKEY_get_bn_param(key_, OSSL_PKEY_PARAM_PRIV_KEY, &key_bn) == 1)
+            return key_bn;
+        return static_cast<BIGNUM *>(nullptr);
+    }
+
+    auto pub_bn() const noexcept {
+        BIGNUM *key_bn{nullptr};
+        if (EVP_PKEY_get_bn_param(key_, OSSL_PKEY_PARAM_PUB_KEY, &key_bn) == 1)
+            return key_bn;
+        return static_cast<BIGNUM *>(nullptr);
     }
 
     auto pub() const noexcept {
@@ -168,6 +206,10 @@ public:
             return key_t{nullptr, 0};
         aes_size = keysize;
         return key_t{aes_key, keysize};
+    }
+
+    static auto is_eckey(EVP_PKEY *key) noexcept -> bool {
+        return key && EVP_PKEY_base_id(key) == EVP_PKEY_EC;
     }
 
 private:
