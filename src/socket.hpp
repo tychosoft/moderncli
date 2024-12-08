@@ -76,6 +76,12 @@ public:
     address_t(const address_t& from) = default;
     auto operator=(const address_t& from) -> address_t& = default;
 
+    explicit address_t(int family, uint16_t value = 0) noexcept {
+        memset(&store_, 0, sizeof(store_));
+        make_any(family);
+        port(value);
+    }
+
     explicit address_t(const struct addrinfo *addr) noexcept {
         set(addr);
     }
@@ -127,6 +133,24 @@ public:
         return reinterpret_cast<const struct sockaddr *>(&store_);
     }
 
+    void port_if(uint16_t value) {
+        if(!port())
+            port(value);
+    }
+
+    void port(uint16_t value) {
+        switch(store_.ss_family) {
+        case AF_INET:
+            (reinterpret_cast<struct sockaddr_in *>(&store_))->sin_port = htons(value);
+            break;
+        case AF_INET6:
+             (reinterpret_cast<struct sockaddr_in6 *>(&store_))->sin6_port = htons(value);
+            break;
+        default:
+            break;
+        }
+    }
+
     auto port() const noexcept -> uint16_t {
         switch(store_.ss_family) {
         case AF_INET:
@@ -144,6 +168,10 @@ public:
 
     auto family() const noexcept {
         return store_.ss_family;
+    }
+
+    auto empty() const noexcept {
+        return store_.ss_family == AF_UNSPEC;
     }
 
     auto is(int fam) const noexcept {
@@ -286,6 +314,8 @@ public:
             memcpy(&store_, addr, size_(addr->sa_family));
     }
 private:
+    struct sockaddr_storage store_{AF_UNSPEC};
+
     void make_any(int family) noexcept {
         switch(family) {
         case AF_INET:
@@ -319,8 +349,6 @@ private:
             return sizeof(struct sockaddr_storage);
         }
     }
-
-    struct sockaddr_storage store_{AF_UNSPEC};
 };
 
 #ifndef EAI_ADDRFAMILY
