@@ -1,11 +1,27 @@
 {
-  "builtin-baseline": "94a50e8c1357d423840e22451e122f56d62b5c20",
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/main/tools/vcpkg/schema.json",
+  "builtin-baseline": "96b5ced82828ecaf67e6010a892c98d3e96ed1c2",
   "name": "moderncli",
-  "version": "0.9.7",
+  "version-string": "0.9.7",
   "dependencies": [
-    "fmt",
     "openssl",
+    "fmt",
+    "zlib",
     "pkgconf",
     "vcpkg-pkgconfig-get-modules"
-  ]
+  ],
+  "default-features": [
+    "use-openssl"
+  ],
+  "features": {
+    "use-openssl": {
+      "description": "Use OpenSSL for TLS/SSL support",
+      "dependencies": [
+        "openssl"
+      ]
+    }
+  },
+  "description": "A C++17 header only library of modern practices",
+  "homepage": "https://gitlab.com/tychosoft/moderncli",
+  "license": "MIT"
 }

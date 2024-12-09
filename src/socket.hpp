@@ -371,7 +371,7 @@ public:
             from.list_ = nullptr;
         }
 
-        service(const std::string& host, const std::string& service, int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) noexcept {
+        service(const std::string& host, const std::string& service = "", int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) noexcept {
             set(host, service, family, type, protocol);
         }
 
@@ -443,7 +443,7 @@ public:
         void set(const std::string& host = "*", const std::string& service = "", int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) noexcept {
             release();
             auto svc = service.c_str();
-            if(service.empty())
+            if(service.empty() || service == "0")
                 svc = nullptr;
 
             struct addrinfo hint{};
