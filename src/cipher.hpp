@@ -147,6 +147,15 @@ private:
     std::size_t size_{0U};
 };
 
+inline auto get_tag_size(const EVP_CIPHER *algo) -> std::size_t {
+    if(algo) {
+        auto nid = EVP_CIPHER_nid(algo);
+        if(nid == NID_aes_128_gcm || nid == NID_aes_192_gcm || nid == NID_aes_256_gcm)
+            return 16;
+    }
+    return 0;
+}
+
 class decrypt_t final {
 public:
     explicit decrypt_t(const EVP_CIPHER *algo = EVP_aes_256_cbc()) noexcept : algo_(algo) {}
@@ -155,6 +164,7 @@ public:
         if(other.ctx_) {
             ctx_ = other.ctx_;
             algo_ = other.algo_;
+            tag_ = other.tag_;
             other.ctx_ = nullptr;
         }
     }
@@ -164,7 +174,13 @@ public:
         if(!ctx_)
             return;
 
-        if(key.size() != keysize() || !EVP_DecryptInit_ex(ctx_, algo_, nullptr, key.data(), key.iv())) {
+        tag_ = get_tag_size(algo_);
+        if(tag_) {
+            EVP_DecryptInit_ex(ctx_, algo_, nullptr, nullptr, nullptr);
+            EVP_CIPHER_CTX_ctrl(ctx_, EVP_CTRL_GCM_SET_IVLEN, 12, nullptr);
+        }
+
+        if(key.size() != keysize() || !EVP_DecryptInit_ex(ctx_, tag_ ? nullptr :  algo_, nullptr, key.data(), key.iv())) {
             EVP_CIPHER_CTX_free(ctx_);
             ctx_ = nullptr;
             return;
@@ -179,12 +195,16 @@ public:
     }
 
     auto operator=(decrypt_t&& other) noexcept -> decrypt_t& {
+        if(this == &other)
+            return *this;
+
         if(ctx_)
             EVP_CIPHER_CTX_free(ctx_);
         ctx_ = nullptr;
         if(other.ctx_) {
             ctx_ = other.ctx_;
             algo_ = other.algo_;
+            tag_ = other.tag_;
             other.ctx_ = nullptr;
         }
         return *this;
@@ -206,7 +226,13 @@ public:
         if(!ctx_)
             return *this;
 
-        if(!EVP_DecryptInit_ex(ctx_, algo_, nullptr, key.data(), key.iv())) {
+        tag_ = get_tag_size(algo_);
+        if(tag_) {
+            EVP_DecryptInit_ex(ctx_, algo_, nullptr, nullptr, nullptr);
+            EVP_CIPHER_CTX_ctrl(ctx_, EVP_CTRL_GCM_SET_IVLEN, 12, nullptr);
+        }
+
+        if(!EVP_DecryptInit_ex(ctx_, tag_ ? nullptr : algo_, nullptr, key.data(), key.iv())) {
             EVP_CIPHER_CTX_free(ctx_);
             return *this;
         }
@@ -235,6 +261,10 @@ public:
         return EVP_CIPHER_key_length(algo_);
     }
 
+    auto tagsize() const noexcept -> std::size_t {
+        return tag_;
+    }
+
     auto update(const uint8_t *in, uint8_t *out, std::size_t size) noexcept {
         auto used = 0;
 
@@ -247,11 +277,14 @@ public:
         return std::size_t(used);
     }
 
-    auto finish(uint8_t *out) noexcept {
+    auto finish(uint8_t *out, const uint8_t *tag) noexcept {
         auto used = 0;
 
         if(!ctx_)
             return std::size_t(0);
+
+        if(tag_ && tag)
+            EVP_CIPHER_CTX_ctrl(ctx_, EVP_CTRL_GCM_SET_TAG, int(tag_), const_cast<uint8_t *>(tag));
 
         if(!EVP_DecryptFinal_ex(ctx_, out, &used))
             used = 0;
@@ -264,6 +297,7 @@ public:
 private:
     EVP_CIPHER_CTX *ctx_{nullptr};
     const EVP_CIPHER *algo_{nullptr};
+    std::size_t tag_{0};
 };
 
 class encrypt_t final {
@@ -274,6 +308,7 @@ public:
         if(other.ctx_) {
             ctx_ = other.ctx_;
             algo_ = other.algo_;
+            tag_ = other.tag_;
             other.ctx_ = nullptr;
         }
     }
@@ -289,11 +324,16 @@ public:
             return;
         }
 
-        if(!EVP_EncryptInit_ex(ctx_, algo_, nullptr, key.data(), key.iv())) {
+        tag_ = get_tag_size(algo_);
+        if(tag_) {
+            EVP_EncryptInit_ex(ctx_, algo_, nullptr, nullptr, nullptr);
+            EVP_CIPHER_CTX_ctrl(ctx_, EVP_CTRL_GCM_SET_IVLEN, 12, nullptr);
+        }
+
+        if(!EVP_EncryptInit_ex(ctx_, tag_ ? nullptr : algo_, nullptr, key.data(), key.iv())) {
             EVP_CIPHER_CTX_free(ctx_);
             return;
         }
-
         EVP_CIPHER_CTX_set_key_length(ctx_, EVP_MAX_KEY_LENGTH);
     }
 
@@ -303,12 +343,16 @@ public:
     }
 
     auto operator=(encrypt_t&& other) noexcept -> encrypt_t& {
+        if(this == &other)
+            return *this;
+
         if(ctx_)
             EVP_CIPHER_CTX_free(ctx_);
         ctx_ = nullptr;
         if(other.ctx_) {
             ctx_ = other.ctx_;
             algo_ = other.algo_;
+            tag_ = other.tag_;
             other.ctx_ = nullptr;
         }
         return *this;
@@ -330,7 +374,13 @@ public:
         if(!ctx_)
             return *this;
 
-        if(!EVP_EncryptInit_ex(ctx_, algo_, nullptr, key.data(), key.iv())) {
+        tag_ = get_tag_size(algo_);
+        if(tag_) {
+            EVP_EncryptInit_ex(ctx_, algo_, nullptr, nullptr, nullptr);
+            EVP_CIPHER_CTX_ctrl(ctx_, EVP_CTRL_GCM_SET_IVLEN, 12, nullptr);
+        }
+
+        if(!EVP_EncryptInit_ex(ctx_, tag_ ? nullptr : algo_, nullptr, key.data(), key.iv())) {
             EVP_CIPHER_CTX_free(ctx_);
             return *this;
         }
@@ -359,6 +409,10 @@ public:
         return EVP_CIPHER_key_length(algo_);
     }
 
+    auto tagsize() const noexcept -> std::size_t {
+        return tag_;
+    }
+
     auto update(const uint8_t *in, uint8_t *out, std::size_t size) noexcept {
         auto used = 0;
 
@@ -371,7 +425,7 @@ public:
         return std::size_t(used);
     }
 
-    auto finish(uint8_t *out) noexcept {
+    auto finish(uint8_t *out, uint8_t *tag = nullptr) noexcept {
         auto used = 0;
 
         if(!ctx_)
@@ -379,6 +433,9 @@ public:
 
         if(!EVP_EncryptFinal_ex(ctx_, out, &used))
             used = 0;
+
+        if(tag_ && tag)
+            EVP_CIPHER_CTX_ctrl(ctx_, EVP_CTRL_GCM_GET_TAG, int(tag_), tag);
 
         EVP_CIPHER_CTX_free(ctx_);
         ctx_ = nullptr;
@@ -388,6 +445,7 @@ public:
 private:
     EVP_CIPHER_CTX *ctx_{nullptr};
     const EVP_CIPHER *algo_{nullptr};
+    std::size_t tag_{0};
 };
 } // end namespace
 #endif
