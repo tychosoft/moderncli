@@ -371,8 +371,8 @@ public:
             from.list_ = nullptr;
         }
 
-        service(const std::string& host, const std::string& service = "", int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) noexcept {
-            set(host, service, family, type, protocol);
+        explicit service(const std::string& host, const std::string& svc = "", int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) noexcept {
+            set(host, svc, family, type, protocol);
         }
 
         ~service() {
@@ -1423,7 +1423,8 @@ inline auto int_bind(const std::string& host, const std::string& service = "", i
 
     if(family != AF_INET6 && (host == "any" || host == "*"))
         return address_t(AF_INET, port);
-    else if(family != AF_INET && (host == "any6" || host == "[*]" || host == "::" || host == "::*" || host == "any" || host == "*"))
+
+    if(family != AF_INET && (host == "any6" || host == "[*]" || host == "::" || host == "::*" || host == "any" || host == "*"))
         return address_t(AF_INET6, port);
 
     if(host.find_first_of(".") == std::string::npos) {
