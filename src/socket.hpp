@@ -1126,6 +1126,7 @@ public:
     static void shutdown() noexcept {
     }
 #endif
+
 protected:
     volatile int so_{-1};
     mutable int err_{0};
@@ -1363,6 +1364,82 @@ inline auto inet_any(const std::string& host, int any = AF_INET) {
         return AF_INET6;
 
     return AF_UNSPEC;
+}
+
+inline auto inet_find(const std::string& host_id, const std::string& service = "", int family = AF_UNSPEC, int type = 0, int protocol = 0) {
+    auto host = host_id;
+    uint16_t port = 0;
+    try {
+        port = std::stoi(service);
+    } catch(...) {
+        port = 0;
+    }
+
+    if(family != AF_INET6 && (host == "loopback" || host == "localhost"))
+        host = "127.0.0.1";
+    else if(family != AF_INET && (host == "loopback6" || host == "localhost6" || host == "loopback" || host == "localhost"))
+        host = "::1";
+    else if(host.empty())
+        host = system_hostname();
+
+    address_t address(host, port);
+    if(!address.empty())
+        return address;
+
+    const char *svc = service.c_str();
+    if(service.empty() || service == "0")
+        svc = nullptr;
+
+    struct addrinfo hints{};
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = family;
+    hints.ai_socktype = type;
+    hints.ai_protocol = protocol;
+    if(port > 0)
+        hints.ai_flags |= NI_NUMERICSERV;
+
+    struct addrinfo *list{nullptr};
+    auto result = getaddrinfo(host.c_str(), svc, &hints, &list);
+    if(list && !result)
+        address = list;
+    if(list)
+        freeaddrinfo(list);
+
+    if(port && !address.empty())
+        address.port_if(port);
+    return address;
+}
+
+inline auto int_bind(const std::string& host, const std::string& service = "", int family = AF_UNSPEC, int type = 0, int protocol = 0) {
+    if(host.empty())
+        return inet_find(host, service, family, type, protocol);
+
+    uint16_t port = 0;
+    try {
+        port = std::stoi(service);
+    } catch(...) {
+        port = 0;
+    }
+
+    if(family != AF_INET6 && (host == "any" || host == "*"))
+        return address_t(AF_INET, port);
+    else if(family != AF_INET && (host == "any6" || host == "[*]" || host == "::" || host == "::*" || host == "any" || host == "*"))
+        return address_t(AF_INET6, port);
+
+    if(host.find_first_of(".") == std::string::npos) {
+        const Socket::interfaces ifa;
+        auto addr = ifa.find(host, AF_INET);
+        auto addr6 = ifa.find(host, AF_INET6);
+        if(family == AF_INET)
+            addr6 = nullptr;
+        else if(family == AF_INET6)
+            addr = nullptr;
+        if((!addr && addr6) || (addr6 && family == AF_INET6))
+            return address_t(addr6);
+        if(addr)
+            return address_t(addr);
+    }
+    return inet_find(host, service, family, type, protocol);
 }
 } // end namespace
 
