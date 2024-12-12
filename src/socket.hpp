@@ -1410,7 +1410,7 @@ inline auto inet_find(const std::string& host_id, const std::string& service = "
     return address;
 }
 
-inline auto int_bind(const std::string& host, const std::string& service = "", int family = AF_UNSPEC, int type = 0, int protocol = 0) {
+inline auto inet_bind(const std::string& host, const std::string& service = "", int family = AF_UNSPEC, int type = 0, int protocol = 0) {
     if(host.empty())
         return inet_find(host, service, family, type, protocol);
 
