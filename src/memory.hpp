@@ -4,6 +4,8 @@
 #ifndef TYCHO_MEMORY_HPP_
 #define TYCHO_MEMORY_HPP_
 
+#include "encoding.hpp"
+
 #include <type_traits>
 #include <stdexcept>
 #include <memory>
@@ -34,6 +36,17 @@ public:
     explicit bytes_array(std::size_t size) :
     array_(std::make_shared<T[]>(size)), size_(size) {}
 
+    template <typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
+    explicit bytes_array(const crypto::key_t& key) :
+    array_(std::make_shared<T[]>(key.second)), size_(key.second) {
+        memcpy(array_.get(), key.first, size_); // FlawFinder: ignore
+    }
+
+    bytes_array(const T* from, std::size_t size) :
+    array_(std::make_shared<T[]>(size)), size_(size) {
+        memcpy(array_.get(), from, sizeof(T) * size);   // FlawFinder: ignore
+    }
+
     bytes_array(bytes_array&& other) noexcept :
     array_(std::move(other.array_)), size_(other.size_) {
         other.size_ = 0;
@@ -45,6 +58,10 @@ public:
 
     operator bool() const noexcept {
         return size_ > 0;
+    }
+
+    operator std::string() const {
+        return to_hex();
     }
 
     auto operator!() const noexcept {
@@ -131,6 +148,35 @@ public:
     auto zero() noexcept {
         if(size_)
             memset(array_, 0, sizeof(T) * size_);
+    }
+
+    auto to_hex() const {
+        return to_hex(get(), size());
+    }
+
+    auto to_b64() const {
+        return to_b64(get(), size());
+    }
+
+    static auto from_hex(std::string_view from) {
+        auto bsize = from.size() / 2;
+        while(sizeof(T) > 1 && bsize % sizeof(T))
+            ++bsize;
+        auto mem = bytes_array(bsize / sizeof(T));
+        if(tycho::from_hex(from, mem.get(), bsize) < from.size() / 2)
+            return bytes_array();
+        return mem;
+    }
+
+    static auto from_b64(std::string_view from) {
+        auto bsize = size_b64(from);
+        auto alloc = bsize;
+        while(sizeof(T) > 1 && alloc % sizeof(T))
+            ++alloc;
+        auto mem = bytes_array(alloc / sizeof(T));
+        if(tycho::from_b64(from, mem.get(), bsize) < bsize)
+            return bytes_array();
+        return mem;
     }
 
 private:
@@ -530,15 +576,6 @@ inline auto operator new(std::size_t size, tycho::mempager_t& pager) -> void * {
 inline void operator delete([[maybe_unused]] void *page, [[maybe_unused]] tycho::mempager_t& pager) {}
 
 #ifdef  TYCHO_PRINT_HPP_
-namespace tycho {
-template<typename T>
-inline auto hex_bytes(const bytes_array<T>& bytes) {
-    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-
-    return to_hex(*bytes, bytes.size());
-}
-} // end namespace
-
 template <typename T> class fmt::formatter<tycho::bytes_array<T> const> {
 public:
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
@@ -549,18 +586,15 @@ public:
 
     template <typename Context>
     constexpr auto format(tycho::bytes_array<T> const& bytes, Context& ctx) const {
-        return format_to(ctx.out(), "{}", tycho::hex_bytes(bytes));
+        return format_to(ctx.out(), "{}", bytes.to_hex());
     }
 };
-
 #endif
 
-#ifdef TYCHO_ENCODING_HPP_
 template <typename T>
 inline auto operator<<(std::ostream& out, const tycho::bytes_array<T>& bin) -> std::ostream& {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-    out << tycho::hex_bytes(bin);
+    out << bin.to_hex();
     return out;
 }
-#endif
 #endif

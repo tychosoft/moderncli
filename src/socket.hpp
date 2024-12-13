@@ -117,6 +117,10 @@ public:
         return reinterpret_cast<const struct sockaddr *>(&store_);
     }
 
+    operator std::string() const {
+        return to_string();
+    }
+
     auto operator!() const noexcept {
         return store_.ss_family == 0;
     }
@@ -263,35 +267,35 @@ public:
         }
     }
 
-    auto to_string() const {
+    auto to_string() const -> std::string {
         char buf[256];
         const struct sockaddr_in *ipv4{nullptr};
         const struct sockaddr_in6 *ipv6{nullptr};
         switch(store_.ss_family) {
         case AF_INET:
             if(is_any())
-                return std::string("*");
+                return {"*"};
             ipv4 = reinterpret_cast<const struct sockaddr_in*>(&store_);
             if(::inet_ntop(AF_INET, &(ipv4->sin_addr), buf, sizeof(buf)))
-                return std::string(buf);
+                return {buf};
             break;
         case AF_INET6:
             if(is_any())
-                return std::string("::");
+                return {"::"};
             ipv6 = reinterpret_cast<const struct sockaddr_in6*>(&store_);
             if(::inet_ntop(AF_INET, &(ipv6->sin6_addr), buf, sizeof(buf)))
-                return std::string(buf);
+                return {buf};
             break;
 #ifdef  AF_UNIX
         case AF_UNIX: {
             auto un = reinterpret_cast<const struct sockaddr_un*>(&store_);
-            return std::string(un->sun_path);
+            return {un->sun_path};
         }
 #endif
         default:
             break;
         }
-        return std::string();
+        return {};
     }
 
     auto data() noexcept {

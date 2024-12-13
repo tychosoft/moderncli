@@ -27,7 +27,7 @@ inline auto await(Func&& func, Args&&... args) -> std::future<typename std::invo
 }
 
 template<typename Func, typename... Args>
-inline void async(Func&& func, Args&&... args) {
+inline void detach(Func&& func, Args&&... args) {
     std::thread([func = std::forward<Func>(func), tuple = std::make_tuple(std::forward<Args>(args)...)]() mutable {
         std::apply(func, std::move(tuple));
     }).detach();

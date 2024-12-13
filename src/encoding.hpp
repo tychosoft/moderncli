@@ -7,9 +7,14 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <array>
 #include <cstring>
 #include <cstdint>
+
+namespace tycho::crypto {
+using key_t = std::pair<const uint8_t *, std::size_t>;
+} // end namespace
 
 namespace tycho {
 inline auto to_b64(const uint8_t *data, std::size_t size) {
@@ -124,6 +129,10 @@ inline auto to_hex(const uint8_t *from, std::size_t size) {
 
 inline auto to_hex(const std::string_view str) {
     return to_hex(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+}
+
+inline auto to_hex(const crypto::key_t& key) {
+    return to_hex(key.first, key.second);
 }
 
 inline auto from_hex(std::string_view from, uint8_t *to, std::size_t size) {

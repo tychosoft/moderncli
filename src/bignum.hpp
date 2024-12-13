@@ -58,6 +58,10 @@ public:
         return get();
     }
 
+    operator std::string() const noexcept {
+        return to_string();
+    }
+
     operator bool() const noexcept {
         return !BN_is_zero(num_);
     }
