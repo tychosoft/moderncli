@@ -1,5 +1,15 @@
 # Release Notes
 
+## v0.9.8
+- Fix event sync
+- Extra string conversions
+- Add gcm mode ciphers
+- X509 string and time conversions
+- Simple internet host and bind resolvers
+- Updated presets
+- Vcpkg support and build update
+- Expand socket address functionality
+
 ## v0.9.7
 - Prepare print header for future C++20 format behaviors
 - Remove older function dispatch in favor of lambda tasks
