@@ -291,11 +291,10 @@ class event_sync final {
 public:
     explicit event_sync(bool reset = true) noexcept : auto_reset_(reset) {}
     event_sync(const event_sync&) = delete;
-    event_sync() = default;
     ~event_sync() = default;
     auto operator=(const event_sync&) noexcept -> auto& = delete;
 
-    void set() noexcept {
+    void notify() noexcept {
         const std::lock_guard lock(lock_);
         signaled_ = true;
         if(auto_reset_)
@@ -335,8 +334,8 @@ public:
 private:
     std::mutex lock_;
     std::condition_variable cond_;
-    bool auto_reset_{true};
     bool signaled_{false};
+    bool auto_reset_{true};
 };
 
 class wait_group final {

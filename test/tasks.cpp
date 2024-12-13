@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "tasks.hpp"
+#include "sync.hpp"
 #include "print.hpp"
 
 #include <string>
@@ -44,12 +45,14 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     task_queue tq1; // NOLINT
     const std::shared_ptr<int> ptr = std::make_shared<int>(count);
     auto use = ptr.use_count();
+    event_sync done;    // NOLINT
     tq1.startup();
-    tq1.dispatch([ptr, &use] {
+    tq1.dispatch([ptr, &use, &done] {
         use = ptr.use_count();
         ++count;
+        done.notify();
     });
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    done.wait();
     tq1.shutdown();
     assert(count == 53);
     assert(use == 2);
