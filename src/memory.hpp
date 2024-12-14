@@ -270,43 +270,175 @@ protected:
     }
 };
 
+class mempager {
+public:
+    mempager(const mempager&) = delete;
+    auto operator=(const mempager&) -> auto& = delete;
+
+    explicit mempager(std::size_t size = 0) noexcept :
+    size_(size), align_(aligned_page()) {
+        if(size_ <= align_)
+            align_ = aligned_cache();
+    }
+
+    mempager(mempager&& move) noexcept :
+    size_(move.size_), align_(move.align_), count_(move.count_), current_(move.current_) {
+        move.current_ = nullptr;
+        move.count_ = 0;
+    }
+
+    virtual ~mempager() {
+        clear();
+    }
+
+    auto operator=(mempager&& move) noexcept -> auto& {
+        if(&move == this)
+            return *this;
+
+        size_ = move.size_;
+        align_ = move.align_;
+        count_ = move.count_;
+        current_ = move.current_;
+        move.current_ = nullptr;
+        move.count_ = 0;
+        return *this;
+    }
+
+    template<typename T>
+    auto make(std::size_t adjust = 0) {
+        return static_cast<T*>(alloc(sizeof(T) + adjust));
+    }
+
+    auto alloc(std::size_t size) -> void * {
+        while(size % sizeof(void *))
+            ++size;
+
+        if(size > (size_ - sizeof(page_ptr)))
+            return nullptr;
+
+        if(!current_ || size > size_ - current_->used) {
+            page_ptr page{nullptr};
+            page_alloc(&page, size_, align_);
+            if(!page)
+                return nullptr;
+
+            page->aligned = nullptr;    // To make dumb checkers happy
+            page->used = sizeof(page_t);
+            page->next = current_;
+            ++count_;
+            current_ = page;
+        }
+
+        uint8_t *mem = (reinterpret_cast<uint8_t *>(current_)) + current_->used;
+        current_->used += static_cast<unsigned>(size);
+        return mem;
+    }
+
+    auto dup(const std::string_view& str) -> char * {
+        auto len = str.size();
+        auto mem = static_cast<char *>(alloc(len + 1));
+        if(mem) {
+            memcpy(mem, str.data(), len); // FlawFinder: ignore
+            mem[len] = 0;
+        }
+        return mem;
+    }
+
+    void clear() noexcept {
+        page_ptr next{};
+        while(current_) {
+            next = current_->next;
+            ::free(current_); // NOLINT
+            current_ = next;
+        }
+        count_ = 0;
+    }
+
+    auto empty() const noexcept {
+        return count_ == 0;
+    }
+
+    auto pages() const noexcept {
+        return count_;
+    }
+
+    auto size() const noexcept {
+        return count_ * size_;
+    }
+
+    auto used() const noexcept {
+        return size();
+    }
+
+    static constexpr auto aligned_size(std::size_t size) -> std::size_t {
+        std::size_t align = 1;
+        while(align < size)
+            align <<= 1;
+        return align;
+    }
+
+    static auto aligned_page(std::size_t min = 0) -> std::size_t{
+#if defined(_SC_PAGESIZE)
+        std::size_t size = aligned_size(static_cast<std::size_t>(sysconf(_SC_PAGESIZE)));
+#elif defined(PAGESIZE)
+        std::size_t size = aligned_size(PAGESIZE);
+#elif defined(PAGE_SIZE)
+        std::size_t size = aligned_size(PAGE_SIZE);
+#else
+        std::size_t size = 1024;
+#endif
+        min = aligned_size(min);
+        while(size < min)
+            size <<= 2;
+        return size;
+    }
+
+    static auto aligned_cache() -> std::size_t {
+        static volatile std::size_t line_size = 0;
+#if defined(_SC_LEVEL1_DCHACHE_LINESIZE)
+        line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+#endif
+        if(line_size < 64)
+            line_size = 64;
+        return aligned_size(line_size);
+    }
+
+protected:
+    std::size_t size_{0}, align_{0};
+    unsigned count_{0};
+
+private:
+    using page_ptr = struct page_t {
+        page_t *next;
+        union {
+            [[maybe_unused]] void *aligned;
+            unsigned used;
+        };
+    } *;
+
+    page_ptr current_{nullptr};
+
+    static void page_alloc(page_ptr *mem, std::size_t size, std::size_t align = 0) {
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+        *mem = static_cast<page_ptr>(::malloc(size));  // NOLINT
+#else
+        if(!align)
+            *mem = static_cast<page_ptr>(::malloc(size));  // NOLINT
+        else
+#ifdef  __clang__
+            posix_memalign(reinterpret_cast<void **>(mem), align, size);
+#else
+            *mem = static_cast<page_ptr>(::aligned_alloc(align, size));
+#endif
+#endif
+    }
+};
+
 using bytearray_t = bytes_array<std::byte>;
 using chararray_t = bytes_array<char>;
 using wordarray_t = bytes_array<uint16_t>;
 using longarray_t = bytes_array<uint32_t>;
-
-constexpr auto aligned_size(std::size_t size) {
-    std::size_t align = 1;
-    while(align < size)
-        align <<= 1;
-    return align;
-}
-
-inline auto aligned_page(std::size_t min = 0) {
-#if defined(_SC_PAGESIZE)
-    std::size_t size = aligned_size(static_cast<std::size_t>(sysconf(_SC_PAGESIZE)));
-#elif defined(PAGESIZE)
-    std::size_t size = aligned_size(PAGESIZE);
-#elif defined(PAGE_SIZE)
-    std::size_t size = aligned_size(PAGE_SIZE);
-#else
-    std::size_t size = 1024;
-#endif
-    min = aligned_size(min);
-    while(size < min)
-        size <<= 2;
-    return size;
-}
-
-inline auto aligned_cache() {
-    static volatile std::size_t line_size = 0;
-#if defined(_SC_LEVEL1_DCHACHE_LINESIZE)
-    line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
-#endif
-    if(line_size < 64)
-        line_size = 64;
-    return aligned_size(line_size);
-}
+using mempager_t = mempager;
 
 template<typename T>
 inline void mem_alloc(T **mem, std::size_t size, std::size_t align = 0) {
@@ -450,116 +582,6 @@ inline auto mem_value(char *target, std::size_t size, unsigned value) -> bool {
     return true;
 }
 
-class mempager_t final {
-public:
-    mempager_t(const mempager_t&) = delete;
-    auto operator=(const mempager_t&) -> auto& = delete;
-
-    explicit mempager_t(std::size_t size = 0) noexcept :
-    size_(size), align_(aligned_page()) {
-        if(size_ <= align_)
-            align_ = aligned_cache();
-    }
-
-    mempager_t(mempager_t&& move) noexcept :
-    size_(move.size_), align_(move.align_), count_(move.count_), current_(move.current_) {
-        move.current_ = nullptr;
-        move.count_ = 0;
-    }
-
-    ~mempager_t() {
-        clear();
-    }
-
-    auto operator=(mempager_t&& move) noexcept -> auto& {
-        if(&move == this)
-            return *this;
-
-        size_ = move.size_;
-        align_ = move.align_;
-        count_ = move.count_;
-        current_ = move.current_;
-        move.current_ = nullptr;
-        move.count_ = 0;
-        return *this;
-    }
-
-    template<typename T>
-    auto make(std::size_t adjust = 0) {
-        return static_cast<T*>(alloc(sizeof(T) + adjust));
-    }
-
-    auto alloc(std::size_t size) -> void * {
-        while(size % sizeof(void *))
-            ++size;
-
-        if(size > (size_ - sizeof(page_ptr)))
-            return nullptr;
-
-        if(!current_ || size > size_ - current_->used) {
-            page_ptr page{nullptr};
-            mem_alloc(&page, size_, align_);
-            if(!page)
-                return nullptr;
-
-            page->aligned = nullptr;    // To make dumb checkers happy
-            page->used = sizeof(page_t);
-            page->next = current_;
-            ++count_;
-            current_ = page;
-        }
-
-        uint8_t *mem = (reinterpret_cast<uint8_t *>(current_)) + current_->used;
-        current_->used += static_cast<unsigned>(size);
-        return mem;
-    }
-
-    auto dup(const std::string_view& str) -> char * {
-        auto len = str.size();
-        auto mem = static_cast<char *>(alloc(len + 1));
-        if(mem) {
-            memcpy(mem, str.data(), len); // FlawFinder: ignore
-            mem[len] = 0;
-        }
-        return mem;
-    }
-
-    void clear() noexcept {
-        page_ptr next{};
-        while(current_) {
-            next = current_->next;
-            ::free(current_); // NOLINT
-            current_ = next;
-        }
-        count_ = 0;
-    }
-
-    auto empty() const noexcept {
-        return count_ == 0;
-    }
-
-    auto pages() const noexcept {
-        return count_;
-    }
-
-    auto size() const noexcept {
-        return count_ * size_;
-    }
-
-private:
-    using page_ptr = struct page_t {
-        page_t *next;
-        union {
-            [[maybe_unused]] void *aligned;
-            unsigned used;
-        };
-    } *;
-
-    std::size_t size_{0}, align_{0};
-    unsigned count_{0};
-    page_ptr current_{nullptr};
-};
-
 inline auto mem_index(std::string_view s) {
     return mem_index(reinterpret_cast<const uint8_t *>(s.data()), s.size());
 }
@@ -569,11 +591,11 @@ inline auto key_index(const char *cp, std::size_t max) {
 }
 } // end namespace
 
-inline auto operator new(std::size_t size, tycho::mempager_t& pager) -> void * {
+inline auto operator new(std::size_t size, tycho::mempager& pager) -> void * {
     return pager.alloc(size);
 }
 
-inline void operator delete([[maybe_unused]] void *page, [[maybe_unused]] tycho::mempager_t& pager) {}
+inline void operator delete([[maybe_unused]] void *page, [[maybe_unused]] tycho::mempager& pager) {}
 
 #ifdef  TYCHO_PRINT_HPP_
 template <typename T> class fmt::formatter<tycho::bytes_array<T> const> {
