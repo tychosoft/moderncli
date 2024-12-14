@@ -2,6 +2,7 @@
 
 ## v0.9.9
 - Update memory for bordeaux
+- Fix bind and make any addresses
 
 ## v0.9.8
 - Fix event sync

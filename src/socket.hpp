@@ -324,9 +324,11 @@ private:
         switch(family) {
         case AF_INET:
             memset(&(reinterpret_cast<struct sockaddr_in*>(&store_))->sin_addr.s_addr, 0, 4);
+            store_.ss_family = AF_INET;
             break;
         case AF_INET6:
             memset(&(reinterpret_cast<struct sockaddr_in6*>(&store_))->sin6_addr.s6_addr, 0, 16);
+            store_.ss_family = AF_INET6;
             break;
         default:
             break;
