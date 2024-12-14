@@ -1,5 +1,8 @@
 # Release Notes
 
+## v0.9.9
+- Update memory for bordeaux
+
 ## v0.9.8
 - Fix event sync
 - Extra string conversions
