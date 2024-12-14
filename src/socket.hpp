@@ -155,6 +155,10 @@ public:
         }
     }
 
+    auto host() const noexcept {
+        return to_string();
+    }
+
     auto port() const noexcept -> uint16_t {
         switch(store_.ss_family) {
         case AF_INET:
@@ -1427,10 +1431,10 @@ inline auto inet_bind(const std::string& host, const std::string& service = "", 
         port = 0;
     }
 
-    if(family != AF_INET6 && (host == "any" || host == "*"))
+    if((family != AF_INET6) && (host == "any" || host == "*"))
         return address_t(AF_INET, port);
 
-    if(family != AF_INET && (host == "any6" || host == "[*]" || host == "::" || host == "::*" || host == "any" || host == "*"))
+    if((family != AF_INET) && (host == "any6" || host == "[*]" || host == "::" || host == "::*" || host == "any" || host == "*"))
         return address_t(AF_INET6, port);
 
     if(host.find_first_of(".") == std::string::npos) {

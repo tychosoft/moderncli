@@ -3,6 +3,7 @@
 ## v0.9.9
 - Update memory for bordeaux
 - Fix bind and make any addresses
+- Add expected host method to address
 
 ## v0.9.8
 - Fix event sync
