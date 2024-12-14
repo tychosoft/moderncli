@@ -379,18 +379,18 @@ public:
 
     static auto aligned_page(std::size_t min = 0) -> std::size_t{
 #if defined(_SC_PAGESIZE)
-        std::size_t size = aligned_size(static_cast<std::size_t>(sysconf(_SC_PAGESIZE)));
+        std::size_t asize = aligned_size(static_cast<std::size_t>(sysconf(_SC_PAGESIZE)));
 #elif defined(PAGESIZE)
-        std::size_t size = aligned_size(PAGESIZE);
+        std::size_t asize = aligned_size(PAGESIZE);
 #elif defined(PAGE_SIZE)
-        std::size_t size = aligned_size(PAGE_SIZE);
+        std::size_t asize = aligned_size(PAGE_SIZE);
 #else
-        std::size_t size = 1024;
+        std::size_t asize = 1024;
 #endif
         min = aligned_size(min);
-        while(size < min)
-            size <<= 2;
-        return size;
+        while(asize < min)
+            asize <<= 2;
+        return asize;
     }
 
     static auto aligned_cache() -> std::size_t {

@@ -302,6 +302,11 @@ public:
         return {};
     }
 
+    auto put(struct sockaddr_storage& out) noexcept {
+        // FlawFinder: ignore
+        memcpy(&out, &store_, sizeof(store_));
+    }
+
     auto data() noexcept {
         return reinterpret_cast<struct sockaddr *>(&store_);
     }
@@ -1455,6 +1460,19 @@ inline auto inet_bind(const std::string& host, const std::string& service = "", 
             return address_t(addr);
     }
     return inet_find(host, service, family, type, protocol);
+}
+
+inline auto is_ipv4(const std::string_view& addr) {
+    // cppcheck-suppress useStlAlgorithm
+    for(const auto ch : addr) {
+        if(ch != '.' && !isdigit(ch))
+            return false;
+    }
+    return true;
+}
+
+inline auto is_ipv6(const std::string_view& addr) {
+    return addr.find_first_of(':') != std::string_view::npos;
 }
 } // end namespace
 
