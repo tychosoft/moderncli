@@ -1405,8 +1405,12 @@ inline auto inet_find(const std::string& host_id, const std::string& service = "
     hints.ai_family = family;
     hints.ai_socktype = type;
     hints.ai_protocol = protocol;
+
     if(port > 0)
-        hints.ai_flags |= NI_NUMERICSERV;
+        hints.ai_flags |= AI_NUMERICSERV;
+
+    if(family != AF_UNSPEC)
+        hints.ai_flags |= AI_ADDRCONFIG;
 
     struct addrinfo *list{nullptr};
     auto result = getaddrinfo(host.c_str(), svc, &hints, &list);
