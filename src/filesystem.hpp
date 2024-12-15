@@ -403,7 +403,7 @@ public:
 
     template <typename Context>
     constexpr auto format(fsys::path const& path, Context& ctx) const {
-        return format_to(ctx.out(), "{}", std::string{path.u8string()});
+        return format(ctx.out(), "{}", std::string{path.u8string()});
     }
 };
 #endif
