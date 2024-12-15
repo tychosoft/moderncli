@@ -50,56 +50,56 @@ template<class... Args>
 using format_str = const char *;
 
 template<class... Args>
-[[noreturn]] constexpr void die(int code, format_str<Args...> fmt, const Args&... args) {
-    std::cerr << fmt::format(fmt, args...);
-    ::exit(code);
-}
-
-template<class... Args>
-[[noreturn]] constexpr void crit(int code, format_str<Args...> fmt, const Args&... args) {
-    std::cerr << fmt::format(fmt, args...);
-    quick_exit(code);
-}
-
-template<class... Args>
 constexpr auto format(format_str<Args...> fmt, const Args&... args) {
     return fmt::format(fmt, args...);
 }
 
 template<class... Args>
 auto format(std::ostream& out, format_str<Args...> fmt, const Args&... args) -> auto& {
-    out << fmt::format(fmt, args...);
+    out << format(fmt, args...);
     return out;
 }
 
 template<class... Args>
 constexpr void print(format_str<Args...> fmt, const Args&... args) {
-    std::cout << fmt::format(fmt, args...);
+    std::cout << format(fmt, args...);
 }
 
 template<class... Args>
 constexpr void print(std::ostream& out, format_str<Args...> fmt, const Args&... args) {
-    out << fmt::format(fmt, args...);
+    out << format(fmt, args...);
 }
 
 template<class... Args>
 constexpr void print(FILE *fp, format_str<Args...> fmt, const Args&... args) {
-    fputs(fmt::format(fmt, args...).c_str(), fp);
+    fputs(format(fmt, args...).c_str(), fp);
 }
 
 template<class... Args>
 constexpr void println(std::ostream& out, format_str<Args...> fmt, const Args&... args) {
-    out << fmt::format(fmt, args...) << std::endl;
+    out << format(fmt, args...) << std::endl;
 }
 
 template<class... Args>
 constexpr void println(format_str<Args...> fmt, const Args&... args) {
-    std::cout << fmt::format(fmt, args...) << std::endl;
+    std::cout << format(fmt, args...) << std::endl;
 }
 
 template<class... Args>
 constexpr void println(FILE *fp, format_str<Args...> fmt, const Args&... args) {
-    fprintf(fp, "%s\n", fmt::format(fmt, args...).c_str());
+    fprintf(fp, "%s\n", format(fmt, args...).c_str());
+}
+
+template<class... Args>
+[[noreturn]] constexpr void die(int code, format_str<Args...> fmt, const Args&... args) {
+    std::cerr << format(fmt, args...);
+    ::exit(code);
+}
+
+template<class... Args>
+[[noreturn]] constexpr void crit(int code, format_str<Args...> fmt, const Args&... args) {
+    std::cerr << format(fmt, args...);
+    quick_exit(code);
 }
 
 class system_logger final {

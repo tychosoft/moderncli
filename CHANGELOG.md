@@ -4,6 +4,7 @@
 - Update memory for bordeaux
 - Fix bind and make any addresses
 - Add expected host method to address
+- Deprecate old and unused functions
 
 ## v0.9.8
 - Fix event sync
