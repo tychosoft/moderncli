@@ -36,6 +36,7 @@
 #include <csignal>
 #include <unistd.h>
 #include <dlfcn.h>
+#include <sched.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -972,4 +973,65 @@ inline auto shell(const std::string& cmd) noexcept {
     return system(cmd.c_str());
 }
 } // end namespace
+
+namespace std::this_thread {
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
+auto priority(int priority) {
+    switch(priority) {
+    case 0:
+        priority = THREAD_PRIORITY_NORMAL;
+        break;
+    case -1:
+        priority = THREAD_PRIORITY_BELOW_NORMAL;
+        break;
+    case 1:
+        priority = THREAD_PRIORITY_ABOVE_NORMAL;
+        break;
+    case -2:
+        priority = THREAD_PRIORITY_LOWEST;
+        break;
+    case 2:
+        priority = THREAD_PRIORITY_HIGHEST;
+        break;
+    case 3:
+        priority = THREAD_PRIORITY_TIME_CRITICAL;
+        break;
+    default:
+        return false;
+    }
+    return SetThreadPriority(GetCurrentThread(), priority) != 0;
+}
+#else
+auto priority(int priority) {
+    auto tid = pthread_self();
+    struct sched_param sp{};
+    int policy{};
+
+    std::memset(&sp, 0, sizeof(sp));
+
+    policy = SCHED_OTHER;
+#ifdef  SCHED_FIFO
+    if(priority > 0) {
+        policy = SCHED_FIFO;
+        priority = sched_get_priority_min(policy) + priority - 1;
+        if(priority > sched_get_priority_max(policy))
+            priority = sched_get_priority_max(policy);
+    }
+#endif
+#ifdef  SCHED_BATCH
+    if(priority < 0) {
+        policy = SCHED_BATCH;
+        priority = 0;
+    }
+#endif
+    if(policy == SCHED_OTHER)
+        priority = 0;
+
+    sp.sched_priority = priority;
+    return pthread_setschedparam(tid, policy, &sp) == 0;
+}
+
+#endif
+} // end namespace
+
 #endif

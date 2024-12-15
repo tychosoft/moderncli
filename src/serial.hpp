@@ -486,7 +486,7 @@ public:
     }
 
     serial_t(serial_t&& from) noexcept :
-    device_(from.device_), timed_(from.timed_), saved_(from.saved_), active_(from.active_), err_(from.err_) {
+    saved_(from.saved_), active_(from.active_), timed_(from.timed_), device_(from.device_), err_(from.err_) {
         from.device_ = invalid_;
     }
 
