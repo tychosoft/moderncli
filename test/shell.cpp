@@ -26,6 +26,9 @@ void caller() {
 } // end anon namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
+    using namespace tycho;
+    using namespace std;
+
     const uint16_t val = 23;
     auto out = format("X{}Y", val);
     assert(out == "X23Y");
