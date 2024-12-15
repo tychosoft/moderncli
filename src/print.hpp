@@ -50,55 +50,55 @@ template<class... Args>
 using format_str = const char *;
 
 template<class... Args>
-constexpr auto format(format_str<Args...> fmt, const Args&... args) {
-    return fmt::format(fmt, args...);
+constexpr auto format(format_str<Args...> fmt, Args&&... args) {
+    return fmt::format(fmt, std::forward<Args>(args)...);
 }
 
 template<class... Args>
-auto format(std::ostream& out, format_str<Args...> fmt, const Args&... args) -> auto& {
-    out << format(fmt, args...);
+auto format(std::ostream& out, format_str<Args...> fmt, Args&&... args) -> auto& {
+    out << format(fmt, std::forward<Args>(args)...);
     return out;
 }
 
 template<class... Args>
-constexpr void print(format_str<Args...> fmt, const Args&... args) {
-    std::cout << format(fmt, args...);
+constexpr void print(format_str<Args...> fmt, Args&&... args) {
+    std::cout << format(fmt, std::forward<Args>(args)...);
 }
 
 template<class... Args>
-constexpr void print(std::ostream& out, format_str<Args...> fmt, const Args&... args) {
-    out << format(fmt, args...);
+constexpr void print(std::ostream& out, format_str<Args...> fmt, Args&&... args) {
+    out << format(fmt, std::forward<Args>(args)...);
 }
 
 template<class... Args>
-constexpr void print(FILE *fp, format_str<Args...> fmt, const Args&... args) {
-    fputs(format(fmt, args...).c_str(), fp);
+constexpr void print(FILE *fp, format_str<Args...> fmt, Args&&... args) {
+    fputs(format(fmt, std::forward<Args>(args)...).c_str(), fp);
 }
 
 template<class... Args>
-constexpr void println(std::ostream& out, format_str<Args...> fmt, const Args&... args) {
-    out << format(fmt, args...) << std::endl;
+constexpr void println(std::ostream& out, format_str<Args...> fmt, Args&&... args) {
+    out << format(fmt, std::forward<Args>(args)...) << std::endl;
 }
 
 template<class... Args>
-constexpr void println(format_str<Args...> fmt, const Args&... args) {
-    std::cout << format(fmt, args...) << std::endl;
+constexpr void println(format_str<Args...> fmt, Args&&... args) {
+    std::cout << format(fmt, std::forward<Args>(args)...) << std::endl;
 }
 
 template<class... Args>
-constexpr void println(FILE *fp, format_str<Args...> fmt, const Args&... args) {
-    fprintf(fp, "%s\n", format(fmt, args...).c_str());
+constexpr void println(FILE *fp, format_str<Args...> fmt, Args&&... args) {
+    fprintf(fp, "%s\n", format(fmt, std::forward<Args>(args)...).c_str());
 }
 
 template<class... Args>
-[[noreturn]] constexpr void die(int code, format_str<Args...> fmt, const Args&... args) {
-    std::cerr << format(fmt, args...);
+[[noreturn]] constexpr void die(int code, format_str<Args...> fmt, Args&&... args) {
+    std::cerr << format(fmt, std::forward<Args>(args)...);
     ::exit(code);
 }
 
 template<class... Args>
-[[noreturn]] constexpr void crit(int code, format_str<Args...> fmt, const Args&... args) {
-    std::cerr << format(fmt, args...);
+[[noreturn]] constexpr void crit(int code, format_str<Args...> fmt, Args&&... args) {
+    std::cerr << format(fmt, std::forward<Args>(args)...);
     quick_exit(code);
 }
 
@@ -111,11 +111,11 @@ public:
     auto operator=(const system_logger&) -> auto& = delete;
 
     template<class... Args>
-    void debug(unsigned level, format_str<Args...> fmt, const Args&... args) {
+    void debug(unsigned level, format_str<Args...> fmt, Args&&... args) {
 #ifndef NDEBUG
         if(level <= logging_) {
             try {
-                auto msg = format(fmt, args...);
+                auto msg = format(fmt, std::forward<Args>(args)...);
                 const std::lock_guard lock(locking_);
                 print(std::cerr, "debug: {}\n", msg);
                 notify_(msg, "debug");
@@ -129,8 +129,8 @@ public:
     }
 
     template<class... Args>
-    void info(format_str<Args...> fmt, const Args&... args) {
-        auto msg = format(fmt, args...);
+    void info(format_str<Args...> fmt, Args&&... args) {
+        auto msg = format(fmt, std::forward<Args>(args)...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
         ::syslog(LOG_INFO, "%s", msg.c_str());
@@ -141,8 +141,8 @@ public:
     }
 
     template<class... Args>
-    void notice(format_str<Args...> fmt, const Args&... args) {
-        auto msg = format(fmt, args...);
+    void notice(format_str<Args...> fmt, Args&&... args) {
+        auto msg = format(fmt, std::forward<Args>(args)...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
         ::syslog(LOG_NOTICE, "%s", msg.c_str());
@@ -153,8 +153,8 @@ public:
     }
 
     template<class... Args>
-    void warn(format_str<Args...> fmt, const Args&... args) {
-        auto msg = format(fmt, args...);
+    void warn(format_str<Args...> fmt, Args&&... args) {
+        auto msg = format(fmt, std::forward<Args>(args)...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
         ::syslog(LOG_WARNING, "%s", msg.c_str());
@@ -165,8 +165,8 @@ public:
     }
 
     template<class... Args>
-    void error(format_str<Args...> fmt, const Args&... args) {
-        auto msg = format(fmt, args...);
+    void error(format_str<Args...> fmt, Args&&... args) {
+        auto msg = format(fmt, std::forward<Args>(args)...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
         ::syslog(LOG_ERR, "%s", msg.c_str());
@@ -177,8 +177,8 @@ public:
     }
 
     template<class... Args>
-    [[noreturn]] void fail(int exit_code, format_str<Args...> fmt, const Args&... args) {
-        auto msg = format(fmt, args...);
+    [[noreturn]] void fail(int exit_code, format_str<Args...> fmt, Args&&... args) {
+        auto msg = format(fmt, std::forward<Args>(args)...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
         ::syslog(LOG_CRIT, "%s", msg.c_str());
@@ -191,8 +191,8 @@ public:
     }
 
     template<class... Args>
-    [[noreturn]] void crit(int exit_code, format_str<Args...> fmt, const Args&... args) {
-        auto msg = format(fmt, args...);
+    [[noreturn]] void crit(int exit_code, format_str<Args...> fmt, Args&&... args) {
+        auto msg = format(fmt, std::forward<Args>(args)...);
         const std::lock_guard lock(locking_);
 #ifdef  USE_SYSLOG
         ::syslog(LOG_CRIT, "%s", msg.c_str());

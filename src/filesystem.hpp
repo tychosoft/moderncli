@@ -164,7 +164,7 @@ inline auto append(int fd) noexcept {
 }
 
 inline auto open(const fsys::path& path, mode flags = mode::rw) noexcept {   // FlawFinder: ignore
-    return ::open(path.u8string().c_str(), flags, 0664); // FlawFinder: ignore
+    return ::open(path.string().c_str(), flags, 0664); // FlawFinder: ignore
 }
 
 inline auto close(int fd) noexcept {
@@ -390,11 +390,11 @@ inline auto scan_recursive(const fsys::path& path, const std::function<bool(cons
 }
 
 inline auto to_string(const fsys::path& path) {
-    return std::string{path.u8string()};
+    return std::string{path.string()};
 }
 } // end namespace
 
-#ifdef  TYCHO_PRINT_HPP_
+#if defined(TYCHO_PRINT_HPP_) && __cplusplus < 202002L
 template <> class [[deprecated]] fmt::formatter<fsys::path> {
 public:
     static constexpr auto parse(format_parse_context& ctx) {

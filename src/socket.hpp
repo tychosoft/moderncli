@@ -1464,7 +1464,7 @@ inline auto inet_bind(const std::string& host, const std::string& service = "", 
 
 inline auto is_ipv4(const std::string_view& addr) {
     // cppcheck-suppress useStlAlgorithm
-    for(const auto ch : addr) {
+    for(const auto ch : addr) { // NOLINT
         if(ch != '.' && !isdigit(ch))
             return false;
     }
