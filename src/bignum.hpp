@@ -456,20 +456,6 @@ inline auto gcd(const bignum_t& a, const bignum_t& b) noexcept -> bignum_t {
 }
 } // end namespace
 
-#ifdef  TYCHO_PRINT_HPP_
-template <> class fmt::formatter<crypto::bignum_t> {
-public:
-    static constexpr auto parse(format_parse_context& ctx) {
-        return ctx.begin();
-    }
-
-    template <typename Context>
-    constexpr auto format(crypto::bignum_t const& bn, Context& ctx) const {
-        return format_to(ctx.out(), "{}", bn.to_string());
-    }
-};
-#endif
-
 inline auto operator<<(std::ostream& out, const tycho::crypto::bignum_t& bn) -> std::ostream& {
     out << bn.to_string();
     return out;

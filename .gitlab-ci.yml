@@ -2,7 +2,7 @@ stages:
   - test
 
 merge:
-  image: alpine
+  image: alpine:edge
   stage: test
   script:
     - apk update

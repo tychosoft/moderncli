@@ -155,4 +155,14 @@ inline auto from_hex(std::string_view from, uint8_t *to, std::size_t size) {
     return max / 2;
 }
 } // end namespace
+
+namespace tycho::crypto {
+inline auto to_b64(const uint8_t *from, size_t size) {
+	return tycho::to_b64(from, size);
+}
+
+inline auto to_b64(const key_t& key) {
+    return tycho::to_b64(key.first, key.second);
+}
+} // end namespace
 #endif

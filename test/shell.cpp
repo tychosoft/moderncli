@@ -31,7 +31,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(out == "X23Y");
     fsys::remove("/tmp/xyz");
     const fsys::path path = "/here";
-    assert(format("!{}!", path) == "!/here!");
+    assert(format("!{}!", path.u8string()) == "!/here!");
     assert(value == 1);
 
     auto *p = &value;

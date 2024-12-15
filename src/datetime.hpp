@@ -10,10 +10,6 @@
 #include <iomanip>
 #include <ctime>
 
-#ifdef  TYCHO_PRINT_HPP_
-#include <fmt/chrono.h>
-#endif
-
 namespace tycho {
 inline constexpr auto GENERIC_DATETIME = "%c";
 inline constexpr auto LOCAL_DATETIME = "%x %X";
@@ -86,20 +82,6 @@ inline auto iso_time(const std::time_t& current) {
     return iso_string(current).substr(11, 8);
 }
 } // end namespace
-
-#ifdef TYCHO_PRINT_HPP_
-template <> class fmt::formatter<std::tm> {
-public:
-    static constexpr auto parse(format_parse_context& ctx) {
-        return ctx.begin();
-    }
-
-    template <typename Context>
-    constexpr auto format(const std::tm& current, Context& ctx) const {
-        return format_to(ctx.out(), "{}", tycho::iso_string(current));
-    }
-};
-#endif
 
 inline auto operator<<(std::ostream& out, const std::tm& current) -> std::ostream& {
     out << std::put_time(&current, tycho::ISO_DATETIME);

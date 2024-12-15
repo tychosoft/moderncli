@@ -395,7 +395,7 @@ inline auto to_string(const fsys::path& path) {
 } // end namespace
 
 #ifdef  TYCHO_PRINT_HPP_
-template <> class fmt::formatter<fsys::path> {
+template <> class [[deprecated]] fmt::formatter<fsys::path> {
 public:
     static constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();

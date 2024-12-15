@@ -1263,7 +1263,7 @@ inline auto system_hostname() noexcept -> std::string {
     return {buf};
 }
 
-inline auto inet_host(struct sockaddr *addr, const std::string& host) noexcept {
+[[deprecated]] inline auto inet_host(struct sockaddr *addr, const std::string& host) noexcept {
     if(!addr)
         return false;
 
@@ -1290,7 +1290,7 @@ inline auto inet_host(const struct sockaddr *addr) noexcept -> std::string {
     return address.to_string();
 }
 
-inline auto inet_host(const std::string& host = "", int type = SOCK_STREAM, int any = AF_UNSPEC) {
+[[deprecated]] inline auto inet_host(const std::string& host = "", int type = SOCK_STREAM, int any = AF_UNSPEC) {
     struct addrinfo hints{0}, *info{nullptr};
     auto fqdn(host);
     if(fqdn.empty())
@@ -1341,7 +1341,7 @@ inline auto inet_family(const std::string& host, int any = AF_UNSPEC) {
     return AF_UNSPEC;
 }
 
-inline auto inet_store(struct sockaddr_storage& addr, const std::string& host, const std::string& service = "", int any = AF_UNSPEC) {
+[[deprecated]] inline auto inet_store(struct sockaddr_storage& addr, const std::string& host, const std::string& service = "", int any = AF_UNSPEC) {
     struct addrinfo hints{}, *list = nullptr;                                       memset(&hints, 0, sizeof(hints));
     memset(&addr, 0, sizeof(addr));
     hints.ai_family = inet_family(host, any);
@@ -1475,20 +1475,6 @@ inline auto is_ipv6(const std::string_view& addr) {
     return addr.find_first_of(':') != std::string_view::npos;
 }
 } // end namespace
-
-#ifdef  TYCHO_PRINT_HPP_
-template <> class fmt::formatter<tycho::address_t> {
-public:
-    static constexpr auto parse(format_parse_context& ctx) {
-        return ctx.begin();
-    }
-
-    template <typename Context>
-    constexpr auto format(tycho::address_t const& addr, Context& ctx) const {
-        return format_to(ctx.out(), "{}", addr.to_string());
-    }
-};
-#endif
 
 inline auto operator<<(std::ostream& out, const tycho::address_t& addr) -> std::ostream& {
     out << addr.to_string();

@@ -597,22 +597,6 @@ inline auto operator new(std::size_t size, tycho::mempager& pager) -> void * {
 
 inline void operator delete([[maybe_unused]] void *page, [[maybe_unused]] tycho::mempager& pager) {}
 
-#ifdef  TYCHO_PRINT_HPP_
-template <typename T> class fmt::formatter<tycho::bytes_array<T> const> {
-public:
-    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-
-    static constexpr auto parse(format_parse_context& ctx) {
-        return ctx.begin();
-    }
-
-    template <typename Context>
-    constexpr auto format(tycho::bytes_array<T> const& bytes, Context& ctx) const {
-        return format_to(ctx.out(), "{}", bytes.to_hex());
-    }
-};
-#endif
-
 template <typename T>
 inline auto operator<<(std::ostream& out, const tycho::bytes_array<T>& bin) -> std::ostream& {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
