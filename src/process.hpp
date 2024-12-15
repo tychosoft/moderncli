@@ -976,7 +976,7 @@ inline auto shell(const std::string& cmd) noexcept {
 
 namespace std::this_thread {
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-auto priority(int priority) {
+inline auto priority(int priority) {
     switch(priority) {
     case 0:
         priority = THREAD_PRIORITY_NORMAL;
@@ -1002,7 +1002,7 @@ auto priority(int priority) {
     return SetThreadPriority(GetCurrentThread(), priority) != 0;
 }
 #else
-auto priority(int priority) {
+inline auto priority(int priority) {
     auto tid = pthread_self();
     struct sched_param sp{};
     int policy{};

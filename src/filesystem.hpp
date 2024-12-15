@@ -394,16 +394,16 @@ inline auto to_string(const fsys::path& path) {
 }
 } // end namespace
 
-#if defined(TYCHO_PRINT_HPP_) && __cplusplus < 202002L
-template <> class [[deprecated]] fmt::formatter<fsys::path> {
+#if defined(TYCHO_PRINT_HPP_) && (__cplusplus < 202002L)
+template <> class fmt::formatter<fsys::path> {
 public:
-    static constexpr auto parse(format_parse_context& ctx) {
+    [[deprecated]] static constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
 
     template <typename Context>
-    constexpr auto format(fsys::path const& path, Context& ctx) const {
-        return format(ctx.out(), "{}", std::string{path.u8string()});
+    [[deprecated]] constexpr auto format(fsys::path const& path, Context& ctx) const {
+        return format_to(ctx.out(), "{}", std::string{path.u8string()});
     }
 };
 #endif
