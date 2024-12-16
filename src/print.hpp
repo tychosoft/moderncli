@@ -57,7 +57,7 @@ constexpr auto format(format_string<Args...> fmt, Args&&... args) {
 
 template<class... Args>
 constexpr auto format(std::ostream& out, format_string<Args...> fmt, Args&&... args) -> auto& {
-    out << fmt::format(fmt, args...);
+    out << fmt::format(fmt, std::forward<Args>(args)...);
     return out;
 }
 

@@ -974,7 +974,7 @@ inline auto shell(const std::string& cmd) noexcept {
 }
 } // end namespace
 
-namespace std::this_thread {
+namespace tycho::this_thread {
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 inline auto priority(int priority) {
     switch(priority) {

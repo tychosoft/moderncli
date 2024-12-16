@@ -7,6 +7,7 @@
 - Deprecate old and unused functions
 - Supports C++20 and later std::format
 - Change current thread priority added
+- Reduce confusion around socket type
 
 ## v0.9.8
 - Fix event sync
