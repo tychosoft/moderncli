@@ -259,7 +259,6 @@ private:
     int family_{AF_UNSPEC};
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-    using socket_t = SOCKET;
     static auto make_socket(SOCKET so) noexcept {
         return int(so);
     }
@@ -269,7 +268,7 @@ private:
         ioctlsocket(so, FIONBIO, &mode);
     }
 
-    static void close_socket(socket_t so) noexcept {
+    static void close_socket(SOCKET so) noexcept {
         ::shutdown(so, SD_BOTH);
         closesocket(so);
     }
@@ -294,12 +293,11 @@ private:
         return io_err(::recv(so_, static_cast<char *>(buffer), int(size), 0));
     }
 #else
-    using socket_t = int;
     static auto make_socket(int so) noexcept {
         return so;
     }
 
-    static void close_socket(socket_t so) noexcept {
+    static void close_socket(int so) noexcept {
         ::shutdown(so, SHUT_RDWR);
         ::close(so);
     }

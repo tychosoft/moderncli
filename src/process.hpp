@@ -982,18 +982,20 @@ inline auto priority(int priority) {
         priority = THREAD_PRIORITY_NORMAL;
         break;
     case -1:
+    case -2:
         priority = THREAD_PRIORITY_BELOW_NORMAL;
         break;
     case 1:
+    case 2:
         priority = THREAD_PRIORITY_ABOVE_NORMAL;
         break;
-    case -2:
+    case -3:
         priority = THREAD_PRIORITY_LOWEST;
         break;
-    case 2:
+    case 3:
         priority = THREAD_PRIORITY_HIGHEST;
         break;
-    case 3:
+    case 4:
         priority = THREAD_PRIORITY_TIME_CRITICAL;
         break;
     default:

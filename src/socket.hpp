@@ -1191,33 +1191,32 @@ private:
     }
 #endif
 };
-using socket_t = Socket;
 using service_t = Socket::service;
 using interface_t = Socket::interfaces;
 
 template<typename T>
-inline auto send(const socket_t& sock, const T& msg, int flags = 0) {
+inline auto send(const Socket& sock, const T& msg, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.send(&msg, sizeof(msg), flags);
 }
 
 template<typename T>
-inline auto recv(const socket_t& sock, T& msg, int flags = 0) {
+inline auto recv(const Socket& sock, T& msg, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.recv(&msg, sizeof(msg), flags);
 }
 
 template<typename T>
-inline auto send(const socket_t& sock, const T& msg, const address_t& addr, int flags = 0) {
+inline auto send(const Socket& sock, const T& msg, const address_t& addr, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.send(&msg, sizeof(msg), addr, flags);
 }
 
 template<typename T>
-inline auto recv(const socket_t& sock, T& msg, address_t& addr, int flags = 0) {
+inline auto recv(const Socket& sock, T& msg, address_t& addr, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.recv(&msg, sizeof(msg), addr, flags);

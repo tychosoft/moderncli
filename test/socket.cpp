@@ -17,7 +17,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(Socket::startup());
     const Socket::interfaces ifs;
     assert(!ifs.empty());
-    const socket_t unset;
+    const Socket unset;
     address_t addr; // NOLINT
     raw_t raw = addr;
     uint32_t data = 0;

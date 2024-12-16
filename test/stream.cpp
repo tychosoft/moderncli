@@ -15,7 +15,7 @@ address_t local_host("127.0.0.1", port);
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(Socket::startup());
-    const socket_t unset;
+    const Socket unset;
     try {
         assert(!unset.accept([](int so, const struct sockaddr *peer) {
             // could return false if filtering...
