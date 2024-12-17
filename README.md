@@ -40,10 +40,10 @@ how to test for and enable these dependencies correctly from CMake.
 ## Distributions
 
 Distributions of this package are provided as detached source tarballs made
-from a tagged release from our internal source repository. These stand-alone
-detached tarballs can be used to make packages for many GNU/Linux systems, and
-for BSD ports. They may also be used to build and install the software directly
-on a target platform.
+from a tagged release from our public gitlab repository or by building the dist
+target. These stand-alone detached tarballs can be used to make packages for
+many GNU/Linux systems, and for BSD ports. They may also be used to build and
+install the software directly on a target platform.
 
 The latest public release source tarball can be produced by an auto-generated
 tarball from a tagged release in the projects public git repository at
@@ -57,10 +57,10 @@ for use on other distributions, for BSD ports, vcpkg, etc, as well.
 This project is offered as free (as in freedom) software for public use and has
 a public project page at https://www.gitlab.com/tychosoft/moderncli which has
 an issue tracker where you can submit public bug reports and a public git
-repository. Patches and merge requests may be submitted in the issue tracker or
-thru email. Support requests and other kinds of inquiries may also be sent thru
-the tychosoft gitlab help desktop service. Other details about participation
-may be found in the Contributing page.
+repository. Patches and merge requests may be submitted in the issue tracker
+or thru email. Support requests and other kinds of inquiries may also be sent
+thru the tychosoft gitlab help desktop service. Other details about
+participation may be found in CONTRIBUTING.md.
 
 ## Testing
 
