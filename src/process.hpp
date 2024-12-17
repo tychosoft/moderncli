@@ -7,6 +7,7 @@
 #include <fstream>
 #include <memory>
 #include <string_view>
+#include <thread>
 #include <string>
 #include <cstdlib>
 #include <cstring>
@@ -975,6 +976,8 @@ inline auto shell(const std::string& cmd) noexcept {
 } // end namespace
 
 namespace tycho::this_thread {
+using namespace std::this_thread;
+
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 inline auto priority(int priority) {
     switch(priority) {
@@ -1032,8 +1035,6 @@ inline auto priority(int priority) {
     sp.sched_priority = priority;
     return pthread_setschedparam(tid, policy, &sp) == 0;
 }
-
 #endif
 } // end namespace
-
 #endif

@@ -204,9 +204,12 @@ public:
         return true;
     }
 
-    auto dispatch(task_t task) {
+    auto dispatch(task_t task, size_t max = 0) {
         std::unique_lock lock(mutex_);
         if(!running_)
+            return false;
+
+        if(max && tasks_.size() >= max)
             return false;
 
         tasks_.push_back(std::move(task));
@@ -279,6 +282,11 @@ public:
         if(!running_)
             return true;
         return tasks_.empty();
+    }
+
+    auto size() const noexcept {
+        const std::lock_guard lock(mutex_);
+        return tasks_.size();
     }
 
 private:

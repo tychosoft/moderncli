@@ -24,17 +24,18 @@ later) that supports the C++ filesystem header and runtime library.
 ## Dependencies
 
 Moderncli and applications also often make use of the C++ library libfmt. This
-is preferred over the use of std::format because it is much smaller when used
-in multiple applications as a shared library, which std::format does not
-support, and it is better optimized. However if you do not use the Moderncli
-print.hpp header in your own applications you do not require libfmt either.
+allows C++17 (and C++20) applications to use modern string and print formatting
+operations like from C++23 and later. If you are building applications for
+C++20 or later, or you do not use the moderncli print header for output, you do
+not need to use or link with libfmt.
 
-Moderncli also uses openssl for crypto operations and any crypto related
-headers. Generally it should only require libcrypto from openssl, though future
-work on streaming may also use libssl for secure socket streams. In addition,
-C++ thread support may have to be enabled to use C++ thread operations. The
-cmake/features.cmake file shows how to test for and enable these dependencies
-correctly from CMake.
+Moderncli also uses openssl for crypto operations and ssl streams in any crypto
+namespace related headers. Generally, if your not using secure streams, but
+does use a moderncli crypto header (sign, cipher, digests, bignum, and random),
+you should do require libcrypto from openssl. If you use secure streaming you
+will also require openssl libssl. In addition, C++ thread support may have to
+be enabled to use C++ thread operations. The cmake/features.cmake file shows
+how to test for and enable these dependencies correctly from CMake.
 
 ## Distributions
 
@@ -44,24 +45,22 @@ detached tarballs can be used to make packages for many GNU/Linux systems, and
 for BSD ports. They may also be used to build and install the software directly
 on a target platform.
 
-The latest public release source tarball can be found at either
-https://www.tychosoft.com/tychosoft/-/packages/generic/moderncli or thru an
-auto-generated tarball from the projects public gitlab repository.
-
-I package this project primarily for Alpine Linux. There is no reason this
-cannot easily be packaged for use on other distributions, for BSD ports, etc,
-as well.
+The latest public release source tarball can be produced by an auto-generated
+tarball from a tagged release in the projects public git repository at
+https://gitlab.com/tychosoft/moderncli. Moderncli can also be easily vendored
+in other software using git modules from this public repo. I also package
+Moderncli for Alpine Linux. There is no reason this cannot easily be packaged
+for use on other distributions, for BSD ports, vcpkg, etc, as well.
 
 ## Participation
 
 This project is offered as free (as in freedom) software for public use and has
 a public project page at https://www.gitlab.com/tychosoft/moderncli which has
-an issue tracker where you can submit public bug reports, a wiki for hosting
-project documentation, and a public git repository. Patches and merge
-requests may be submitted in the issue tracker or thru email. Support requests
-and other kinds of inquiries may also be sent thru the tychosoft gitlab help
-desktop service. Other details about participation may be found in the
-Contributing page.
+an issue tracker where you can submit public bug reports and a public git
+repository. Patches and merge requests may be submitted in the issue tracker or
+thru email. Support requests and other kinds of inquiries may also be sent thru
+the tychosoft gitlab help desktop service. Other details about participation
+may be found in the Contributing page.
 
 ## Testing
 
