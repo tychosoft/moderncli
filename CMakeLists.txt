@@ -119,6 +119,9 @@ target_link_libraries(test_serial PRIVATE fmt::fmt)
 add_executable(test_monads test/monads.cpp src/monadic.hpp)
 add_test(NAME test-monads COMMAND test_monads)
 
+add_executable(test_slice test/slice.cpp src/slice.hpp)
+add_test(NAME test-slice COMMAND test_slice)
+
 add_executable(test_cpp20 test/cpp20.cpp)
 add_test(NAME test-cpp20 COMMAND test_cpp20)
 set_target_properties(test_cpp20 PROPERTIES CXX_STANDARD 20)

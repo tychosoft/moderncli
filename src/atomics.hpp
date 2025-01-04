@@ -8,7 +8,7 @@
 #include <optional>
 #include <type_traits>
 
-namespace atomics {
+namespace tycho::atomics {
 template<typename T = unsigned>
 class sequence_t final {
 public:
