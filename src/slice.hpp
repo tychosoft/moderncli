@@ -39,7 +39,7 @@ public:
         return empty();
     }
 
-    auto operator[](std::size_t index) -> T& {
+    auto operator[](size_type index) -> T& {
         if(index >= list.size()) {
             throw std::out_of_range("Index out of range");
         }
@@ -146,19 +146,25 @@ public:
         return list.erase(it);
     }
 
+    auto erase(iterator start, iterator end) {
+        return list.erase(start, end);
+    }
+
+    void erase(size_type start, size_type end) {
+        if (start >= list.size() || end > list.size() || start > end)
+            throw std::out_of_range("Invalid range");
+        auto it_start = list.begin();
+        auto it_end = list.begin();
+        std::advance(it_start, start);
+        std::advance(it_end, end);
+        list.erase(it_start, it_end);
+    }
+
     void clear() {
         list.clear();
     }
 
-    auto clone() const {
-        slice<T> cloned;
-        for (const auto& item : list) {
-            cloned->data.push_back(std::make_shared<T>(*item));
-        }
-        return cloned;
-    }
-
-    void resize(std::size_t count) {
+    void resize(size_type count) {
         list.resize(count);
     }
 
@@ -187,15 +193,39 @@ public:
         std::copy(other.list.begin(), other.list.end(), std::inserter(list, it));
     }
 
-    auto subslice(size_type start, size_type end) const {
-        if(start >= list.size() || end > list.size() || start > end)
+    auto clone(size_type start, size_type last) const {
+        if(start >= list.size() || last > list.size() || start > last)
             throw std::out_of_range("Invalid subslice range");
         slice<T>  result;
         auto it = list.begin();
         std::advance(it, start);
-        for (auto i = start; i < end; ++i) {
+        for (auto i = start; i < last; ++i) {
             result.add(**it++);
         }
+        return result;
+    }
+
+    auto clone(size_type start = 0) {
+        return clone(start, list.size());
+    }
+
+    auto subslice(size_type start, size_type last) const {
+        if(start >= list.size() || last > list.size() || start > last)
+            throw std::out_of_range("Invalid subslice range");
+        slice<T>  result;
+        auto it = list.begin();
+        std::advance(it, start);
+        for (auto i = start; i < last; ++i) {
+            result.list.push_back(*it++);
+        }
+        return result;
+    }
+
+    auto subslice(iterator start_it, iterator end_it) const {
+        if(std::distance(list.begin(), start_it) > std::distance(start_it, end_it) || std::distance(list.begin(), end_it) > list.size())
+            throw std::out_of_range("Invalid slice iterator range");
+        slice<T> result;
+        std::copy(start_it, end_it, std::back_inserter(result.list));
         return result;
     }
 
