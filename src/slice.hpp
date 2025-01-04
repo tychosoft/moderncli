@@ -41,12 +41,27 @@ public:
     }
 
     auto operator[](size_type index) -> T& {
-        if(index >= list.size()) {
+        if(index >= list.size())
             throw std::out_of_range("Index out of range");
-        }
         auto it = list.begin();
         std::advance(it, index);
         return **it;
+    }
+
+    auto operator[](size_type index) const -> T& {
+        if(index >= list.size())
+            throw std::out_of_range("Index out of range");
+        auto it = list.begin();
+        std::advance(it, index);
+        return **it;
+    }
+
+    auto operator()(size_type index) const {
+        return get(index);
+    }
+
+    auto operator()(size_type index, std::shared_ptr<T> ptr) {
+        set(index, ptr);
     }
 
     auto operator+=(const slice<T>& other) -> auto& {
@@ -62,6 +77,22 @@ public:
     auto operator<<(const T& item) -> auto& {
         append(item);
         return *this;
+    }
+
+    auto get(size_type index) {
+        if(index >= list.size())
+            throw std::out_of_range("Index out of range");
+        auto it = list.begin();
+        std::advance(it, index);
+        return *it;
+    }
+
+    auto set(size_type index, std::shared_ptr<T> ptr) {
+        if(index >= list.size())
+            throw std::out_of_range("Index out of range");
+        auto it = list.begin();
+        std::advance(it, index);
+        *it = ptr;
     }
 
     auto size() const {
@@ -129,6 +160,10 @@ public:
         list.push_back(std::make_shared<T>(item));
     }
 
+    void append(std::shared_ptr<T> ptr) {
+        list.push_back(ptr);
+    }
+
     void append(const slice<T>& other) {
         std::copy(other.list.begin(), other.list.end(), std::back_inserter(list));
     }
@@ -141,6 +176,10 @@ public:
 
     auto insert(iterator it, const T& value) {
         return list.insert(it, std::make_shared<T>(value));
+    }
+
+    auto insert(iterator it, std::shared_ptr<T> ptr) {
+        return list.insert(it, ptr);
     }
 
     auto erase(iterator it) {
