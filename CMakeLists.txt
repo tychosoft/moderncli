@@ -122,9 +122,11 @@ add_test(NAME test-monads COMMAND test_monads)
 add_executable(test_slice test/slice.cpp src/slice.hpp)
 add_test(NAME test-slice COMMAND test_slice)
 
+if(NOT MSVC)
 add_executable(test_cpp20 test/cpp20.cpp)
 add_test(NAME test-cpp20 COMMAND test_cpp20)
 set_target_properties(test_cpp20 PROPERTIES CXX_STANDARD 20)
+endif()
 
 # Extras...
 add_custom_target(header-files SOURCES ${headers})

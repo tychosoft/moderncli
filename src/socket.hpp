@@ -302,7 +302,7 @@ public:
         return {};
     }
 
-    auto put(struct sockaddr_storage& out) noexcept {
+    auto put(struct sockaddr_storage& out) const noexcept {
         // FlawFinder: ignore
         memcpy(&out, &store_, sizeof(store_));
     }
@@ -1381,7 +1381,7 @@ inline auto inet_any(const std::string& host, int any = AF_INET) {
 }
 
 inline auto inet_find(const std::string& host_id, const std::string& service = "", int family = AF_UNSPEC, int type = 0, int protocol = 0) {
-    auto host = host_id;
+    auto host(host_id);
     uint16_t port = 0;
     try {
         port = std::stoi(service);

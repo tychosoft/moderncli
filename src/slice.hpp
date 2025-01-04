@@ -9,6 +9,7 @@
 #include <iterator>
 #include <initializer_list>
 #include <algorithm>
+#include <stdexcept>
 
 namespace tycho {
 template<typename T>
