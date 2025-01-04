@@ -14,7 +14,7 @@ template<typename T>
 class maybe {
 public:
     maybe() : value(std::nullopt) {}
-    maybe(T val) : value(val) {}
+    explicit maybe(T val) : value(val) {}
 
     template<typename Func>
     auto bind(Func func) -> maybe<decltype(func(std::declval<T>()).value)> {
@@ -26,19 +26,19 @@ public:
         return value.has_value();
     }
 
-    bool operator!() const {
-        return value.has_value() == false;
+    auto operator!() const {
+        return !value.has_value();
     }
 
     auto operator*() const {
         return value.value();
     }
 
-    bool has_value() const {
+    auto has_value() const {
         return value.has_value();
     }
 
-    T get_value() const {
+    auto get_value() const {
         return value.value();
     }
 
@@ -47,12 +47,12 @@ private:
 };
 
 template<typename T>
-maybe<T> some(T value) {
+auto some(T value) {
     return maybe<T>(value);
 }
 
 template<typename T>
-maybe<T> none() {
+auto none() {
     return maybe<T>();
 }
 
@@ -69,31 +69,31 @@ auto map(maybe<std::optional<T>> maybe_val, Func func) -> maybe<std::optional<de
 }
 
 template<typename T, typename Predicate>
-maybe<T> filter(maybe<T> maybe_val, Predicate pred) {
+auto filter(maybe<T> maybe_val, Predicate pred) {
     if(maybe_val.has_value() && pred(maybe_val.get_value())) return maybe_val;
     return none<T>();
 }
 
 template<typename T, typename Predicate>
-maybe<std::optional<T>> filter(maybe<std::optional<T>> maybe_val, Predicate pred) {
+auto filter(maybe<std::optional<T>> maybe_val, Predicate pred) {
     if(maybe_val.has_value() && maybe_val.get_value().has_value() && pred(maybe_val.get_value().value())) return maybe_val;
     return none<std::optional<T>>();
 }
 
 template<typename T>
-T or_else(maybe<T> maybe_val, T default_value) {
+auto or_else(maybe<T> maybe_val, T default_value) {
     if(maybe_val.has_value()) return maybe_val.get_value();
     return default_value;
 }
 
 template<typename T>
-T or_else(maybe<std::optional<T>> maybe_val, T default_value) {
+auto or_else(maybe<std::optional<T>> maybe_val, T default_value) {
     if(maybe_val.has_value() && maybe_val.get_value().has_value()) return maybe_val.get_value().value();
     return default_value;
 }
 
 template<typename T>
-maybe<T> flatten(maybe<maybe<T>> maybe_val) {
+auto flatten(maybe<maybe<T>> maybe_val) {
     if(maybe_val.has_value()) return maybe_val.get_value();
     return none<T>();
 }
@@ -124,7 +124,7 @@ auto apply(maybe<Func> maybe_func, maybe<std::optional<T>> maybe_val) -> maybe<d
 }
 
 template<typename T, typename Func>
-auto traverse(std::vector<maybe<T>> maybe_vec, Func func) -> maybe<std::vector<decltype(func(std::declval<T>()).get_value())>> {
+auto traverse(const std::vector<maybe<T>>& maybe_vec, Func func) -> maybe<std::vector<decltype(func(std::declval<T>()).get_value())>> {
     std::vector<decltype(func(std::declval<T>()).get_value())> result;
     for(const auto& maybe_val : maybe_vec) {
         if(maybe_val.has_value())
@@ -136,7 +136,7 @@ auto traverse(std::vector<maybe<T>> maybe_vec, Func func) -> maybe<std::vector<d
 }
 
 template<typename T>
-maybe<std::vector<T>> sequence(std::vector<maybe<T>> maybe_vec) {
+auto  sequence(const std::vector<maybe<T>>& maybe_vec) {
     std::vector<T> result;
     for (const auto& maybe_val : maybe_vec) {
         if(maybe_val.has_value())
@@ -148,7 +148,7 @@ maybe<std::vector<T>> sequence(std::vector<maybe<T>> maybe_vec) {
 }
 
 template<typename T, typename Func, typename Acc>
-Acc fold(const std::vector<maybe<T>>& maybe_vec, Func func, Acc init) {
+auto fold(const std::vector<maybe<T>>& maybe_vec, Func func, Acc init) {
     Acc result = init;
     for(const auto& maybe_val : maybe_vec) {
         if(maybe_val.has_value())
