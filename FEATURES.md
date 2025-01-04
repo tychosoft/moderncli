@@ -70,6 +70,10 @@ changed data.
 Low level memory operations, allocator schemes, and byte array classes. This
 includes safe low level memory functions.
 
+## monadic.hpp
+
+Monadic operations and wrappers based on std::optional.
+
 ## output.hpp
 
 Older stream based output that pre-dates print. By not requiring format() it
@@ -105,6 +109,16 @@ modern posix and windows platforms.
 
 Public key signing and verification support using pem files and certificate
 objects.
+
+## slice.hpp
+
+A C++ version of slice, which is a container found in many other languages.
+This implimentation is distinct from arrays or vectors since we assume most
+uses have no need for distinction between a slice and a view of a slice, so we
+have slices of managed shared pointers stored in a list rather than separate
+slice and a slice\_view classes. This makes copying slices and subslices cheap
+since views are just copies of slices that point to the same item data. True
+(deep) copies are made instead by cloning.
 
 ## socket.hpp
 
