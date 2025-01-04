@@ -30,7 +30,7 @@ if(LINT_SOURCES)
         add_custom_target(cppcheck
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             USES_TERMINAL
-            COMMAND ${CPPCHECK_EXEC} -I${PROJECT_BINARY_DIR} ${cppcheckArgs} --force --std=c++${CMAKE_CXX_STANDARD} --quiet ${LINT_SOURCES}
+            COMMAND ${CPPCHECK_EXEC} -DLINT=1 -I${PROJECT_BINARY_DIR} ${cppcheckArgs} --force --std=c++${CMAKE_CXX_STANDARD} --quiet ${LINT_SOURCES}
         )
     endif()
 
@@ -43,7 +43,7 @@ if(LINT_SOURCES)
         add_custom_target(lint_tidy
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             USES_TERMINAL
-            COMMAND ${CLANG_TIDY_EXEC} ${LINT_SOURCES} -quiet -- -std=c++${CMAKE_CXX_STANDARD} -I${PROJECT_BINARY_DIR} ${TIDY_INCLUDES} ${tidyArgs}
+            COMMAND ${CLANG_TIDY_EXEC} ${LINT_SOURCES} -quiet -- -std=c++${CMAKE_CXX_STANDARD} -I${PROJECT_BINARY_DIR} -DLINT=1 ${TIDY_INCLUDES} ${tidyArgs}
         )
     endif()
 endif()
