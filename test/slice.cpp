@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "slice.hpp"
+#include <cstdlib>
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     try {
@@ -13,7 +14,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(ints[1] == 2);
     }
     catch(...) {
-        exit(-1);
+        ::exit(-1);
     }
 }
 

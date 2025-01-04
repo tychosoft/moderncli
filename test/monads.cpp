@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "monadic.hpp"
+#include <cstdlib>
 
 using namespace tycho::monadic;
 
@@ -62,7 +63,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(sum == 10);
     }
     catch(...) {
-        exit(-1);
+        ::exit(-1);
     }
 }
 

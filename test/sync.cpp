@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "sync.hpp"
+#include <cstdlib>
 
 struct test {
     int v1{2};
@@ -30,7 +31,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(tester->v1 == 2);
     }
     catch(...) {
-        exit(1);
+        ::exit(1);
     }
 }
 
