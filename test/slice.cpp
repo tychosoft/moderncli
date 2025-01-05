@@ -17,6 +17,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         auto ptr = ints(1);
         assert(*ptr == 7);
         assert(ptr.use_count() == 2);
+        ints.each([](int& value) {
+            return value += 1;
+        });
+        //assert(*ptr == 8);
     }
     catch(...) {
         ::exit(-1);

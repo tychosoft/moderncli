@@ -148,8 +148,8 @@ auto  sequence(const std::vector<maybe<T>>& maybe_vec) {
 }
 
 template<typename T, typename Func, typename Acc>
-auto fold(const std::vector<maybe<T>>& maybe_vec, Func func, Acc init) {
-    Acc result = init;
+auto fold(const std::vector<maybe<T>>& maybe_vec, Func func, Acc init = Acc{}) {
+    Acc result(init);
     for(const auto& maybe_val : maybe_vec) {
         if(maybe_val.has_value())
             result = func(result, maybe_val.get_value());

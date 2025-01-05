@@ -99,10 +99,29 @@ public:
     }
 
     template<typename Func>
-    auto each(Func func) const {
-        for(const auto ptr : list_) {
+    void each(Func func) const {
+        for(auto& ptr : list_)
             func(*ptr);
+    }
+
+    template<typename Predicate>
+    auto filter(Predicate pred) const {
+        slice<T> result;
+        for(auto& ptr : list_) {
+            if(pred(*ptr))
+               // cppcheck-suppress useStlAlgorithm
+               result.push_back(ptr);
         }
+        return result;
+    }
+
+    template<typename Func, typename Acc>
+    auto fold(Func func, Acc init = Acc{}) {
+        Acc result(init);
+        for(auto& ptr : list_) {
+            result = func(result, *ptr);
+        }
+        return result;
     }
 
     auto empty() const {
@@ -237,6 +256,16 @@ public:
         auto it = list_.begin();
         std::advance(it, pos);
         std::copy(other.list_.begin(), other.list_.end(), std::inserter(list_, it));
+    }
+
+    template<typename Predicate>
+    auto clone(Predicate pred) const {
+        slice<T> result;
+        for(const auto ptr : list_) {
+            if(pred(*ptr))
+               result.append(*ptr);
+        }
+        return result;
     }
 
     auto clone(size_type start, size_type last) const {
