@@ -285,17 +285,17 @@ public:
         return list_.erase(it);
     }
 
-    auto erase(iterator start, iterator end) {
-        return list_.erase(start, end);
+    auto erase(iterator start, iterator last) {
+        return list_.erase(start, last);
     }
 
-    void erase(size_type start, size_type end) {
-        if (start >= list_.size() || end > list_.size() || start > end)
+    void erase(size_type start, size_type last) {
+        if (start >= list_.size() || last > list_.size() || start > last)
             throw std::out_of_range("Invalid range");
         auto it_start = list_.begin();
         auto it_end = list_.begin();
         std::advance(it_start, start);
-        std::advance(it_end, end);
+        std::advance(it_end, last);
         list_.erase(it_start, it_end);
     }
 

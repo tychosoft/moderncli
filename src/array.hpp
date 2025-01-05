@@ -13,16 +13,24 @@ namespace tycho {
 template <typename T, std::size_t N, std::ptrdiff_t Offset = 0>
 class array : public std::array<T,N> {
 public:
+    using reference = T&;
+    using const_reference = const T&;
+    using size_type = typename std::array<T,N>::size_type;
+    using iterator = typename std::array<T,N>::iterator;
+    using const_iterator = typename std::array<T,N>::const_iterator;
+    using reverse_iterator = typename std::array<T,N>::reverse_iterator;
+    using const_reverse_iterator = typename std::array<T,N>::const_reverse_iterator;
+
     using std::array<T,N>::array;
     explicit array(const std::array<T,N>& from) : std::array<T, N>(from) {}
 
-    auto operator[](std::size_t index) -> T& {
+    auto operator[](size_type index) -> T& {
         if(index < Offset || index >= N + Offset)
             throw std::out_of_range("Index out of range");
         return std::array<T,N>::operator[](index - Offset);
     }
 
-    auto operator[](std::size_t index) const -> const T& {
+    auto operator[](size_type index) const -> const T& {
         if(index < Offset || index >= N + Offset)
             throw std::out_of_range("Index out of range");
         return std::array<T,N>::operator[](index - Offset);
@@ -32,6 +40,14 @@ public:
 template<typename T, std::ptrdiff_t Offset = 0>
 class vector : public std::vector<T> {
 public:
+    using reference = T&;
+    using const_reference = const T&;
+    using size_type = typename std::vector<T>::size_type;
+    using iterator = typename std::vector<T>::iterator;
+    using const_iterator = typename std::vector<T>::const_iterator;
+    using reverse_iterator = typename std::vector<T>::reverse_iterator;
+    using const_reverse_iterator = typename std::vector<T>::const_reverse_iterator;
+
     using std::vector<T>::vector;
     explicit vector(const std::vector<T>& vec) : std::vector<T>(vec) {}
     explicit vector(std::vector<T>&& vec) : std::vector<T>(std::move(vec)) {}
@@ -54,24 +70,24 @@ public:
         return this->empty();
     }
 
-    auto operator[](std::size_t index) -> T& {
+    auto operator[](size_type index) -> T& {
         if(index < Offset || index >= this->size() + Offset)
             throw std::out_of_range("Index out of range");
         return std::vector<T>::operator[](index - Offset);
     }
 
-    auto operator[](std::size_t index) const -> const T& {
+    auto operator[](size_type index) const -> const T& {
         if(index < Offset || index >= this->size() + Offset)
             throw std::out_of_range("Index out of range");
         return std::vector<T>::operator[](index - Offset);
     }
 
-    auto subvector(typename std::vector<T>::size_type start, typename std::vector<T>::size_type end) const {
+    auto subvector(size_type start, size_type last) const {
         start -= Offset;
-        end -= Offset;
-        if (start > this->size() || end > this->size() || start > end)
+        last -= Offset;
+        if (start > this->size() || last > this->size() || start > last)
             throw std::out_of_range("Invalid subvector range");
-        return vector(this->begin() + start, this->begin() + end);
+        return vector(this->begin() + start, this->begin() + last);
     }
 
     template <typename Func>
@@ -92,12 +108,12 @@ public:
         this->erase(std::remove_if(this->begin(), this->end(), pred), this->end());
     }
 
-    void remove(typename std::vector<T>::size_type start, typename std::vector<T>::size_type end) const {
+    void remove(size_type start, size_type last) const {
         start -= Offset;
-        end -= Offset;
-        if (start > this->size() || end > this->size() || start > end)
+        last -= Offset;
+        if (start > this->size() || last > this->size() || start > last)
             throw std::out_of_range("Invalid subvector range");
-        this->erase(this->begin() + start, this->begin() + end);
+        this->erase(this->begin() + start, this->begin() + last);
     }
 
     void remove(const T& value) {
