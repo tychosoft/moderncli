@@ -32,6 +32,16 @@ public:
         assign(init);
     }
 
+    template <typename Iterator>
+    slice(Iterator first, Iterator last) {
+        std::copy(first, last, std::back_inserter(*this));
+    }
+
+    template <typename Iterator, typename Predicate>
+    slice(Iterator first, Iterator last, Predicate pred) {
+        std::copy_if(first, last, std::back_inserter(*this), pred);
+    }
+
     operator bool() const {
         return !empty();
     }
@@ -83,6 +93,14 @@ public:
     auto operator<<(const T& item) -> auto& {
         append(item);
         return *this;
+    }
+
+    void push_back(const T& item) {
+        append(item);
+    }
+
+    void push_front(const T& item) {
+        prepend(item);
     }
 
     auto size() const {
@@ -184,6 +202,18 @@ public:
         }
     }
 
+    template <typename Iterator>
+    void assign(Iterator first, Iterator last) {
+        list_.clear();
+        std::copy(first, last, std::back_inserter(*this));
+    }
+
+    template <typename Iterator, typename Predicate>
+    void assign(Iterator first, Iterator last, Predicate pred) {
+        list_.clear();
+        std::copy_if(first, last, std::back_inserter(*this), pred);
+    }
+
     void append(const T& item) {
         list_.push_back(std::make_shared<T>(item));
     }
@@ -196,6 +226,16 @@ public:
         for(const auto& item : items) {
             append(item);
         }
+    }
+
+    template <typename Iterator>
+    void append(Iterator first, Iterator last) {
+        std::copy(first, last, std::back_inserter(*this));
+    }
+
+    template <typename Iterator, typename Predicate>
+    void append(Iterator first, Iterator last, Predicate pred) {
+        std::copy_if(first, last, std::back_inserter(*this), pred);
     }
 
     void prepend(const T& item) {
