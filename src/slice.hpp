@@ -29,9 +29,7 @@ public:
     explicit slice(const std::list<std::shared_ptr<T>>& from) : list_(from) {}
 
     slice(std::initializer_list<T> init) {
-        for(const auto& item : init) {
-            assign(item);
-        }
+        assign(init);
     }
 
     operator bool() const {
@@ -44,6 +42,11 @@ public:
 
     auto operator=(const std::list<std::shared_ptr<T>>& from) -> auto& {
         list_ = from;
+        return *this;
+    }
+
+    auto operator=(std::initializer_list<T> init) -> auto& {
+        assign(init);
         return *this;
     }
 
