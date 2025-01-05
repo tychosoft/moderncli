@@ -13,37 +13,37 @@ namespace tycho::monadic {
 template<typename T>
 class maybe {
 public:
-    maybe() : value(std::nullopt) {}
-    explicit maybe(T val) : value(val) {}
+    maybe() : value_(std::nullopt) {}
+    explicit maybe(T val) : value_(val) {}
 
     template<typename Func>
-    auto bind(Func func) -> maybe<decltype(func(std::declval<T>()).value)> {
-        if(value) return maybe<decltype(func(value.value()).value)>(func(value.value()).value);
-        return maybe<decltype(func(std::declval<T>()).value)>();
+    auto bind(Func func) -> maybe<decltype(func(std::declval<T>()).value_)> {
+        if(value_) return maybe<decltype(func(value_.value()).value_)>(func(value_.value()).value_);
+        return maybe<decltype(func(std::declval<T>()).value_)>();
     }
 
     operator bool() const {
-        return value.has_value();
+        return value_.has_value();
     }
 
     auto operator!() const {
-        return !value.has_value();
+        return !value_.has_value();
     }
 
     auto operator*() const {
-        return value.value();
+        return value_.value();
     }
 
     auto has_value() const {
-        return value.has_value();
+        return value_.has_value();
     }
 
     auto get_value() const {
-        return value.value();
+        return value_.value();
     }
 
 private:
-    std::optional<T> value;
+    std::optional<T> value_;
 };
 
 template<typename T>
