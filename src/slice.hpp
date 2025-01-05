@@ -17,6 +17,7 @@ class slice {
 public:
     using value_type = T;
     using size_type = std::size_t;
+    using pointer = typename std::shared_ptr<T>;
     using reference = T&;
     using const_reference = const T&;
     using iterator = typename std::list<std::shared_ptr<T>>::iterator;
@@ -46,12 +47,8 @@ public:
         return *this;
     }
 
-    auto operator[](size_type index) -> T& {
-        if(index >= list.size())
-            throw std::out_of_range("Index out of range");
-        auto it = list.begin();
-        std::advance(it, index);
-        return **it;
+    auto operator()(size_type index) const {
+        return at(index);
     }
 
     auto operator[](size_type index) const -> T& {
@@ -91,6 +88,14 @@ public:
 
     auto max_size() const {
         return list.max_size();
+    }
+
+    auto at(size_type index) const {
+        if(index >= list.size())
+            throw std::out_of_range("Index out of range");
+        auto it = list.begin();
+        std::advance(it, index);
+        return *it;
     }
 
     auto empty() const {

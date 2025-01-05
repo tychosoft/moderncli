@@ -12,6 +12,11 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         ints.assign({1, 2, 3});
         assert(ints.size() == 3);
         assert(ints[1] == 2);
+        ints[1] = 7;
+        assert(ints[1] == 7);
+        auto ptr = ints(1);
+        assert(*ptr == 7);
+        assert(ptr.use_count() == 2);
     }
     catch(...) {
         ::exit(-1);
