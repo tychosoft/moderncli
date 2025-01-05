@@ -25,6 +25,7 @@ public:
     using const_reverse_iterator = typename std::list<std::shared_ptr<T>>::const_reverse_iterator;
 
     slice() = default;
+    explicit slice(const std::list<std::shared_ptr<T>>& from) : list(from) {}
 
     slice(std::initializer_list<T> init) {
         for(const auto& item : init) {
@@ -38,6 +39,11 @@ public:
 
     auto operator!() const {
         return empty();
+    }
+
+    auto operator=(const std::list<std::shared_ptr<T>>& from) -> auto& {
+        list = from;
+        return *this;
     }
 
     auto operator[](size_type index) -> T& {
@@ -131,6 +137,10 @@ public:
     void assign(const slice<T>& other) {
         list.clear();
         std::copy(other.list.begin(), other.list.end(), std::back_inserter(list));
+    }
+
+    void assign(const std::list<std::shared_ptr<T>>& from) {
+        list = from;
     }
 
     void assign(std::initializer_list<T> items) {
