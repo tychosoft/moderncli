@@ -7,6 +7,7 @@
 #include "print.hpp"
 #include "secure.hpp"
 #include "socket.hpp"
+#include <cstdlib>
 
 namespace {
 const uint16_t port = 9789;

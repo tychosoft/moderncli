@@ -9,7 +9,7 @@
 # warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 cmake_minimum_required(VERSION 3.16.0)
-project(ModernCLI VERSION 0.9.9 LANGUAGES CXX)
+project(ModernCLI VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -116,9 +116,11 @@ add_executable(test_serial test/serial.cpp src/serial.hpp)
 add_test(NAME test-serial COMMAND test_serial)
 target_link_libraries(test_serial PRIVATE fmt::fmt)
 
+if(NOT MSVC)
 add_executable(test_cpp20 test/cpp20.cpp)
 add_test(NAME test-cpp20 COMMAND test_cpp20)
 set_target_properties(test_cpp20 PROPERTIES CXX_STANDARD 20)
+endif()
 
 # Extras...
 add_custom_target(header-files SOURCES ${headers})
