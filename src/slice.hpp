@@ -60,11 +60,23 @@ public:
         return *this;
     }
 
+    auto operator()(size_type index) {
+        return at(index);
+    }
+
     auto operator()(size_type index) const {
         return at(index);
     }
 
-    auto operator[](size_type index) const -> T& {
+    auto operator[](size_type index) -> T& {
+        if(index >= list_.size())
+            throw std::out_of_range("Index out of range");
+        auto it = list_.begin();
+        std::advance(it, index);
+        return **it;
+    }
+
+    auto operator[](size_type index) const -> const T& {
         if(index >= list_.size())
             throw std::out_of_range("Index out of range");
         auto it = list_.begin();
@@ -80,18 +92,29 @@ public:
         return list_;
     }
 
-    auto operator+=(const slice<T>& other) -> auto& {
-        append(other);
-        return *this;
-    }
-
-    auto operator+=(const T& item) -> auto& {
-        append(item);
-        return *this;
-    }
-
     auto operator<<(const T& item) -> auto& {
         append(item);
+        return *this;
+    }
+
+    auto operator<<(const slice<T>& other) -> auto& {
+        std::copy(other.list_.begin(), other.list_.end(), std::back_inserter(list_));
+        return *this;
+    }
+
+    auto operator<<(std::initializer_list<T> items) -> auto& {
+        for(const auto& item : items) {
+            append(item);
+        }
+    }
+
+    auto operator>>(const T& item) -> auto& {
+        prepend(item);
+        return *this;
+    }
+
+    auto operator>>(const slice<T>& other) -> auto& {
+        std::copy(other.list_.rbegin(), other.list_.rend(), std::front_inserter(list_));
         return *this;
     }
 
@@ -109,6 +132,14 @@ public:
 
     auto max_size() const {
         return list_.max_size();
+    }
+
+    auto at(size_type index) {
+        if(index >= list_.size())
+            throw std::out_of_range("Index out of range");
+        auto it = list_.begin();
+        std::advance(it, index);
+        return *it;
     }
 
     auto at(size_type index) const {

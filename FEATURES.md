@@ -11,6 +11,12 @@ An argument parsing library header for use in a C++ main().  It consists of
 statically configured command line parsing objects and a method to generate
 help text. Support for a kind of golang init() thru init\_t also introduced.
 
+## array.hpp
+
+Enhanced and interoperable tycho templates of std::array and std::vector with
+some additional methods, some methods found in C++20 and later for C++17, and
+offering an offset option.
+
 ## atomics.hpp
 
 Atomic types and lockfree data structures and features. This includes lockfree

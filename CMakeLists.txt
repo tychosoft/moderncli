@@ -122,6 +122,9 @@ add_test(NAME test-monads COMMAND test_monads)
 add_executable(test_slice test/slice.cpp src/slice.hpp)
 add_test(NAME test-slice COMMAND test_slice)
 
+add_executable(test_array test/array.cpp src/array.hpp)
+add_test(NAME test-array COMMAND test_array)
+
 if(NOT MSVC)
 add_executable(test_cpp20 test/cpp20.cpp)
 add_test(NAME test-cpp20 COMMAND test_cpp20)
