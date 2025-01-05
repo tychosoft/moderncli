@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Tycho Softworks.
+// Copyright (C) 2025 Tycho Softworks.
 // This code is licensed under MIT license.
 
 #undef  NDEBUG

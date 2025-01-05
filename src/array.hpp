@@ -1,8 +1,8 @@
 // Copyright (C) 2025 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#ifndef TYCHO_CONTAINERS_HPP_
-#define TYCHO_CONTAINERS_HPP_
+#ifndef TYCHO_ARRAY_HPP_
+#define TYCHO_ARRAY_HPP_
 
 #include <vector>
 #include <array>

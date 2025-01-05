@@ -125,6 +125,9 @@ add_test(NAME test-slice COMMAND test_slice)
 add_executable(test_array test/array.cpp src/array.hpp)
 add_test(NAME test-array COMMAND test_array)
 
+add_executable(test_list test/list.cpp src/list.hpp)
+add_test(NAME test-list COMMAND test_list)
+
 if(NOT MSVC)
 add_executable(test_cpp20 test/cpp20.cpp)
 add_test(NAME test-cpp20 COMMAND test_cpp20)

@@ -13,7 +13,7 @@ help text. Support for a kind of golang init() thru init\_t also introduced.
 
 ## array.hpp
 
-Enhanced and interoperable tycho templates of std::array and std::vector with
+Enhanced and interoperable derived templates of std::array and std::vector with
 some additional methods, some methods found in C++20 and later for C++17, and
 offering an offset option.
 
@@ -70,6 +70,12 @@ have key=value key pairs in each section.  It allows for an instantiation of a
 section as a collection of keys as well as iterating over named sections and
 key collections. It can also be used to modify and re-write the key file with
 changed data.
+
+## list.hpp
+
+Enhanced and interoperable derived templates of std::list based classes, such
+as stack, queue, and deque that has some additional methods, some methods found
+in C++20 and later for C++17.
 
 ## memory.hpp
 
