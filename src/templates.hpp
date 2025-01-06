@@ -114,6 +114,11 @@ public:
     explicit defer(F&& func) : action_(std::forward<F>(func)) {}
     ~defer() {if (action_) action_();}
 
+    defer(const defer&) = delete;
+    defer(defer&&) = delete;
+    auto operator=(const defer&) -> auto& = delete;
+    auto operator=(defer&&) -> auto& = delete;
+
 private:
     std::function<void()> action_;
 };

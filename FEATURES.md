@@ -112,6 +112,13 @@ effectively emulate on some targets.
 Generate random keys and data using openssl rand functions. Also has some
 utility functions like b64 support for binary data and to manipulate keys.
 
+## select.hpp
+
+Select is a kind of functional enumerated generic type that can do simple
+switch selection for generic types thru lambda expressions. A selection can
+even include multiple types, such as selecting from both integers and
+strings.
+
 ## serial.hpp
 
 Support serial I/O operations through a serial port or ptty device. Includes

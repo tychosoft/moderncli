@@ -128,6 +128,9 @@ add_test(NAME test-array COMMAND test_array)
 add_executable(test_list test/list.cpp src/list.hpp)
 add_test(NAME test-list COMMAND test_list)
 
+add_executable(test_select test/select.cpp src/select.hpp)
+add_test(NAME test-select COMMAND test_select)
+
 # FreeBSD (14 and earlier) clang c++20 library support seems incomplete...
 if(NOT (CMAKE_CXX_COMPILER_ID MATCHES "MSVC" OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD"))
 add_executable(test_cpp20 test/cpp20.cpp)

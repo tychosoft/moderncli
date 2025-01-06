@@ -6,7 +6,6 @@
 
 #include <string>
 #include <ostream>
-#include <functional>
 #include <cstring>
 #include <cstdint>
 
@@ -500,10 +499,11 @@ public:
             return data;
         }
 
-        auto visit(const std::function<bool(struct addrinfo*)>& visitor) {
+        template <typename Func>
+        auto each(Func func) const {
             auto list = list_;
             while(list) {
-                if(!visitor(list))
+                if(!func(list))
                     return false;
                 list = list->ai_next;
             }
@@ -1037,7 +1037,8 @@ public:
         return from;
     }
 
-    auto accept(const std::function<bool(int so, const struct sockaddr *)>& acceptor) const {
+    template <typename Func>
+    auto accept(Func acceptor) const {
         if(so_ == -1)
             return false;
 
