@@ -5,8 +5,8 @@
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "templates.hpp"
 #include "print.hpp"
-#include "secure.hpp"
 #include "socket.hpp"
+#include "stream.hpp"
 #include <cstdlib>
 
 namespace {

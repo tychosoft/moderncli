@@ -35,11 +35,6 @@ Basic date / time processing and formatting functions.
 
 Uses openssl libcrypto to generate hash digests.
 
-## eckey.hpp
-
-Creation and management of Eliptical Curve key pairs for both public and
-private keys.
-
 ## encoding.hpp
 
 Various common character encoding formats, starting with b64 and hex.
@@ -101,11 +96,6 @@ Support serial I/O operations through a serial port or ptty device. Includes
 support for line buffered and timed input. Serial support is provided for both
 modern posix and windows platforms.
 
-## sign.hpp
-
-Public key signing and verification support using pem files and certificate
-objects.
-
 ## socket.hpp
 
 Generic C++ socket library. This stand-alone header deals with low level socket
@@ -127,11 +117,6 @@ accepted socket from a listener. The header is purely stand-alone, though it
 often would also be used with socket.hpp for servers or useful utility
 functions. Being stand-alone it could be combined with other kinds of C++
 networking libraries easily without a lot of overlap.
-
-## secure.hpp
-
-Secure socket support (ssl) as C++ streams. This is based on the streams
-class, but, of course must be linked with libssl to use.
 
 ## strings.hpp
 
@@ -165,10 +150,6 @@ await does for asynchronous methods in C#.
 
 Some very generic, universal, miscellaneous templates and functions. This also
 is used to introduce new language-like "features" like init and defer.
-
-## x509.hpp
-
-Basic support for x509 certificate objects.
 
 ## linting
 

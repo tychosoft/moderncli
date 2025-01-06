@@ -1,7 +1,10 @@
 # Release Notes
 
+## v1.0.0
+- Some experimental headers removed (will be back in 1.1)
+
 ## v0.9.9
-- Update memory for bordeaux
+- Updated memory for bordeaux
 - Fix bind and make any addresses
 - Add expected host method to address
 - Deprecate old and unused functions
