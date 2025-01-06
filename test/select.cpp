@@ -14,15 +14,6 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         {2, []() { std::cout << "2 Case\n"; }}
     };
 
-    try {
-        assert(selector(1));
-        assert(selector("apple"));
-        assert(!selector(42));
-    }
-    catch(...) {
-        ::exit(-1);
-    }
-
     enum class selects : int {
         Five = 5,
         Six = 6,
@@ -35,6 +26,20 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         {6, selects::Six}
     };
 
-    assert(mapped("five") == selects::Five);
+    const select_any<int, std::string> anytypes {
+        {5, std::string("Five")},
+        {"five", 5}
+    };
+
+    try {
+        assert(selector(1));
+        assert(selector("apple"));
+        assert(!selector(42));
+        assert(mapped("five") == selects::Five);
+        assert(std::any_cast<std::string>(anytypes(5)) == "Five");
+    }
+    catch(...) {
+        ::exit(-1);
+    }
 }
 

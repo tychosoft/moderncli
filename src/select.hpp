@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <utility>
 #include <stdexcept>
+#include <any>
 
 namespace tycho {
 template <typename... Ts>
@@ -67,6 +68,30 @@ public:
 private:
     static_assert(std::is_enum_v<Enum>, "Enum must be an enumerated type");
     std::unordered_map<variant_type, Enum> cases_;
+};
+
+template <typename... Ts>
+class select_any {
+public:
+    using variant_type = std::variant<Ts...>;
+    select_any(const select_any&) = delete;
+    auto operator=(const select_any&) -> auto& = delete;
+
+    select_any(std::initializer_list<std::pair<variant_type, std::any>> list) {
+        for (const auto& item : list) {
+            cases_[item.first] = item.second;
+        }
+    }
+
+    auto operator()(const variant_type& value) const {
+        auto it = cases_.find(value);
+        if (it != cases_.end())
+            return it->second;
+        throw std::out_of_range("Selection not mapped to an any");
+    }
+
+private:
+    std::unordered_map<variant_type, std::any> cases_;
 };
 } // end namespace
 #endif
