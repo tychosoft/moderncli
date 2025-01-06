@@ -260,8 +260,7 @@ public:
 
     struct node_t final {
         T data;
-        node_t* next;
-
+        node_t* next{nullptr};
         explicit node_t(const T& value) : data(value), next(nullptr) {}
     };
 
@@ -327,7 +326,20 @@ public:
         auto node = new node_t(value);
         node->next = head_;
         head_ = node;
-        size_++;
+        ++size_;
+        if(!tail_)
+            tail_ = head_;
+    }
+
+    void push_back(const T& value) {
+        if(head_ == nullptr)
+            push_front(value);
+        else {
+            auto node = new node_t(value);
+            tail_->next = node;
+            tail_ = node;
+            ++size_;
+        }
     }
 
     auto push(const T& value) {
@@ -340,6 +352,12 @@ public:
         throw std::runtime_error("List is empty");
     }
 
+    auto back() -> auto& {
+        if(tail_ != nullptr)
+            return tail_->data;
+        throw std::runtime_error("List is empty");
+    }
+
     auto pop() {
         if(head_ == nullptr)
             throw std::runtime_error("List is empty");
@@ -349,6 +367,8 @@ public:
         delete head_;
         head_ = next;
         --size_;
+        if(!head_)
+            tail_ = nullptr;
         return copy;
     }
 
@@ -369,7 +389,7 @@ public:
             delete current;
             current = next;
         }
-        head_ = nullptr;
+        head_ = tail_ = nullptr;
         size_ = 0;
     }
 
@@ -390,11 +410,25 @@ public:
     }
 
     template <typename... Args>
-    void emplace(Args&&... args) {
+    void emplace_front(Args&&... args) {
         auto node = new node_t(T(std::forward<Args>(args)...));
         node->next = head_;
         head_ = node;
-        size_++;
+        if(!tail_)
+            tail_ = node;
+        ++size_;
+    }
+
+    template <typename... Args>
+    void emplace_back(Args&&... args) {
+        auto node = new node_t(T(std::forward<Args>(args)...));
+        if(tail_) {
+            tail_->next = node;
+            tail_ = node;
+        }
+        else
+            head_ = tail_ = node;
+        ++size_;
     }
 
     template <typename Func>
@@ -411,7 +445,7 @@ public:
     }
 
 private:
-    node_t* head_{nullptr};
+    node_t* head_{nullptr}, tail_{nullptr};
     size_type size_{0};
 };
 } // end namespace
