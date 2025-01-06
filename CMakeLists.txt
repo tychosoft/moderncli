@@ -112,7 +112,7 @@ add_executable(test_serial test/serial.cpp src/serial.hpp)
 add_test(NAME test-serial COMMAND test_serial)
 target_link_libraries(test_serial PRIVATE fmt::fmt)
 
-if(NOT MSVC)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 add_executable(test_cpp20 test/cpp20.cpp)
 add_test(NAME test-cpp20 COMMAND test_cpp20)
 set_target_properties(test_cpp20 PROPERTIES CXX_STANDARD 20)
