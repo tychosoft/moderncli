@@ -41,7 +41,7 @@ public:
     }
 
     constexpr auto max() const {
-        return Offset + N - 1;
+        return size_type(Offset + N - 1);
     }
 };
 
@@ -95,6 +95,8 @@ public:
     }
 
     auto max() const {
+        if(this->empty())
+            throw std::out_of_range("Vector is empty");
         return Offset + this->size() - 1;
     }
 

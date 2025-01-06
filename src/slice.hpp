@@ -118,6 +118,16 @@ public:
         return *this;
     }
 
+    constexpr auto min() const {
+        return size_type(0);
+    }
+
+    auto max() const {
+        if(this->empty())
+            throw std::out_of_range("Slice is empty");
+        return size_type(size() - 1);
+    }
+
     void push_back(const T& item) {
         append(item);
     }
