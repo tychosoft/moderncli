@@ -118,16 +118,6 @@ public:
         return *this;
     }
 
-    constexpr auto min() const {
-        return size_type(0);
-    }
-
-    auto max() const {
-        if(this->empty())
-            throw std::out_of_range("Slice is empty");
-        return size_type(size() - 1);
-    }
-
     void push_back(const T& item) {
         append(item);
     }
@@ -162,15 +152,17 @@ public:
 
     template<typename Func>
     void each(Func func) const {
-        for(auto& ptr : list_)
-            func(*ptr);
+        for(auto& ptr : list_) {
+            if(bool(ptr))
+                func(*ptr);
+        }
     }
 
     template<typename Predicate>
     auto filter(Predicate pred) const {
         slice<T> result;
         for(auto& ptr : list_) {
-            if(pred(*ptr))
+            if(bool(ptr) && pred(*ptr))
                // cppcheck-suppress useStlAlgorithm
                result.push_back(ptr);
         }
@@ -181,7 +173,8 @@ public:
     auto fold(Func func, Acc init = Acc{}) {
         Acc result(init);
         for(auto& ptr : list_) {
-            result = func(result, *ptr);
+            if(bool(ptr))
+                result = func(result, *ptr);
         }
         return result;
     }

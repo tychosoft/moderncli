@@ -24,8 +24,6 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(even.empty());   // NOLINT
         assert(move.size() == 2);
         assert(move[0] == 2);
-        tycho::vector<int, 10> offset(move);
-        assert(offset[10] == 2);
     }
     catch(...) {
         ::exit(-1);

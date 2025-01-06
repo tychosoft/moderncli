@@ -45,7 +45,7 @@ public:
     }
 };
 
-template<typename T, std::ptrdiff_t Offset = 0>
+template<typename T>
 class vector : public std::vector<T> {
 public:
     using reference = T&;
@@ -79,30 +79,18 @@ public:
     }
 
     auto operator[](size_type index) -> T& {
-        if(index < Offset || index >= this->size() + Offset)
+        if(index >= this->size())
             throw std::out_of_range("Index out of range");
-        return std::vector<T>::operator[](index - Offset);
+        return std::vector<T>::operator[](index);
     }
 
     auto operator[](size_type index) const -> const T& {
-        if(index < Offset || index >= this->size() + Offset)
+        if(index >= this->size())
             throw std::out_of_range("Index out of range");
-        return std::vector<T>::operator[](index - Offset);
-    }
-
-    constexpr auto min() const {
-        return Offset;
-    }
-
-    auto max() const {
-        if(this->empty())
-            throw std::out_of_range("Vector is empty");
-        return Offset + this->size() - 1;
+        return std::vector<T>::operator[](index);
     }
 
     auto subvector(size_type start, size_type last) const {
-        start -= Offset;
-        last -= Offset;
         if (start > this->size() || last > this->size() || start > last)
             throw std::out_of_range("Invalid subvector range");
         return vector(this->begin() + start, this->begin() + last);
@@ -116,7 +104,7 @@ public:
 
     template <typename Predicate>
     auto filter(Predicate pred) const {
-        vector<T,Offset> result;
+        vector<T> result;
         std::copy_if(this->begin(), this->end(), std::back_inserter(result), pred);
         return result;
     }
@@ -127,8 +115,6 @@ public:
     }
 
     void remove(size_type start, size_type last) const {
-        start -= Offset;
-        last -= Offset;
         if (start > this->size() || last > this->size() || start > last)
             throw std::out_of_range("Invalid subvector range");
         this->erase(this->begin() + start, this->begin() + last);
