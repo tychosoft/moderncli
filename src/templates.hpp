@@ -110,15 +110,12 @@ private:
 
 class defer final {
 public:
-    defer() = delete;
-    defer(const defer&) = delete;
-    auto operator=(const defer&) = delete;
-
-    explicit defer(const std::function<void()>& func) : action_(func) {}
-    ~defer() {action_();}
+    template <typename F>
+    explicit defer(F&& func) : action_(std::forward<F>(func)) {}
+    ~defer() {if (action_) action_();}
 
 private:
-    const std::function<void()> action_;
+    std::function<void()> action_;
 };
 
 // some commonly forwarded classes...
