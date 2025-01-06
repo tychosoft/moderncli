@@ -324,10 +324,10 @@ public:
     }
 
     void push_front(const T& value) {
-        auto newNode = new node_t(value);
-        newNode->next = head_;
-        head_ = newNode;
-        ++size_;
+        auto node = new node_t(value);
+        node->next = head_;
+        head_ = node;
+        size_++;
     }
 
     auto push(const T& value) {
@@ -387,6 +387,14 @@ public:
 
     auto end() const {
         return const_iterator(nullptr);
+    }
+
+    template <typename... Args>
+    void emplace(Args&&... args) {
+        auto node = new node_t(T(std::forward<Args>(args)...));
+        node->next = head_;
+        head_ = node;
+        size_++;
     }
 
     template <typename Func>
