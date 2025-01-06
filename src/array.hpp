@@ -35,6 +35,14 @@ public:
             throw std::out_of_range("Index out of range");
         return std::array<T,N>::operator[](index - Offset);
     }
+
+    constexpr auto min() const {
+        return Offset;
+    }
+
+    constexpr auto max() const {
+        return Offset + N - 1;
+    }
 };
 
 template<typename T, std::ptrdiff_t Offset = 0>
@@ -80,6 +88,14 @@ public:
         if(index < Offset || index >= this->size() + Offset)
             throw std::out_of_range("Index out of range");
         return std::vector<T>::operator[](index - Offset);
+    }
+
+    constexpr auto min() const {
+        return Offset;
+    }
+
+    auto max() const {
+        return Offset + this->size() - 1;
     }
 
     auto subvector(size_type start, size_type last) const {
