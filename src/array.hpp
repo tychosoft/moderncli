@@ -43,6 +43,10 @@ public:
     constexpr auto max() const {
         return size_type(Offset + N - 1);
     }
+
+    auto contains(const T& value) const {
+        return std::find(this->begin(), this->end(), value) != this->end();
+    }
 };
 
 template<typename T>
@@ -78,16 +82,8 @@ public:
         return this->empty();
     }
 
-    auto operator[](size_type index) -> T& {
-        if(index >= this->size())
-            throw std::out_of_range("Index out of range");
-        return std::vector<T>::operator[](index);
-    }
-
-    auto operator[](size_type index) const -> const T& {
-        if(index >= this->size())
-            throw std::out_of_range("Index out of range");
-        return std::vector<T>::operator[](index);
+    auto contains(const T& value) const {
+        return std::find(this->begin(), this->end(), value) != this->end();
     }
 
     auto subvector(size_type start, size_type last) const {

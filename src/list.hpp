@@ -70,6 +70,10 @@ public:
         return result;
     }
 
+    auto contains(const T& value) const {
+        return std::find(this->begin(), this->end(), value) != this->end();
+    }
+
     auto sublist(size_type start, size_type last) const {
         if(start >= this->size() || last > this->size() || start > last)
             throw std::out_of_range("Invalid sublist range");
@@ -119,6 +123,10 @@ public:
 
     auto operator!() const {
         return this->empty();
+    }
+
+    auto contains(const T& value) const {
+        return std::find(this->begin(), this->end(), value) != this->end();
     }
 
     template <typename Pred>
@@ -172,6 +180,10 @@ public:
         return this->empty();
     }
 
+    auto contains(const T& value) const {
+        return std::find(this->begin(), this->end(), value) != this->end();
+    }
+
     template <typename Pred>
     void pop_if(Pred pred) {
         while(pred(this->front()))
@@ -223,6 +235,10 @@ public:
 
     auto operator!() const {
         return this->empty();
+    }
+
+    auto contains(const T& value) const {
+        return std::find(this->begin(), this->end(), value) != this->end();
     }
 
     template <typename Pred>
@@ -407,6 +423,10 @@ public:
 
     auto end() const {
         return const_iterator(nullptr);
+    }
+
+    auto contains(const T& value) const {
+        return std::find(begin(), end(), value) != end();
     }
 
     template <typename... Args>

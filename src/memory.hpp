@@ -180,6 +180,10 @@ public:
         return get() + size_;
     }
 
+    auto contains(const T& value) const {
+        return std::find(begin(), end(), value) != end();
+    }
+
     auto subarray(size_type start, size_t last) {
         if (start > this->size() || last > this->size() || start > last)
             throw std::out_of_range("Invalid subarray range");

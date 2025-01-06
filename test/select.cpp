@@ -20,18 +20,18 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         Seven = 7
     };
 
-    const select_enum<selects, int, std::string> mapped {
-        {5, selects::Five},
-        {"five", selects::Five},
-        {6, selects::Six}
-    };
-
-    const select_any<int, std::string> anytypes {
-        {5, std::string("Five")},
-        {"five", 5}
-    };
-
     try {
+        const select_enum<selects, int, std::string> mapped {
+            {5, selects::Five},
+            {"five", selects::Five},
+            {6, selects::Six}
+        };
+
+        const select_any<int, std::string> anytypes {
+            {5, std::string("Five")},
+            {"five", 5}
+        };
+
         assert(selector(1));
         assert(selector("apple"));
         assert(!selector(42));

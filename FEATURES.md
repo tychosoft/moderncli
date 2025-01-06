@@ -78,6 +78,11 @@ as stack, queue, and deque that has some additional methods, some methods found
 in C++20 and later for C++17. An optimized single linked list / stack class is
 also included.
 
+## map.hpp
+
+Enhanced and interoperable derived templates of std map and dictionary classes.
+This may add special operations and features from C++20 or later.
+
 ## memory.hpp
 
 Low level memory operations, allocator schemes, and byte array classes. This
