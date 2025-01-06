@@ -187,11 +187,10 @@ public:
     template <typename Predicate>
     auto filter(Predicate pred) const {
         stack<T> result;
-        std::copy_if(this->begin(), this->end(), std::back_inserter(result), pred);
+        std::copy_if(this->begin(), this->end(), std::front_inserter(result), pred);
         return result;
     }
 };
-
 
 template<typename T>
 class deque : public std::deque<T> {
@@ -250,6 +249,162 @@ public:
         std::copy_if(this->begin(), this->end(), std::back_inserter(result), pred);
         return result;
     }
+};
+
+template <typename T>
+class slist {
+public:
+    using reference = T&;
+    using const_reference = const T&;
+    using size_type = std::size_t;
+
+    struct node_t final {
+        T data;
+        node_t* next;
+
+        explicit node_t(const T& value) : data(value), next(nullptr) {}
+    };
+
+    class iterator {
+    public:
+        explicit iterator(node_t* node) : current_(node) {}
+
+        auto operator*() -> auto& {
+            return current_->data;
+        }
+
+        auto operator++() -> auto& {
+            if(current_)
+                current_ = current_->next;
+            return *this;
+        }
+
+        auto operator!=(const iterator& other) const {
+            return current_ != other.current_;
+        }
+
+    private:
+        node_t* current_{nullptr};
+    };
+
+    class const_iterator {
+    public:
+        explicit const_iterator(const node_t* node) : current_(node) {}
+
+        auto operator*() const -> auto& {
+            return current_->data;
+        }
+
+        auto operator++() -> auto& {
+            if(current_)
+                current_ = current_->next;
+            return *this;
+        }
+
+        auto operator!=(const const_iterator& other) const {
+            return current_ != other.current_;
+        }
+
+    private:
+        const node_t* current_{nullptr};
+    };
+
+    slist() = default;
+
+    ~slist() {
+        clear();
+    }
+
+    operator bool() {
+        return !empty();
+    }
+
+    auto operator!() {
+        return empty();
+    }
+
+    void push_front(const T& value) {
+        auto newNode = new node_t(value);
+        newNode->next = head_;
+        head_ = newNode;
+        ++size_;
+    }
+
+    auto push(const T& value) {
+        push_front(value);
+    }
+
+    auto front() -> auto& {
+        if(head_ != nullptr)
+            return head_->data;
+        throw std::runtime_error("List is empty");
+    }
+
+    auto pop() {
+        if(head_ == nullptr)
+            throw std::runtime_error("List is empty");
+
+        auto copy = head_->data;
+        auto next = head_->next;
+        delete head_;
+        head_ = next;
+        --size_;
+        return copy;
+    }
+
+    auto empty() const {
+        return head_ == nullptr;
+    }
+
+    auto size() const {
+        return size_;
+    }
+
+    void clear() {
+        node_t* current = head_;
+        node_t* next = nullptr;
+
+        while(current != nullptr) {
+            next = current->next;
+            delete current;
+            current = next;
+        }
+        head_ = nullptr;
+        size_ = 0;
+    }
+
+    auto begin() {
+        return iterator(head_);
+    }
+
+    auto end() {
+        return iterator(nullptr);
+    }
+
+    auto begin() const {
+        return const_iterator(head_);
+    }
+
+    auto end() const {
+        return const_iterator(nullptr);
+    }
+
+    template <typename Func>
+    void each(Func func) {
+        for(auto& element : *this)
+            func(element);
+    }
+
+    template <typename Predicate>
+    auto filter(Predicate pred) const {
+        queue<T> result;
+        std::copy_if(this->begin(), this->end(), std::front_inserter(result), pred);
+        return result;
+    }
+
+private:
+    node_t* head_{nullptr};
+    size_type size_{0};
 };
 } // end namespace
 #endif

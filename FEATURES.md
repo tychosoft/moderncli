@@ -75,7 +75,8 @@ changed data.
 
 Enhanced and interoperable derived templates of std::list based classes, such
 as stack, queue, and deque that has some additional methods, some methods found
-in C++20 and later for C++17.
+in C++20 and later for C++17. An optimized single linked list / stack class is
+also included.
 
 ## memory.hpp
 
