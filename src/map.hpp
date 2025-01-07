@@ -12,7 +12,7 @@
 
 namespace tycho {
 template<typename K, typename T>
-class sort_map : public std::map<K,T> {
+class sorted_map : public std::map<K,T> {
 public:
     using reference = T&;
     using const_reference = const T&;
@@ -22,8 +22,8 @@ public:
     using const_iterator = typename std::map<K,T>::const_iterator;
 
     using std::map<K,T>::map;
-    explicit sort_map(const std::map<K,T>& from) : std::map<K,T>(from) {}
-    explicit sort_map(std::map<K,T>&& from) : std::map<K,T>(std::move(from)) {}
+    explicit sorted_map(const std::map<K,T>& from) : std::map<K,T>(from) {}
+    explicit sorted_map(std::map<K,T>&& from) : std::map<K,T>(std::move(from)) {}
 
     operator bool() const {
         return !this->empty();
@@ -49,7 +49,7 @@ public:
 
     template <typename Pred>
     auto filter(Pred pred) const {
-        sort_map<K,T> result;
+        sorted_map<K,T> result;
         for(auto& pair : *this) {
             if(pred(pair))
                 result[pair.first] = pair.second;
@@ -65,7 +65,7 @@ public:
 };
 
 template<typename K, typename T>
-class hash_map : public std::unordered_map<K,T> {
+class keyed_map : public std::unordered_map<K,T> {
 public:
     using reference = T&;
     using const_reference = const T&;
@@ -75,8 +75,8 @@ public:
     using const_iterator = typename std::unordered_map<K,T>::const_iterator;
 
     using std::unordered_map<K,T>::unordered_map;
-    explicit hash_map(const std::unordered_map<K,T>& from) : std::unordered_map<K,T>(from) {}
-    explicit hash_map(std::unordered_map<K,T>&& from) : std::unordered_map<K,T>(std::move(from)) {}
+    explicit keyed_map(const std::unordered_map<K,T>& from) : std::unordered_map<K,T>(from) {}
+    explicit keyed_map(std::unordered_map<K,T>&& from) : std::unordered_map<K,T>(std::move(from)) {}
 
     operator bool() const {
         return !this->empty();
@@ -108,7 +108,7 @@ public:
 
     template <typename Pred>
     auto filter(Pred pred) const {
-        hash_map<K,T> result;
+        keyed_map<K,T> result;
         for(auto& pair : *this) {
             if(pred(pair))
                 result[pair.first] = pair.second;

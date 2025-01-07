@@ -9,27 +9,21 @@
 #include <functional>
 #include <unordered_map>
 #include <utility>
-#include <stdexcept>
-#include <any>
 
 namespace tycho {
 template <typename... Ts>
 class select_when {
 public:
     using variant_type = std::variant<Ts...>;
+    using action_type = void(*)();
+
     select_when(const select_when&) = delete;
     auto operator=(const select_when&) -> auto& = delete;
 
-    select_when(std::initializer_list<std::pair<variant_type, std::function<void()>>> list) {
+    select_when(std::initializer_list<std::pair<variant_type,action_type>> list) {
         for (const auto& item : list) {
             cases_[item.first] = item.second;
         }
-    }
-
-    template <typename F>
-    auto when(const variant_type& value, F&& func) -> auto& {
-        cases_[value] = std::forward<F>(func);
-        return *this;
     }
 
     auto operator()(const variant_type& value) const {
@@ -42,56 +36,31 @@ public:
     }
 
 private:
-    std::unordered_map<variant_type, std::function<void()>> cases_;
+    std::unordered_map<variant_type,action_type> cases_;
 };
 
-template <typename Enum, typename... Ts>
-class select_enum {
+template <typename T, typename... Ts>
+class select_type {
 public:
     using variant_type = std::variant<Ts...>;
-    select_enum(const select_enum&) = delete;
-    auto operator=(const select_enum&) -> auto& = delete;
+    select_type(const select_type&) = delete;
+    auto operator=(const select_type&) -> auto& = delete;
 
-    select_enum(std::initializer_list<std::pair<variant_type, Enum>> list) {
+    select_type(std::initializer_list<std::pair<variant_type,T>> list) {
         for (const auto& item : list) {
             cases_[item.first] = item.second;
         }
     }
 
-    auto operator()(const variant_type& value) const {
+    auto operator()(const variant_type& value, const T& or_value = T{}) const {
         auto it = cases_.find(value);
         if (it != cases_.end())
             return it->second;
-        throw std::out_of_range("Selection not mapped to an enum");
+        return or_value;
     }
 
 private:
-    static_assert(std::is_enum_v<Enum>, "Enum must be an enumerated type");
-    std::unordered_map<variant_type, Enum> cases_;
-};
-
-template <typename... Ts>
-class select_any {
-public:
-    using variant_type = std::variant<Ts...>;
-    select_any(const select_any&) = delete;
-    auto operator=(const select_any&) -> auto& = delete;
-
-    select_any(std::initializer_list<std::pair<variant_type, std::any>> list) {
-        for (const auto& item : list) {
-            cases_[item.first] = item.second;
-        }
-    }
-
-    auto operator()(const variant_type& value) const {
-        auto it = cases_.find(value);
-        if (it != cases_.end())
-            return it->second;
-        throw std::out_of_range("Selection not mapped to an any");
-    }
-
-private:
-    std::unordered_map<variant_type, std::any> cases_;
+    std::unordered_map<variant_type,T> cases_;
 };
 } // end namespace
 #endif

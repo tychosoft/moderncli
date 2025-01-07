@@ -8,7 +8,7 @@
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     try {
-        const tycho::hash_map<int,int> pairs{
+        const tycho::keyed_map<int,int> pairs{
             {1, 10},
             {2, 20}
         };
