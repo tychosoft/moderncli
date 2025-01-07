@@ -119,17 +119,11 @@ target_link_libraries(test_serial PRIVATE fmt::fmt)
 add_executable(test_monads test/monads.cpp src/monadic.hpp)
 add_test(NAME test-monads COMMAND test_monads)
 
-add_executable(test_slice test/slice.cpp src/slice.hpp)
-add_test(NAME test-slice COMMAND test_slice)
-
 add_executable(test_array test/array.cpp src/array.hpp)
 add_test(NAME test-array COMMAND test_array)
 
 add_executable(test_list test/list.cpp src/list.hpp)
 add_test(NAME test-list COMMAND test_list)
-
-add_executable(test_map test/map.cpp src/map.hpp)
-add_test(NAME test-map COMMAND test_map)
 
 add_executable(test_select test/select.cpp src/select.hpp)
 add_test(NAME test-select COMMAND test_select)

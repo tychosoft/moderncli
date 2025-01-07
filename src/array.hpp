@@ -50,7 +50,7 @@ public:
 };
 
 template<typename T>
-class vector : public std::vector<T> {
+class slice : public std::vector<T> {
 public:
     using reference = T&;
     using const_reference = const T&;
@@ -61,16 +61,16 @@ public:
     using const_reverse_iterator = typename std::vector<T>::const_reverse_iterator;
 
     using std::vector<T>::vector;
-    explicit vector(const std::vector<T>& vec) : std::vector<T>(vec) {}
-    explicit vector(std::vector<T>&& vec) : std::vector<T>(std::move(vec)) {}
+    explicit slice(const std::vector<T>& vec) : std::vector<T>(vec) {}
+    explicit slice(std::vector<T>&& vec) : std::vector<T>(std::move(vec)) {}
 
     template <typename Iterator>
-    vector(Iterator first, Iterator last) {
+    slice(Iterator first, Iterator last) {
         std::copy(first, last, std::back_inserter(*this));
     }
 
     template <typename Iterator, typename Predicate>
-    vector(Iterator first, Iterator last, Predicate pred) {
+    slice(Iterator first, Iterator last, Predicate pred) {
         std::copy_if(first, last, std::back_inserter(*this), pred);
     }
 
@@ -82,14 +82,18 @@ public:
         return this->empty();
     }
 
+    auto find(const T& value) const {
+        return std::find(this->begin(), this->end(), value);
+    }
+
     auto contains(const T& value) const {
         return std::find(this->begin(), this->end(), value) != this->end();
     }
 
-    auto subvector(size_type start, size_type last) const {
+    auto subslice(size_type start, size_type last) const {
         if (start > this->size() || last > this->size() || start > last)
-            throw std::out_of_range("Invalid subvector range");
-        return vector(this->begin() + start, this->begin() + last);
+            throw std::out_of_range("Invalid subslice range");
+        return slice(this->begin() + start, this->begin() + last);
     }
 
     template <typename Func>
@@ -98,21 +102,36 @@ public:
             func(element);
     }
 
-    template <typename Predicate>
-    auto filter(Predicate pred) const {
-        vector<T> result;
+    template <typename Pred>
+    auto filter_if(Pred pred) const {
+        slice<T> result;
         std::copy_if(this->begin(), this->end(), std::back_inserter(result), pred);
         return result;
     }
 
-    template <typename Predicate>
-    void remove_if(Predicate pred) const {
+    template <typename Pred>
+    auto extract_if(Pred pred) const {
+        slice<T> result;
+        auto it = this->begin();
+        while(it != this->end()) {
+            if(pred(*it)) {
+                result.push_back(*it);
+                it = this->erase(it);
+            }
+            else
+                ++it;
+        }
+        return result;
+    }
+
+    template <typename Pred>
+    void remove_if(Pred pred) const {
         this->erase(std::remove_if(this->begin(), this->end(), pred), this->end());
     }
 
     void remove(size_type start, size_type last) const {
         if (start > this->size() || last > this->size() || start > last)
-            throw std::out_of_range("Invalid subvector range");
+            throw std::out_of_range("Invalid subslice range");
         this->erase(this->begin() + start, this->begin() + last);
     }
 

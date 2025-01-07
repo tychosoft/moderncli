@@ -13,9 +13,8 @@ help text. Support for a kind of golang init() thru init\_t also introduced.
 
 ## array.hpp
 
-Enhanced and interoperable derived templates of std::array and std::vector with
-some additional methods, some methods found in C++20 and later for C++17, and
-offering an offset option.
+Specialized array class with offset. This also includes an enhanced vector
+class that acts more like what slice does in other languages.
 
 ## atomics.hpp
 
@@ -73,15 +72,7 @@ changed data.
 
 ## list.hpp
 
-Enhanced and interoperable derived templates of std::list based classes, such
-as stack, queue, and deque that has some additional methods, some methods found
-in C++20 and later for C++17. An optimized single linked list / stack class is
-also included.
-
-## map.hpp
-
-Enhanced and interoperable derived templates of std map and dictionary classes.
-This may add special operations and features from C++20 or later.
+Specialized optimized single linked list class.
 
 ## memory.hpp
 
@@ -134,16 +125,6 @@ modern posix and windows platforms.
 
 Public key signing and verification support using pem files and certificate
 objects.
-
-## slice.hpp
-
-A C++ version of slice, which is a container found in many other languages.
-This implimentation is distinct from arrays or vectors since we assume most
-uses have no need for distinction between a slice and a view of a slice, so we
-have slices of managed shared pointers stored in a list rather than separate
-slice and a slice\_view classes. This makes copying slices and subslices cheap
-since views are just copies of slices that point to the same item data. True
-(deep) copies are made instead by cloning.
 
 ## socket.hpp
 

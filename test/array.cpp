@@ -8,13 +8,13 @@
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     try {
-        const tycho::vector<int> vec1;
+        const tycho::slice<int> vec1;
         const std::vector<int> vec2(5, 100);
         const std::vector<int> temp = {1, 2, 3, 4, 5};
-        const tycho::vector<int> vec3(temp.begin(), temp.end());
-        const tycho::vector<int> vec4(temp);
-        const tycho::vector<int> vec5(vec4);
-        auto even = vec3.filter([](int x) {
+        const tycho::slice<int> vec3(temp.begin(), temp.end());
+        const tycho::slice<int> vec4(temp);
+        const tycho::slice<int> vec5(vec4);
+        auto even = vec3.filter_if([](int x) {
             return x % 2 == 0;
         });
         const std::vector<int> old(even);
@@ -24,6 +24,15 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(even.empty());   // NOLINT
         assert(move.size() == 2);
         assert(move[0] == 2);
+
+        const tycho::slice<std::string> strings = {"hello", "goodbye"};
+        assert(strings[1] == "goodbye");
+        assert(strings.contains("goodbye"));
+
+        tycho::array<std::string, 80, 10> sa;
+        sa[10] = "first";
+        sa[89] = "last";
+        assert(sa[10] == "first");
     }
     catch(...) {
         ::exit(-1);

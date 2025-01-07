@@ -14,7 +14,7 @@ template<typename T>
 class maybe {
 public:
     maybe() : value_(std::nullopt) {}
-    explicit maybe(T val) : value_(val) {}
+    explicit maybe(const T& val) : value_(val) {}
 
     template<typename Func>
     auto bind(Func func) -> maybe<decltype(func(std::declval<T>()).value_)> {
@@ -40,6 +40,10 @@ public:
 
     auto get_value() const {
         return value_.value();
+    }
+
+    auto get_value(const T& or_else) const {
+        return value_.has_value() ? value_.value() : or_else;
     }
 
 private:
