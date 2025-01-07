@@ -12,6 +12,9 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         auto chars1 = "123";
         std::string_view text1(chars1);
         assert(get_value(text1) == 123);
+
+        text1 = "true";
+        assert(get_bool(text1) == true);
     }
     catch(std::exception& e) {
         printf("Error: %s\n", e.what());
