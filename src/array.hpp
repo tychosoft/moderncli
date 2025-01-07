@@ -49,20 +49,20 @@ public:
     }
 };
 
-template<typename T>
-class slice : public std::vector<T> {
+template<typename T, class Alloc = std::allocator<T>>
+class slice : public std::vector<T,Alloc> {
 public:
     using reference = T&;
     using const_reference = const T&;
-    using size_type = typename std::vector<T>::size_type;
-    using iterator = typename std::vector<T>::iterator;
-    using const_iterator = typename std::vector<T>::const_iterator;
-    using reverse_iterator = typename std::vector<T>::reverse_iterator;
-    using const_reverse_iterator = typename std::vector<T>::const_reverse_iterator;
+    using size_type = typename std::vector<T,Alloc>::size_type;
+    using iterator = typename std::vector<T,Alloc>::iterator;
+    using const_iterator = typename std::vector<T,Alloc>::const_iterator;
+    using reverse_iterator = typename std::vector<T,Alloc>::reverse_iterator;
+    using const_reverse_iterator = typename std::vector<T,Alloc>::const_reverse_iterator;
 
-    using std::vector<T>::vector;
-    explicit slice(const std::vector<T>& vec) : std::vector<T>(vec) {}
-    explicit slice(std::vector<T>&& vec) : std::vector<T>(std::move(vec)) {}
+    using std::vector<T,Alloc>::vector;
+    explicit slice(const std::vector<T,Alloc>& vec) : std::vector<T,Alloc>(vec) {}
+    explicit slice(std::vector<T,Alloc>&& vec) : std::vector<T,Alloc>(std::move(vec)) {}
 
     template <typename Iterator>
     slice(Iterator first, Iterator last) {
@@ -104,14 +104,14 @@ public:
 
     template <typename Pred>
     auto filter_if(Pred pred) const {
-        slice<T> result;
+        slice<T,Alloc> result;
         std::copy_if(this->begin(), this->end(), std::back_inserter(result), pred);
         return result;
     }
 
     template <typename Pred>
     auto extract_if(Pred pred) const {
-        slice<T> result;
+        slice<T,Alloc> result;
         auto it = this->begin();
         while(it != this->end()) {
             if(pred(*it)) {

@@ -125,6 +125,9 @@ add_test(NAME test-array COMMAND test_array)
 add_executable(test_list test/list.cpp src/list.hpp)
 add_test(NAME test-list COMMAND test_list)
 
+add_executable(test_scan test/scan.cpp src/scan.hpp)
+add_test(NAME test-scan COMMAND test_scan)
+
 add_executable(test_select test/select.cpp src/select.hpp)
 add_test(NAME test-select COMMAND test_select)
 

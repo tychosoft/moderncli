@@ -108,6 +108,14 @@ effectively emulate on some targets.
 Generate random keys and data using openssl rand functions. Also has some
 utility functions like b64 support for binary data and to manipulate keys.
 
+## scan.hpp
+
+Common functions to parse and extract fields like numbers and quoted strings
+from a string view. As a scan function extracts, it also updates the view. The
+low level scan functions will eventually be driven from a scan template class
+that has a format string much like format. Other upper level utility functions
+will also be provided.
+
 ## select.hpp
 
 Select is a kind of functional enumerated generic type that can do simple
