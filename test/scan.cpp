@@ -9,12 +9,20 @@
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     try {
-        auto chars1 = "123";
-        std::string_view text1(chars1);
-        assert(get_value(text1) == 123);
+        std::string_view text = "123";
+        assert(get_value(text) == 123);
 
-        text1 = "true";
-        assert(get_bool(text1) == true);
+        text = "true";
+        assert(get_bool(text) == true);
+
+        text = "Off";
+        assert(get_bool(text) == false);
+
+        text = "5m";
+        assert(get_seconds(text) == 300);
+
+        text = "300";
+        assert(get_seconds(text) == 300);
     }
     catch(std::exception& e) {
         printf("Error: %s\n", e.what());

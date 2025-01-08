@@ -6,6 +6,7 @@
 
 #include <string_view>
 #include <stdexcept>
+#include <chrono>
 #include <cstdint>
 #include <cctype>
 
@@ -82,6 +83,33 @@ inline auto get_value(std::string_view& text, int32_t min = 1, int32_t max = 655
     if(min >= 0 && rv < min)
             throw std::out_of_range("value too small");
     return rv;
+}
+
+inline auto get_seconds(std::string_view& text) -> time_t {
+    if(text.empty() || !isdigit(text.front()))
+        throw std::invalid_argument("Duration missing or invalid");
+
+    auto value = time_t(scan::value(text));
+    if(!text.empty() && isdigit(text.front()))
+        throw std::overflow_error("Duration too big");
+
+    if(text.empty())
+        return value;
+
+    if(text.size() == 1) {
+        auto ch = tolower(text.front());
+        if(ch == 's')
+            return value;
+        if(ch == 'm')
+            return value * 60;
+        if(ch == 'h')
+            return value * 3600;
+        if(ch == 'd')
+            return value * 86400;
+        if(ch == 'w')
+            return value * 604800;
+    }
+    throw std::invalid_argument("Duration is invalid");
 }
 
 inline auto get_bool(std::string_view& text) {
