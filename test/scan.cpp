@@ -5,7 +5,6 @@
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "scan.hpp"
 #include <cstdlib>
-#include <cstdio>
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     try {
@@ -19,10 +18,13 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(get_bool(text) == false);
 
         text = "5m";
-        assert(get_seconds(text) == 300);
+        assert(get_duration(text) == 300);
 
         text = "300";
-        assert(get_seconds(text) == 300);
+        assert(get_duration(text) == 300);
+
+        text = "1:26:10";
+        assert(get_duration(text) == 5170);
 
         text = "hello";
         assert(get_string(text) == "hello");
@@ -30,7 +32,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         text = "'hello world'";
         assert(get_string(text) == "hello world");
 
-        text = "\"hello\\nworld\"";
+        text = "\"hello\\nworld\""; // NOLINT
         assert(get_string(text) == "hello\nworld");
     }
     catch(std::exception& e) {

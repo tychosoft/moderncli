@@ -6,17 +6,37 @@
 
 #include <string_view>
 #include <stdexcept>
-#include <chrono>
 #include <cstdint>
 #include <cctype>
 
 // low level utility scan functions
 namespace tycho::scan {
-inline auto text(std::string_view& text) -> std::string {
+inline auto count(const std::string_view& text, char code) {
+    std::size_t count = 0;
+    for(const char ch : text)
+        // cppcheck-suppress useStlAlgorithm
+        if(ch == code) ++count;
+    return count;
+}
+
+inline auto pow(long base, long exp) {
+    long result = 1;
+    for (;;) {
+        if (exp & 1)
+            result *= base;
+        exp >>= 1;
+        if (!exp)
+            break;
+        base *= base;
+    }
+    return result;
+}
+
+inline auto text(std::string_view& text, bool quoted = false) -> std::string {
     std::string result;
     char quote = 0;
 
-    if(!text.empty() && (text.front() == '\'' || text.front() == '\"' || text.front() == '`')) {
+    if(!quoted && !text.empty() && (text.front() == '\'' || text.front() == '\"' || text.front() == '`')) {
         if(text.size() < 2) // if only 1 char, no closing quote...
             return {};
 
@@ -30,8 +50,14 @@ inline auto text(std::string_view& text) -> std::string {
             return result;
         }
 
-        if(quote == '\"' && text.front() == '\\') {
-            if(text.size() < 3)
+        // incomplete quoted string, keep last char in text
+        if(quote && text.size() == 1) {
+            result += text.front();
+            return result;
+        }
+
+        if((quoted || quote == '\"') && (text.front() == '\\')) {
+            if(text.size() < 2)
                 return {};
             switch(text[1]) {
             case 'n':
@@ -109,19 +135,19 @@ inline auto match(std::string_view& text, const std::string_view& find, bool ins
 }
 
 inline auto spaces(std::string_view& text, std::size_t max = 0) {
-    std::size_t count{0};
-    while(!text.empty() && (!max || (count < max)) && isdigit(text.front())) {
+    std::size_t scount{0};
+    while(!text.empty() && (!max || (scount < max)) && isdigit(text.front())) {
         text.remove_prefix(1);
-        ++count;
+        ++scount;
     }
-    return count;
+    return scount;
 }
 } // end namespace
 
 // primary scan functions and future scan class
 namespace tycho {
-inline auto get_string(std::string_view& text) {
-    auto result = scan::text(text);
+inline auto get_string(std::string_view& text, bool quoted = false) {
+    auto result = scan::text(text, quoted);
     if(!text.empty())
         throw std::invalid_argument("Incomplete string");
     return result;
@@ -154,29 +180,51 @@ inline auto get_value(std::string_view& text, int32_t min = 1, int32_t max = 655
     return rv;
 }
 
-inline auto get_seconds(std::string_view& text) -> time_t {
+inline auto get_duration(std::string_view& text, bool ms = false) -> unsigned {
     if(text.empty() || !isdigit(text.front()))
         throw std::invalid_argument("Duration missing or invalid");
 
-    auto value = time_t(scan::value(text));
+    auto value = scan::value(text);
+    unsigned scale = 1;
+    if(ms)
+        scale = 1000UL;
+
     if(!text.empty() && isdigit(text.front()))
         throw std::overflow_error("Duration too big");
 
     if(text.empty())
         return value;
 
+    if(text.size() == 2 && text == "ms" && ms) {
+        text.remove_prefix(2);
+        return value;
+    }
+
     if(text.size() == 1) {
         auto ch = tolower(text.front());
-        if(ch == 's')
-            return value;
-        if(ch == 'm')
-            return value * 60;
-        if(ch == 'h')
-            return value * 3600;
-        if(ch == 'd')
-            return value * 86400;
-        if(ch == 'w')
-            return value * 604800;
+        text.remove_prefix(1);
+        switch(ch) {
+        case 's':
+            return value * scale;
+        case 'm':
+            return value * 60UL * scale;
+        case 'h':
+            return value * 3600UL * scale;
+        case 'd':
+            return value * 86400UL * scale;
+        case 'w':
+            return value * 604800UL * scale;
+        default:
+            break;
+        }
+    }
+
+    // hour and minute markers...
+    auto count = scan::count(text, ':');
+    if(text.front() == ':' && !ms && count < 4) {
+        text.remove_prefix(1);
+        value *= (scan::pow(60UL, long(count)));
+        return value + get_duration(text);
     }
     throw std::invalid_argument("Duration is invalid");
 }
@@ -201,6 +249,60 @@ inline auto get_bool(std::string_view& text) {
     if(match(text, "off", true) && text.empty())
         return false;
     throw std::out_of_range("Bool not valid");
+}
+
+inline auto get_bool_or(std::string_view& text, bool or_else) {
+    try {
+        return get_bool(text);
+    }
+    catch(const std::exception& e) {
+        return or_else;
+    }
+}
+
+inline auto get_count_or(std::string_view& text, uint16_t or_else = 0, uint16_t max = 65535) {
+    try {
+        return uint16_t(get_value(text, 1, max));
+    }
+    catch(const std::exception& e) {
+        return or_else;
+    }
+}
+
+inline auto get_seconds_or(std::string_view& text, uint32_t or_else = 0) {
+    try {
+        return get_duration(text);
+    }
+    catch(const std::exception& e) {
+        return or_else;
+    }
+}
+
+inline auto get_timeout_or(std::string_view& text, uint32_t or_else = 0) {
+    try {
+        return get_duration(text, true);
+    }
+    catch(const std::exception& e) {
+        return or_else;
+    }
+}
+
+inline auto get_quoted_or(std::string_view& text, const std::string& or_else = "") {
+    try {
+        return get_string(text, true);
+    }
+    catch(const std::exception& e) {
+        return or_else;
+    }
+}
+
+inline auto get_string_or(std::string_view& text, const std::string& or_else = "") {
+    try {
+        return get_string(text);
+    }
+    catch(const std::exception& e) {
+        return or_else;
+    }
 }
 } // end namespace
 #endif
