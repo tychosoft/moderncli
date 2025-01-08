@@ -123,6 +123,25 @@ private:
     std::function<void()> action_;
 };
 
+template<typename T, typename... Args>
+auto try_func(std::function<void(Args...)> func, const T& or_value, Args... args) {
+    try {
+        return func(args...);
+    } catch(...) {
+        return or_value;
+    }
+}
+
+template<typename... Args>
+auto try_proc(std::function<void(Args...)> proc, Args... args) {
+    try {
+        proc(args...);
+        return true;
+    } catch(...) {
+        return false;
+    }
+}
+
 // some commonly forwarded classes...
 
 class keyfile;

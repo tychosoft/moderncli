@@ -60,6 +60,15 @@ auto none() {
     return maybe<T>();
 }
 
+template<typename T, typename... Args>
+auto maybe_try(std::function<void(Args...)> func, Args... args) -> maybe<T> {
+    try {
+        return maybe<T>(func(args...));
+    } catch(...) {
+        return maybe<T>();
+    }
+}
+
 template<typename T, typename Func>
 auto map(maybe<T> maybe_val, Func func) -> maybe<decltype(func(std::declval<T>()))> {
     if(maybe_val.has_value()) return maybe<decltype(func(std::declval<T>()))>(func(maybe_val.get_value()));
@@ -85,15 +94,21 @@ auto filter(maybe<std::optional<T>> maybe_val, Predicate pred) {
 }
 
 template<typename T>
-auto or_else(maybe<T> maybe_val, T default_value) {
+auto or_else(maybe<T> maybe_val, const T& default_value) {
     if(maybe_val.has_value()) return maybe_val.get_value();
     return default_value;
 }
 
 template<typename T>
-auto or_else(maybe<std::optional<T>> maybe_val, T default_value) {
+auto or_else(maybe<std::optional<T>> maybe_val, const T& default_value) {
     if(maybe_val.has_value() && maybe_val.get_value().has_value()) return maybe_val.get_value().value();
     return default_value;
+}
+
+template <typename T, typename Func>
+auto and_then(maybe<T> maybe_val, Func func) {
+    if(maybe_val.has_value()) return maybe<T>(func(maybe_val.get_value()));
+    return none<T>();
 }
 
 template<typename T>
