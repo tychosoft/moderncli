@@ -23,6 +23,15 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
         text = "300";
         assert(get_seconds(text) == 300);
+
+        text = "hello";
+        assert(get_string(text) == "hello");
+
+        text = "'hello world'";
+        assert(get_string(text) == "hello world");
+
+        text = "\"hello\\nworld\"";
+        assert(get_string(text) == "hello\nworld");
     }
     catch(std::exception& e) {
         printf("Error: %s\n", e.what());
