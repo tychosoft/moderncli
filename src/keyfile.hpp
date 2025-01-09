@@ -36,6 +36,12 @@ public:
         return ptr_->fetch(id);
     }
 
+    auto get_or(const std::string& id, const std::string& or_else = "_") const {
+        if(!ptr_->exists(id))
+            return ptr_->fetch(or_else);
+        return ptr_->fetch(id);
+    }
+
     auto keyset(const std::string& id = "_") -> auto& {
         return ptr_->fetch(id);
     }
@@ -54,6 +60,13 @@ public:
 
     auto load(const std::string& path) {
         return ptr_ ? ptr_->load(path) : false;
+    }
+
+    auto load(const std::string& id, const std::initializer_list<std::pair<std::string,std::string>>& list) -> auto& {
+        auto& group = ptr_->fetch(id);
+        for(const auto& [key, value] : list)
+            group[key] = value;
+        return *this;
     }
 
     void clear() {
@@ -75,6 +88,13 @@ public:
 
     auto empty() const {
         return !ptr_ || ptr_->empty();
+    }
+
+    static auto create(const std::initializer_list<std::string>& list) -> auto {
+        keyfile keys;
+        for(const auto& group : list)
+            keys.ptr_->fetch(group);
+        return keys;
     }
 
 private:
@@ -175,5 +195,14 @@ private:
     };
     std::shared_ptr<data> ptr_;
 };
+
+inline auto key_or(const keyfile::keys& keys, const std::string& id, const std::string& or_else = "") {
+    try {
+        return keys.at(id);
+    }
+    catch(...) {
+        return or_else;
+    }
+}
 } // end namespace
 #endif
