@@ -14,6 +14,7 @@ namespace tycho {
 class keyfile {
 public:
     using keys = std::unordered_map<std::string, std::string>;
+    using iterator = std::unordered_map<std::string, keys>::const_iterator;
 
     explicit keyfile(const std::initializer_list<std::string>& paths) noexcept :
     ptr_(std::make_shared<keyfile::data>()) {
@@ -47,6 +48,10 @@ public:
     }
 
     auto exists(const std::string& id = "_") const {
+        return ptr_ ? ptr_->exists(id) : false;
+    }
+
+    auto contains(const std::string& id) const {
         return ptr_ ? ptr_->exists(id) : false;
     }
 
@@ -90,6 +95,14 @@ public:
         return !ptr_ || ptr_->empty();
     }
 
+    auto begin() const -> iterator {
+        return ptr_->begin();
+    }
+
+    auto end() const -> iterator {
+        return ptr_->end();
+    }
+
     static auto create(const std::initializer_list<std::string>& list) -> auto {
         keyfile keys;
         for(const auto& group : list)
@@ -106,6 +119,14 @@ private:
 
         auto empty() const -> bool {
             return sections.empty();
+        }
+
+        auto begin() const -> iterator {
+            return sections.begin();
+        }
+
+        auto end() const -> iterator {
+            return sections.end();
         }
 
         auto exists(const std::string& id) const -> bool {

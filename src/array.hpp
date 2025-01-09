@@ -7,6 +7,7 @@
 #include <vector>
 #include <array>
 #include <algorithm>
+#include <iterator>
 #include <stdexcept>
 
 namespace tycho {

@@ -5,6 +5,7 @@
 #define TYCHO_SCAN_HPP_
 
 #include <string_view>
+#include <string>
 #include <stdexcept>
 #include <cstdint>
 #include <cctype>

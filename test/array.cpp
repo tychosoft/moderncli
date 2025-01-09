@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "array.hpp"
+#include <string>
 #include <cstdlib>
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
