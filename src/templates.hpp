@@ -59,6 +59,11 @@ constexpr auto const_clamp(const T& value, const T& min, const T& max) {
     return (value < min) ? min : ((value > max) ? max : value); // NOLINT
 }
 
+template <typename T>
+constexpr auto const_range(const T& value, const T& min, const T& max) {
+    return (value >= min && value <= max);
+}
+
 template<typename T>
 constexpr auto abs(T value) {
     static_assert(std::is_integral_v<T> && !std::is_unsigned_v<T>, "T must be signed number");
