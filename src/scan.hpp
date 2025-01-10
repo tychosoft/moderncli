@@ -270,6 +270,15 @@ inline auto get_count_or(std::string_view text, uint16_t or_else = 0, uint16_t m
     }
 }
 
+inline auto get_range_or(std::string_view text, uint32_t or_else = 0, uint32_t min = 1, uint32_t max = 65535UL) {
+    try {
+        return uint32_t(get_value(text, int32_t(min), int32_t(max)));
+    }
+    catch(const std::exception& e) {
+        return or_else;
+    }
+}
+
 inline auto get_seconds_or(std::string_view text, uint32_t or_else = 0) {
     try {
         return get_duration(text);
