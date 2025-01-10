@@ -16,20 +16,13 @@ public:
     using keys = std::unordered_map<std::string, std::string>;
     using iterator = std::unordered_map<std::string, keys>::const_iterator;
 
-    explicit keyfile(const std::initializer_list<std::string>& paths) noexcept :
-    ptr_(std::make_shared<keyfile::data>()) {
-        for(const auto& path : paths)
-            ptr_->load(path);
-    }
-
-    keyfile() noexcept :
-    ptr_(std::make_shared<keyfile::data>()) {};
+    keyfile() noexcept : ptr_(std::make_shared<keyfile::data>()) {}
 
     auto operator[](const std::string& id) -> auto& {
         return ptr_->fetch(id);
     }
 
-    auto operator[](const std::string& id) const {
+    auto operator[](const std::string& id) const -> const auto& {
         return ptr_->fetch(id);
     }
 
@@ -63,8 +56,9 @@ public:
         if(ptr_) ptr_->remove(id);
     }
 
-    auto load(const std::string& path) {
-        return ptr_ ? ptr_->load(path) : false;
+    auto load(const std::string& path) -> auto& {
+        if(ptr_) ptr_->load(path);
+        return *this;
     }
 
     auto load(const std::string& id, const std::initializer_list<std::pair<std::string,std::string>>& list) -> auto& {
@@ -96,18 +90,22 @@ public:
     }
 
     auto begin() const -> iterator {
-        return ptr_->begin();
+        return ptr_->cbegin();
     }
 
     auto end() const -> iterator {
-        return ptr_->end();
+        return ptr_->cend();
     }
 
-    static auto create(const std::initializer_list<std::string>& list) -> auto {
+    static auto create(const std::initializer_list<std::string>& list) {
         keyfile keys;
         for(const auto& group : list)
             keys.ptr_->fetch(group);
         return keys;
+    }
+
+    static auto create() {
+        return keyfile();
     }
 
 private:
@@ -121,12 +119,12 @@ private:
             return sections.empty();
         }
 
-        auto begin() const -> iterator {
-            return sections.begin();
+        auto cbegin() const -> iterator {
+            return sections.cbegin();
         }
 
-        auto end() const -> iterator {
-            return sections.end();
+        auto cend() const -> iterator {
+            return sections.cend();
         }
 
         auto exists(const std::string& id) const -> bool {
@@ -152,14 +150,14 @@ private:
 
             while(std::getline(file, buffer)) {
                 auto input = std::string_view(buffer);
-                auto begin = input.find_first_not_of(whitespace);
-                if(begin == std::string::npos)
+                auto first = input.find_first_not_of(whitespace);
+                if(first == std::string::npos)
                     continue;
 
-                input.remove_prefix(begin);
-                auto end = input.find_last_not_of(whitespace);
-                if(end != std::string::npos)
-                    input.remove_suffix(input.size() - end - 1);
+                input.remove_prefix(first);
+                auto last = input.find_last_not_of(whitespace);
+                if(last != std::string::npos)
+                    input.remove_suffix(input.size() - last - 1);
 
                 if(!input.empty() && input[0] == '[' && input.back() == ']') {
                     section = input.substr(1, input.size() - 2);
@@ -175,9 +173,9 @@ private:
 
                 auto key = input.substr(0, pos);
                 auto value = input.substr(++pos);
-                end = key.find_last_not_of(whitespace);
-                if(end != std::string::npos)
-                    key.remove_suffix(key.size() - end - 1);
+                last = key.find_last_not_of(whitespace);
+                if(last != std::string::npos)
+                    key.remove_suffix(key.size() - last - 1);
 
                 pos = value.find_first_not_of(whitespace);
                 value.remove_prefix(pos);
