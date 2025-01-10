@@ -128,19 +128,19 @@ private:
     std::function<void()> action_;
 };
 
-template<typename T, typename... Args>
-auto try_func(std::function<void(Args...)> func, const T& or_value, Args... args) {
+template<typename T>
+auto try_func(std::function<T()> func, const T& or_value) {
     try {
-        return func(args...);
+        return func();
     } catch(...) {
         return or_value;
     }
 }
 
-template<typename... Args>
-auto try_proc(std::function<void(Args...)> proc, Args... args) {
+template<typename Func>
+auto try_proc(Func proc) {
     try {
-        proc(args...);
+        proc();
         return true;
     } catch(...) {
         return false;

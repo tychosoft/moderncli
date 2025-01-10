@@ -60,10 +60,10 @@ auto none() {
     return maybe<T>();
 }
 
-template<typename T, typename... Args>
-auto maybe_try(std::function<void(Args...)> func, Args... args) -> maybe<T> {
+template<typename T>
+auto maybe_try(std::function<T()> func) -> maybe<T> {
     try {
-        return maybe<T>(func(args...));
+        return maybe<T>(func());
     } catch(...) {
         return maybe<T>();
     }
