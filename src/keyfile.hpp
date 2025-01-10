@@ -17,6 +17,10 @@ public:
     using iterator = std::unordered_map<std::string, keys>::const_iterator;
 
     keyfile() noexcept : ptr_(std::make_shared<keyfile::data>()) {}
+    explicit keyfile(const std::initializer_list<std::string>& paths) noexcept :    ptr_(std::make_shared<keyfile::data>()) {
+        for(const auto& path : paths)
+            ptr_->load(path);
+    }
 
     auto operator[](const std::string& id) -> auto& {
         return ptr_->fetch(id);

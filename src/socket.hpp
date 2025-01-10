@@ -1462,6 +1462,10 @@ inline auto inet_bind(const std::string& host, const std::string& service = "", 
     return inet_find(host, service, family, type, protocol);
 }
 
+inline auto inet_bind(const std::string& host, uint16_t port, int family = AF_UNSPEC, int type = 0, int protocol = 0) {
+    return inet_bind(host, std::to_string(port), family, type, protocol);
+}
+
 inline auto is_ipv4(const std::string_view& addr) {
     // cppcheck-suppress useStlAlgorithm
     for(const auto ch : addr) { // NOLINT
