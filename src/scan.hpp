@@ -147,14 +147,14 @@ inline auto spaces(std::string_view& text, std::size_t max = 0) {
 
 // primary scan functions and future scan class
 namespace tycho {
-inline auto get_string(std::string_view& text, bool quoted = false) {
+inline auto get_string(std::string_view text, bool quoted = false) {
     auto result = scan::text(text, quoted);
     if(!text.empty())
         throw std::invalid_argument("Incomplete string");
     return result;
 }
 
-inline auto get_value(std::string_view& text, int32_t min = 1, int32_t max = 65535) -> int32_t {
+inline auto get_value(std::string_view text, int32_t min = 1, int32_t max = 65535) -> int32_t {
     bool neg = false;
     if(min < 0 && !text.empty() && text.front() == '-') {
         neg = true;
@@ -181,7 +181,7 @@ inline auto get_value(std::string_view& text, int32_t min = 1, int32_t max = 655
     return rv;
 }
 
-inline auto get_duration(std::string_view& text, bool ms = false) -> unsigned {
+inline auto get_duration(std::string_view text, bool ms = false) -> unsigned {
     if(text.empty() || !isdigit(text.front()))
         throw std::invalid_argument("Duration missing or invalid");
 
@@ -252,7 +252,7 @@ inline auto get_bool(std::string_view& text) {
     throw std::out_of_range("Bool not valid");
 }
 
-inline auto get_bool_or(std::string_view& text, bool or_else) {
+inline auto get_bool_or(std::string_view text, bool or_else) {
     try {
         return get_bool(text);
     }
@@ -261,7 +261,7 @@ inline auto get_bool_or(std::string_view& text, bool or_else) {
     }
 }
 
-inline auto get_count_or(std::string_view& text, uint16_t or_else = 0, uint16_t max = 65535) {
+inline auto get_count_or(std::string_view text, uint16_t or_else = 0, uint16_t max = 65535) {
     try {
         return uint16_t(get_value(text, 1, max));
     }
@@ -270,7 +270,7 @@ inline auto get_count_or(std::string_view& text, uint16_t or_else = 0, uint16_t 
     }
 }
 
-inline auto get_seconds_or(std::string_view& text, uint32_t or_else = 0) {
+inline auto get_seconds_or(std::string_view text, uint32_t or_else = 0) {
     try {
         return get_duration(text);
     }
@@ -279,7 +279,7 @@ inline auto get_seconds_or(std::string_view& text, uint32_t or_else = 0) {
     }
 }
 
-inline auto get_timeout_or(std::string_view& text, uint32_t or_else = 0) {
+inline auto get_timeout_or(std::string_view text, uint32_t or_else = 0) {
     try {
         return get_duration(text, true);
     }
@@ -288,7 +288,7 @@ inline auto get_timeout_or(std::string_view& text, uint32_t or_else = 0) {
     }
 }
 
-inline auto get_quoted_or(std::string_view& text, const std::string& or_else = "") {
+inline auto get_quoted_or(std::string_view text, const std::string& or_else = "") {
     try {
         return get_string(text, true);
     }
@@ -297,7 +297,7 @@ inline auto get_quoted_or(std::string_view& text, const std::string& or_else = "
     }
 }
 
-inline auto get_string_or(std::string_view& text, const std::string& or_else = "") {
+inline auto get_string_or(std::string_view text, const std::string& or_else = "") {
     try {
         return get_string(text);
     }
