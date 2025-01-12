@@ -32,11 +32,11 @@ inline void rand(T& data) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     auto ptr = reinterpret_cast<uint8_t *>(&data);
-    ::RAND_bytes(ptr, static_cast<int>(sizeof(data)));
+    ::RAND_bytes(ptr, int(sizeof(data)));
 }
 
 inline void rand(uint8_t *ptr, std::size_t size) {
-    ::RAND_bytes(ptr, static_cast<int>(size));
+    ::RAND_bytes(ptr, int(size));
 }
 
 template <typename T>

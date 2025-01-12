@@ -31,7 +31,7 @@ public:
         }
 
         auto kp = reinterpret_cast<const uint8_t *>(phrase.data());
-        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
+        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, kp, int(phrase.size()), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else
@@ -45,7 +45,7 @@ public:
             return;
         }
 
-        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, key.first, static_cast<int>(key.second), rounds, data_, iv_));
+        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, key.first, int(key.second), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else
@@ -101,7 +101,7 @@ public:
 
         size_ = EVP_CIPHER_key_length(algo);
         auto kp = reinterpret_cast<const uint8_t *>(phrase.data());
-        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, kp, static_cast<int>(phrase.size()), rounds, data_, iv_));
+        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, kp, int(phrase.size()), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else
@@ -115,7 +115,7 @@ public:
         }
 
         size_ = EVP_CIPHER_key_length(algo);
-        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, key.first, static_cast<int>(key.second), rounds, data_, iv_));
+        auto ks = std::size_t(EVP_BytesToKey(algo, md, salt.first, key.first, int(key.second), rounds, data_, iv_));
         if(ks < size_)
             size_ = 0;
         else

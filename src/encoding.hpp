@@ -32,7 +32,7 @@ inline auto to_b64(const uint8_t *data, std::size_t size) {
         for (std::size_t j = 0; j < 3; ++j) {
             c <<= 8;
             if(i + j < size)
-                c |= static_cast<uint32_t>(data[i + j]);
+                c |= uint32_t(data[i + j]);
         }
         out += base64_chars[(c >> 18) & 0x3F];
         out += base64_chars[(c >> 12) & 0x3F];
@@ -104,7 +104,7 @@ inline auto from_b64(std::string_view from, uint8_t *to, std::size_t max) {
             break;
         auto index = base64_index(ch);
         if (index >= 0) {
-            val = (val << 6) | static_cast<uint32_t>(index);
+            val = (val << 6) | uint32_t(index);
             bits += 6;
             if (bits >= 8) {
                 to[count++] = (val >> (bits - 8));
@@ -150,7 +150,7 @@ inline auto from_hex(std::string_view from, uint8_t *to, std::size_t size) {
         auto value = strtoul(buf, &end, 16);
         if(*end != 0)
             return pos / 2;
-        *(to++) = static_cast<uint8_t>(value);
+        *(to++) = uint8_t(value);
     }
     return max / 2;
 }

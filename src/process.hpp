@@ -167,7 +167,7 @@ public:
         const DWORD protectAccess = (rw) ? PAGE_READWRITE : PAGE_READONLY;
         const DWORD desiredAccess = (rw) ? FILE_MAP_READ | FILE_MAP_WRITE : FILE_MAP_READ;
 
-        const auto max = offset + static_cast<off_t>(size);
+        const auto max = offset + off_t(size);
         const DWORD dwMaxSizeLow = (sizeof(off_t) <= sizeof(DWORD)) ? (DWORD)max : (DWORD)(max & 0xFFFFFFFFL);
         const DWORD dwMaxSizeHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
                         (DWORD)0 : (DWORD)((max >> 32) & 0xFFFFFFFFL);
@@ -273,7 +273,7 @@ public:
         const DWORD protectAccess = (rw) ? PAGE_READWRITE : PAGE_READONLY;
         const DWORD desiredAccess = (rw) ? FILE_MAP_READ | FILE_MAP_WRITE : FILE_MAP_READ;
 
-        const auto max = offset + static_cast<off_t>(size);
+        const auto max = offset + off_t(size);
         [[maybe_unused]] const int64_t max64 = max;
         const DWORD dwMaxSizeLow = (sizeof(off_t) <= sizeof(DWORD)) ? (DWORD)max : (DWORD)(max64 & 0xFFFFFFFFL);
         const DWORD dwMaxSizeHigh = (sizeof(off_t) <= sizeof(DWORD)) ?
@@ -302,21 +302,21 @@ private:
 inline auto page_size() noexcept -> off_t {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
-    return static_cast<off_t>(si.dwPageSize);
+    return off_t(si.dwPageSize);
 }
 
 inline void time(struct timeval *tp) noexcept {
-    static const uint64_t EPOCH = ((uint64_t) 116444736000000000ULL);
+    static const uint64_t EPOCH = uint64_t(116444736000000000ULL);
     SYSTEMTIME  system_time;
     FILETIME    file_time;
 
     GetSystemTime(&system_time);
     SystemTimeToFileTime(&system_time, &file_time);
-    auto time =  (static_cast<uint64_t>(file_time.dwLowDateTime));
+    auto time =  uint64_t(file_time.dwLowDateTime);
     time += (static_cast<uint64_t>(file_time.dwHighDateTime)) << 32;
 
-    tp->tv_sec  = static_cast<long>((time - EPOCH) / 10000000L);
-    tp->tv_usec = static_cast<long>(system_time.wMilliseconds * 1000L);
+    tp->tv_sec  = long((time - EPOCH) / 10000000L);
+    tp->tv_usec = long(system_time.wMilliseconds * 1000L);
 }
 
 inline auto is_tty(handle_t handle) noexcept {

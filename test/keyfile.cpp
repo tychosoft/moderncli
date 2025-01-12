@@ -18,7 +18,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     auto keys = test_keys["test"];
     assert(!keys.empty());
     assert(keys["test1"] == "hello");
-    assert(keys["test2"] == "");
+    assert(keys["test2"].empty());
     assert(get_quoted(keys["test3"]) == "hello world");
     assert(get_quoted(keys["test1"]) == "hello");
     assert(get_quoted(keys["test4"]) == "hello\"world");
@@ -28,11 +28,13 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
     test_keys.load("more", {
         {"hello", "world"},
+        {"mixed", "CaSe"},
     });
 
     assert(test_keys.exists("more"));
     keys = test_keys["more"];
     assert(keys["hello"] == "world");
+    assert(get_lower(keys["mixed"]) == "case");
 }
 
 

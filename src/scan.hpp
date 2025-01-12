@@ -155,10 +155,33 @@ inline auto get_string(std::string_view text, bool quoted = false) {
 }
 
 inline auto get_quoted(std::string_view text, char quote = '\"') {
+    std::string result;
     if(text.size() > 1 && text.front() == text.back() && text.front() == quote)
-        return scan::text(text);
-    return scan::text(text, true);
+        result = scan::text(text);
+    else
+        result = scan::text(text, true);
+
+    if(!text.empty())
+        throw std::invalid_argument("Incomplete string");
+    return result;
 }
+
+inline auto get_lower(std::string_view text, char quote = '\"') {
+    std::string result;
+    if(text.size() > 1 && text.front() == text.back() && text.front() == quote)
+        result = scan::text(text);
+    else
+        result = scan::text(text, true);
+
+    if(!text.empty())
+        throw std::invalid_argument("Incomplete string");
+
+    for(auto& ch : result)
+        // cppcheck-suppress useStlAlgorithm
+        ch = char(tolower(ch));
+    return result;
+}
+
 
 inline auto get_literal(std::string_view text, char quote = '\"') {
     if(text.size() > 1 && text.front() == text.back() && text.front() == quote) {
@@ -183,13 +206,13 @@ inline auto get_value(std::string_view text, int32_t min = 1, int32_t max = 6553
         throw std::overflow_error("Value too big");
 
     if(neg) {
-        auto nv = -static_cast<int32_t>(value);
+        auto nv = -int32_t(value);
         if(nv < min)
             throw std::out_of_range("value too small");
         return nv;
     }
 
-    auto rv = static_cast<int32_t>(value);
+    auto rv = int32_t(value);
     if(min >= 0 && rv < min)
             throw std::out_of_range("value too small");
     return rv;

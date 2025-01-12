@@ -295,7 +295,7 @@ protected:
         if(ch == EOF || count >= limit || !base)
             return EOF;
 
-        base[count++] = static_cast<uint8_t>(ch);
+        base[count++] = uint8_t(ch);
         if(zero)
             base[count] = 0;
         return ch;
@@ -362,7 +362,7 @@ public:
         }
 
         uint8_t *mem = (reinterpret_cast<uint8_t *>(current_)) + current_->used;
-        current_->used += static_cast<unsigned>(size);
+        current_->used += unsigned(size);
         return mem;
     }
 
@@ -411,7 +411,7 @@ public:
 
     static auto aligned_page(std::size_t min = 0) -> std::size_t{
 #if defined(_SC_PAGESIZE)
-        std::size_t asize = aligned_size(static_cast<std::size_t>(sysconf(_SC_PAGESIZE)));
+        std::size_t asize = aligned_size(std::size_t(sysconf(_SC_PAGESIZE)));
 #elif defined(PAGESIZE)
         std::size_t asize = aligned_size(PAGESIZE);
 #elif defined(PAGE_SIZE)
@@ -484,12 +484,12 @@ inline void mem_alloc(T **mem, std::size_t size, std::size_t align = 0) {
     *mem = static_cast<T*>(::malloc(size));  // NOLINT
 #else
     if(!align)
-        *mem = static_cast<T *>(::malloc(size));  // NOLINT
+        *mem = static_cast<T*>(::malloc(size));  // NOLINT
     else
 #ifdef  __clang__
         posix_memalign(reinterpret_cast<void **>(mem), align, size);
 #else
-        *mem = static_cast<T *>(::aligned_alloc(align, size));
+        *mem = static_cast<T*>(::aligned_alloc(align, size));
 #endif
 #endif
 }
@@ -604,7 +604,7 @@ inline auto mem_value(char *target, std::size_t size, unsigned value) -> bool {
         }
 
         if(dig || zero) {
-            *(target++) = static_cast<char>('0' + dig);
+            *(target++) = char('0' + dig);
             zero = true;
         }
         if(max == 1)
