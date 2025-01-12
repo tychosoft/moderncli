@@ -182,7 +182,8 @@ private:
                     key.remove_suffix(key.size() - last - 1);
 
                 pos = value.find_first_not_of(whitespace);
-                value.remove_prefix(pos);
+                if(pos != std::string::npos)
+                    value.remove_prefix(pos);
                 sections[section][std::string(key)] = std::string(value);
             }
             return true;

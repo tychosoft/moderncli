@@ -17,6 +17,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     auto keys = test_keys["test"];
     assert(!keys.empty());
     assert(keys["test1"] == "hello");
+    assert(keys["test2"] == "");
     assert(test_keys.exists("initial"));
 
     test_keys.load("more", {

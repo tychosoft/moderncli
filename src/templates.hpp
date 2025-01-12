@@ -132,7 +132,8 @@ template<typename T>
 auto try_func(std::function<T()> func, const T& or_value) {
     try {
         return func();
-    } catch(...) {
+    }
+    catch(...) {
         return or_value;
     }
 }
@@ -142,7 +143,8 @@ auto try_proc(Func proc) {
     try {
         proc();
         return true;
-    } catch(...) {
+    }
+    catch(...) {
         return false;
     }
 }
