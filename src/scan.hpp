@@ -87,7 +87,7 @@ inline auto text(std::string_view& text, bool quoted = false) -> std::string {
             case '\"':
             case '`':
             case '\\':
-                result += text.front();
+                result += text[1];
                 break;
             default:
                 return result;
@@ -152,6 +152,20 @@ inline auto get_string(std::string_view text, bool quoted = false) {
     if(!text.empty())
         throw std::invalid_argument("Incomplete string");
     return result;
+}
+
+inline auto get_quoted(std::string_view text, char quote = '\"') {
+    if(text.size() > 1 && text.front() == text.back() && text.front() == quote)
+        return scan::text(text);
+    return scan::text(text, true);
+}
+
+inline auto get_literal(std::string_view text, char quote = '\"') {
+    if(text.size() > 1 && text.front() == text.back() && text.front() == quote) {
+        text.remove_prefix(1);
+        text.remove_suffix(1);
+    }
+    return std::string{text};
 }
 
 inline auto get_value(std::string_view text, int32_t min = 1, int32_t max = 65535) -> int32_t {

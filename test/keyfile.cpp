@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "keyfile.hpp"
+#include "scan.hpp"
 
 #ifndef TEST_DATA
 #define TEST_DATA "."   // NOLINT
@@ -18,6 +19,11 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(!keys.empty());
     assert(keys["test1"] == "hello");
     assert(keys["test2"] == "");
+    assert(get_quoted(keys["test3"]) == "hello world");
+    assert(get_quoted(keys["test1"]) == "hello");
+    assert(get_quoted(keys["test4"]) == "hello\"world");
+    assert(get_string(keys["test4"]) == "hello\\\"world");
+    assert(get_literal(keys["password"]) == "\"hi\\");
     assert(test_keys.exists("initial"));
 
     test_keys.load("more", {
