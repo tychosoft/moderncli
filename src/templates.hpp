@@ -6,6 +6,7 @@
 
 #include <type_traits>
 #include <functional>
+#include <stdexcept>
 #include <memory>
 
 namespace tycho {
@@ -129,7 +130,7 @@ private:
 };
 
 template<typename T>
-auto try_func(std::function<T()> func, const T& or_value) {
+inline auto try_func(std::function<T()> func, const T& or_value) {
     try {
         return func();
     }
@@ -139,7 +140,7 @@ auto try_func(std::function<T()> func, const T& or_value) {
 }
 
 template<typename Func>
-auto try_proc(Func proc) {
+inline auto try_proc(Func proc) {
     try {
         proc();
         return true;
@@ -149,8 +150,11 @@ auto try_proc(Func proc) {
     }
 }
 
-// some commonly forwarded classes...
+inline void runtime_assert(bool check, const char *error) {
+    if(!check) throw std::runtime_error(error);
+}
 
+// some commonly forwarded classes...
 class keyfile;
 } // end namespace
 
