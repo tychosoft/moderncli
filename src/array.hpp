@@ -9,8 +9,13 @@
 #include <algorithm>
 #include <iterator>
 #include <stdexcept>
+#include <cstdint>
 
 namespace tycho {
+namespace crypto {
+using key_t = std::pair<const uint8_t *, std::size_t>;
+} // end namespace
+
 template <typename T, std::size_t N, std::ptrdiff_t Offset = 0>
 class array : public std::array<T,N> {
 public:
@@ -65,6 +70,12 @@ public:
     explicit slice(const std::vector<T,Alloc>& vec) : std::vector<T,Alloc>(vec) {}
     explicit slice(std::vector<T,Alloc>&& vec) : std::vector<T,Alloc>(std::move(vec)) {}
 
+    template <typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
+    explicit slice(crypto::key_t& key) :
+    std::vector<T>(key.second) {
+        memcpy(this->data(), key.first, key.second); // FlawFinder: ignore
+    }
+
     template <typename Iterator>
     slice(Iterator first, Iterator last) {
         std::copy(first, last, std::back_inserter(*this));
@@ -75,12 +86,25 @@ public:
         std::copy_if(first, last, std::back_inserter(*this), pred);
     }
 
+    template <typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
+    operator crypto::key_t() {
+        return std::make_pair(reinterpret_cast<const uint8_t *>(this->data()), this->size());
+    }
+
     operator bool() const {
         return !this->empty();
     }
 
     auto operator!() const {
         return this->empty();
+    }
+
+    auto operator*() const -> const T* {
+        return this->data();
+    }
+
+    auto operator*() -> T* {
+        return this->data();
     }
 
     auto find(const T& value) const {
@@ -140,5 +164,7 @@ public:
         this->erase(std::remove(this->begin(), this->end(), value), this->end());
     }
 };
+
+using byteslice = slice<std::byte>;
 } // end namespace
 #endif
