@@ -92,6 +92,13 @@ auto fold(const Container& container, T init, Func func) -> T {
     return std::accumulate(container.begin(), container.end(), init, func);
 }
 
+template<typename Container, typename Func>
+auto make(std::size_t size, Func func) {
+    Container result;
+    std::fill_n(std::back_inserter(result), size, func());
+    return result;
+}
+
 template<typename Container, typename Range>
 auto operator|(const Container& container, const Range& range) {
     return range(container);

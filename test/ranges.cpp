@@ -18,6 +18,11 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
         each(evens, [](int& n) { n = n * 2;});
         assert(evens[0] == 8);
+
+        auto made = make<std::vector<int>>(3, []{return -1;});
+        assert(made.size() == 3);
+        assert(made[0] == -1);
+
     }
     catch(...) {
         ::exit(-1);
