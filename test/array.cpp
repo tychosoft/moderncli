@@ -40,6 +40,11 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         slicer[0] = "first";
         slicer[19] = "last";
         assert(slicer.contains("last"));
+        auto copy = slicer;
+        assert(copy.size() == slicer.size());
+        assert(copy[0] == slicer[0]);   // independent memory copies...
+        assert(copy.data() != slicer.data());
+        assert(copy == slicer);
     }
     catch(...) {
         ::exit(-1);
