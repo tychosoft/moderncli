@@ -9,7 +9,7 @@
 # warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 cmake_minimum_required(VERSION 3.16.0)
-project(ModernCLI VERSION 1.1.5 LANGUAGES CXX)
+project(ModernCLI VERSION 1.2.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -124,6 +124,9 @@ add_test(NAME test-array COMMAND test_array)
 
 add_executable(test_list test/list.cpp src/list.hpp)
 add_test(NAME test-list COMMAND test_list)
+
+add_executable(test_ranges test/ranges.cpp src/ranges.hpp)
+add_test(NAME test-ranges COMMAND test_ranges)
 
 add_executable(test_scan test/scan.cpp src/scan.hpp)
 add_test(NAME test-scan COMMAND test_scan)

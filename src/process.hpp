@@ -55,7 +55,7 @@
 #define execvpe(p,a,e)  exect(p,a,e)
 #endif
 
-namespace process {
+namespace tycho::process {
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 using id_t = intptr_t;
 using addr_t = FARPROC;

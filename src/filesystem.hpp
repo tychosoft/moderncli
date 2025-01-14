@@ -78,7 +78,7 @@ inline auto getline_w32(char **lp, std::size_t *size, FILE *fp) -> ssize_t {
 }
 #endif
 
-namespace fsys {
+namespace tycho::fsys {
 using namespace std::filesystem;
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
@@ -402,20 +402,20 @@ inline auto to_string(const fsys::path& path) {
 } // end namespace
 
 #if defined(TYCHO_PRINT_HPP_) && (__cplusplus < 202002L)
-template <> class fmt::formatter<fsys::path> {
+template <> class fmt::formatter<tycho::fsys::path> {
 public:
     [[deprecated]] static constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
 
     template <typename Context>
-    [[deprecated]] constexpr auto format(fsys::path const& path, Context& ctx) const {
+    [[deprecated]] constexpr auto format(tycho::fsys::path const& path, Context& ctx) const {
         return format_to(ctx.out(), "{}", std::string{path.u8string()});
     }
 };
 #endif
 
-inline auto operator<<(std::ostream& out, const fsys::path& path) -> std::ostream& {
+inline auto operator<<(std::ostream& out, const tycho::fsys::path& path) -> std::ostream& {
     out << path.u8string();
     return out;
 }
