@@ -10,6 +10,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <cstdint>
+#include <type_traits>
 
 namespace tycho {
 namespace crypto {
@@ -115,8 +116,10 @@ public:
         return std::find(this->begin(), this->end(), value) != this->end();
     }
 
-    auto subslice(size_type start, size_type last) const {
-        if (start > this->size() || last > this->size() || start > last)
+    auto subslice(size_type start, size_type last = 0) const {
+        if(!last)
+            last = this->size() - start;
+        if(start > this->size() || last > this->size() || start > last)
             throw std::out_of_range("Invalid subslice range");
         return slice(this->begin() + start, this->begin() + last);
     }
@@ -156,7 +159,7 @@ public:
 
     void remove(size_type start, size_type last) const {
         if (start > this->size() || last > this->size() || start > last)
-            throw std::out_of_range("Invalid subslice range");
+            throw std::out_of_range("Invalid subspan range");
         this->erase(this->begin() + start, this->begin() + last);
     }
 
@@ -165,6 +168,91 @@ public:
     }
 };
 
+template<typename T>
+class span {
+public:
+    using size_type = std::size_t;
+    using value_type = T;
+
+    constexpr span(T* ptr, size_type size) : ptr_(ptr), size_(size) {}
+
+    template<size_type S>
+    explicit constexpr span(T(&arr)[S]) : span(arr, S) {}
+
+    template <typename Container, typename = std::enable_if_t<std::is_same_v<T, typename Container::value_type>>>
+    explicit span(Container& container) : span(container.data(), container.size()) {}
+
+    constexpr auto operator[](size_type index) const -> T& {
+        if(index >= size_)
+            throw std::out_of_range("Span index past end");
+        return ptr_[index];
+    }
+
+    constexpr auto at(size_type index) const -> T& {
+        if(index >= size_)
+            throw std::out_of_range("Span index past end");
+        return ptr_[index];
+    }
+
+    constexpr auto size_bytes() const {
+        return size_ * sizeof(T);
+    }
+
+    constexpr auto size() const {
+        return size_;
+    }
+
+    constexpr auto data() const -> T* {
+        return ptr_;
+    }
+
+    constexpr auto begin() const {
+        return ptr_;
+    }
+
+    constexpr auto end() const {
+        return ptr_ + size_;
+    }
+
+    constexpr auto front() const -> T& {
+        return ptr_[0];
+    }
+
+    constexpr auto back() const -> T& {
+        return ptr_[size_ - 1];
+    }
+
+    constexpr auto empty() const {
+        return size_ == 0;
+    }
+
+    auto subspan(size_type from, size_type to = 0) {
+        if(!to)
+            to = size_ - from;
+        if(from > size_ || to > size_ || from > to)
+            throw std::out_of_range("Invalid subslice range");
+
+        if(from >= size_)
+            return span(ptr_, 0);
+
+        return span(ptr_, to - from);
+    }
+
+private:
+    T *ptr_{nullptr};
+    size_type size_{0};
+};
+
 using byteslice = slice<std::byte>;
+
+template<typename T, std::size_t S>
+constexpr auto make_span(T(&arr)[S]) {
+        return span<T>(arr);
+}
+
+template<typename Container>
+auto make_span(Container& container) -> span<typename Container::value_type> {
+    return span<typename Container::value_type>(container);
+}
 } // end namespace
 #endif

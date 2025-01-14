@@ -14,7 +14,8 @@ help text. Support for a kind of golang init() thru init\_t also introduced.
 ## array.hpp
 
 Specialized array class with offset. This also includes an enhanced vector
-class that acts more like what slice does in other languages.
+class that acts more like what slice does in other languages, and a simplified
+C++17 friendly version of spans.
 
 ## atomics.hpp
 
@@ -107,6 +108,11 @@ effectively emulate on some targets.
 
 Generate random keys and data using openssl rand functions. Also has some
 utility functions like b64 support for binary data and to manipulate keys.
+
+## ranges.hpp
+
+A simplified C++17 version of std::ranges. It also includes some features not
+found in C++20.
 
 ## scan.hpp
 

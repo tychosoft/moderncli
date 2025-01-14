@@ -45,6 +45,11 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(copy[0] == slicer[0]);   // independent memory copies...
         assert(copy.data() != slicer.data());
         assert(copy == slicer);
+
+        const auto spanner = make_span(slicer);
+        assert(spanner.front() == "first");
+        assert(spanner.size() == 20);
+
     }
     catch(...) {
         ::exit(-1);
