@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "array.hpp"
+#include "memory.hpp"
 #include <string>
 #include <cstdlib>
 
@@ -50,6 +51,15 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(spanner.front() == "first");
         assert(spanner.size() == 20);
 
+        auto shared = bytearray_t(3, 7);
+        auto shared1 = shared;
+        {
+            auto shared2 = shared;
+            shared2[0] = 9;
+        }
+        assert(shared1.count() == 2);
+        assert(shared1[2] == 7);
+        assert(shared1[0] == 9);
     }
     catch(...) {
         ::exit(-1);

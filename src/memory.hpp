@@ -40,17 +40,25 @@ public:
     shared_array(const shared_array& other) = default;
 
     explicit shared_array(size_type size) :
-    array_(std::make_shared<T[]>(size)), size_(size) {}
+    array_(std::make_shared<T>(size)), size_(size) {}
 
-    template <typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
+    shared_array(size_type size, const T& init) :
+    array_(std::make_shared<T>(size)), size_(size) {
+        size_type pos = 0;
+        auto ptr = get();
+        while(pos < size)
+            ptr[pos++] = init;
+    }
+
+    template<typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
     explicit shared_array(const crypto::key_t& key) :
-    array_(key.second ? std::make_shared<T[]>(key.second) : nullptr), size_(key.second) {
+    array_(key.second ? std::make_shared<T>(key.second / sizeof(T)) : nullptr), size_(key.second / sizeof(T)) {
         if(size_)
-            memcpy(array_.get(), key.first, size_); // FlawFinder: ignore
+            memcpy(array_.get(), key.first, key.second); // FlawFinder: ignore
     }
 
     shared_array(const T* from, size_type size) :
-    array_(size ? std::make_shared<T[]>(size) : nullptr), size_(size) {
+    array_(size ? std::make_shared<T>(size) : nullptr), size_(size) {
         if(size)
             memcpy(array_.get(), from, sizeof(T) * size);   // FlawFinder: ignore
     }
@@ -58,6 +66,12 @@ public:
     shared_array(shared_array&& other) noexcept :
     array_(std::move(other.array_)), size_(other.size_) {
         other.size_ = 0;
+    }
+
+    // finalize shared data
+    ~shared_array() {
+        if(!empty() && count() == 1)
+            zero();
     }
 
     operator crypto::key_t() const noexcept {
@@ -88,7 +102,7 @@ public:
     auto operator[](size_type index) -> T& {
         if(index >= size_)
             throw std::out_of_range("Index is out of range");
-        return array_[index];
+        return array_.get()[index];
     }
 
     auto operator[](size_type index) const -> const T& {
@@ -130,7 +144,7 @@ public:
     }
 
     auto key() const -> crypto::key_t {
-        return std::make_pair(reinterpret_cast<uint8_t*>(array_.get()), size_);
+        return std::make_pair(reinterpret_cast<uint8_t*>(array_.get()), size_bytes());
     }
 
     auto empty() const noexcept {
@@ -159,7 +173,7 @@ public:
 
     auto zero() noexcept {
         if(size_)
-            memset(array_, 0, sizeof(T) * size_);
+            memset(array_.get(), 0, sizeof(T) * size_);
     }
 
     auto to_hex() const {
@@ -476,7 +490,7 @@ private:
     }
 };
 
-using bytearray_t = shared_array<std::byte>;
+using bytearray_t = shared_array<uint8_t>;
 using chararray_t = shared_array<char>;
 using wordarray_t = shared_array<uint16_t>;
 using longarray_t = shared_array<uint32_t>;

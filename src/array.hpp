@@ -242,7 +242,7 @@ private:
     size_type size_{0};
 };
 
-using byteslice = slice<std::byte>;
+using byteslice_t = slice<uint8_t>;
 
 template<typename T, std::size_t S>
 constexpr auto make_span(T(&arr)[S]) {
