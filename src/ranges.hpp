@@ -46,6 +46,17 @@ private:
 };
 
 template<typename Container>
+auto copy(const Container& container, std::size_t pos, std::size_t count) {
+    Container result;
+    if(!count || pos >= container.size())
+        return result;
+    if(pos + count >= container.size())
+        count = container.size() - pos;
+    std::copy_n(std::advance(container.begin(), pos), count, std::back_inserter(result));
+    return result;
+}
+
+template<typename Container>
 auto take(const Container& container, std::size_t size) {
     Container result;
     std::copy_n(container.begin(), std::min(size, container.size()), std::back_inserter(result));

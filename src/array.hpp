@@ -157,10 +157,15 @@ public:
         this->erase(std::remove_if(this->begin(), this->end(), pred), this->end());
     }
 
-    void remove(size_type start, size_type last) const {
-        if (start > this->size() || last > this->size() || start > last)
-            throw std::out_of_range("Invalid subspan range");
-        this->erase(this->begin() + start, this->begin() + last);
+    void remove(size_type pos, size_type count = 0) const {
+        if(pos + count > this->size())
+            throw std::out_of_range("Invalid slice range");
+        if(!count)
+            count = this->size() - pos;
+        if(!count)
+            this->clear();
+        else
+            this->erase(this->begin() + pos, this->begin() + pos + count);
     }
 
     void remove(const T& value) {
