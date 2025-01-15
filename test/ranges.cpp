@@ -5,6 +5,7 @@
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "ranges.hpp"
 #include <vector>
+#include <cstdlib>
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     try {
