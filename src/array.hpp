@@ -116,12 +116,12 @@ public:
         return std::find(this->begin(), this->end(), value) != this->end();
     }
 
-    auto subslice(size_type start, size_type last = 0) const {
-        if(!last)
-            last = this->size() - start;
-        if(start > this->size() || last > this->size() || start > last)
+    auto subslice(size_type pos, size_type count = 0) const {
+        if(pos + count > this->size())
             throw std::out_of_range("Invalid subslice range");
-        return slice(this->begin() + start, this->begin() + last);
+        if(!count)
+            count = this->size() - pos;
+        return slice(this->begin() + pos, this->begin() + pos + count);
     }
 
     template <typename Func>
@@ -226,16 +226,10 @@ public:
         return size_ == 0;
     }
 
-    auto subspan(size_type from, size_type to = 0) {
-        if(!to)
-            to = size_ - from;
-        if(from > size_ || to > size_ || from > to)
-            throw std::out_of_range("Invalid subslice range");
-
-        if(from >= size_)
-            return span(ptr_, 0);
-
-        return span(ptr_, to - from);
+    auto subspan(size_type pos, size_type count = 0) {
+        if(pos + count > size_)
+            throw std::out_of_range("Invalid subspan range");
+        return span(ptr_ + pos, count ? count : size_ - pos);
     }
 
 private:

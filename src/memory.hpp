@@ -44,13 +44,15 @@ public:
 
     template <typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
     explicit shared_array(const crypto::key_t& key) :
-    array_(std::make_shared<T[]>(key.second)), size_(key.second) {
-        memcpy(array_.get(), key.first, size_); // FlawFinder: ignore
+    array_(key.second ? std::make_shared<T[]>(key.second) : nullptr), size_(key.second) {
+        if(size_)
+            memcpy(array_.get(), key.first, size_); // FlawFinder: ignore
     }
 
     shared_array(const T* from, size_type size) :
-    array_(std::make_shared<T[]>(size)), size_(size) {
-        memcpy(array_.get(), from, sizeof(T) * size);   // FlawFinder: ignore
+    array_(size ? std::make_shared<T[]>(size) : nullptr), size_(size) {
+        if(size)
+            memcpy(array_.get(), from, sizeof(T) * size);   // FlawFinder: ignore
     }
 
     shared_array(shared_array&& other) noexcept :
@@ -184,10 +186,10 @@ public:
         return std::find(begin(), end(), value) != end();
     }
 
-    auto subarray(size_type start, size_t last) {
-        if (start > this->size() || last > this->size() || start > last)
+    auto subarray(size_type pos, size_t count = 0) {
+        if(pos + count > size_)
             throw std::out_of_range("Invalid subarray range");
-        return shared_array(begin() + start, begin() + last);
+        return shared_array(get() + pos, count ? count : size_ - pos);
     }
 
     static auto from_hex(std::string_view from) {
