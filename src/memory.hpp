@@ -138,7 +138,11 @@ public:
     }
 
     auto size() const noexcept {
-        sizeof(T) * size_;
+        return size_;
+    }
+
+    auto size_bytes() const noexcept {
+        return size_ * sizeof(T);
     }
 
     auto view() const {
@@ -159,11 +163,11 @@ public:
     }
 
     auto to_hex() const {
-        return to_hex(get(), size());
+        return to_hex(get(), size_bytes());
     }
 
     auto to_b64() const {
-        return to_b64(get(), size());
+        return to_b64(get(), size_bytes());
     }
 
     auto begin() const {
@@ -186,10 +190,14 @@ public:
         return std::find(begin(), end(), value) != end();
     }
 
-    auto subarray(size_type pos, size_t count = 0) {
+    auto subarray(size_type pos, size_t count = 0) const {
         if(pos + count > size_)
             throw std::out_of_range("Invalid subarray range");
         return shared_array(get() + pos, count ? count : size_ - pos);
+    }
+
+    auto clone() const {
+        return shared_array(get(), size_);
     }
 
     static auto from_hex(std::string_view from) {

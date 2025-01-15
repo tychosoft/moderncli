@@ -18,7 +18,7 @@ public:
 
     template <typename Container>
     auto operator()(const Container& container) const {
-        Container result;
+        Container result{};
         std::copy_if(container.begin(), container.end(), std::back_inserter(result), pred_);
         return result;
     }
@@ -36,7 +36,7 @@ public:
 
     template <typename Container>
     auto operator()(const Container& container) const {
-        Container result;
+        Container result{};
         std::transform(container.begin(), container.end(), std::back_inserter(result), func_);
         return result;
     }
@@ -47,7 +47,7 @@ private:
 
 template<typename Container>
 auto copy(const Container& container, std::size_t pos, std::size_t count) {
-    Container result;
+    Container result{};
     if(!count || pos >= container.size())
         return result;
     if(pos + count >= container.size())
@@ -58,14 +58,14 @@ auto copy(const Container& container, std::size_t pos, std::size_t count) {
 
 template<typename Container>
 auto take(const Container& container, std::size_t size) {
-    Container result;
+    Container result{};
     std::copy_n(container.begin(), std::min(size, container.size()), std::back_inserter(result));
     return result;
 }
 
 template<typename Container>
 auto drop(const Container& container, std::size_t size) {
-    Container result;
+    Container result{};
     if (size < container.size())
         std::copy(container.begin() + size, container.end(), std::back_inserter(result));
     return result;
@@ -105,7 +105,7 @@ auto fold(const Container& container, T init, Func func) -> T {
 
 template<typename Container, typename Func>
 auto make(std::size_t size, Func func) {
-    Container result;
+    Container result{};
     std::fill_n(std::back_inserter(result), size, func());
     return result;
 }

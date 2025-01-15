@@ -105,7 +105,7 @@ inline auto value(std::string_view& text, uint64_t max = 2147483647) -> uint32_t
     uint64_t value = 0;
     while(!text.empty() && isdigit(text.front())) {
         value *= 10;
-        value += (text.front()) - '0';
+        value += uint64_t(text.front() - '0');
         if(value > max) {
             value /= 10;
             break;

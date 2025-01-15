@@ -231,7 +231,7 @@ public:
         return size_ == 0;
     }
 
-    auto subspan(size_type pos, size_type count = 0) {
+    auto subspan(size_type pos, size_type count = 0) const {
         if(pos + count > size_)
             throw std::out_of_range("Invalid subspan range");
         return span(ptr_ + pos, count ? count : size_ - pos);
