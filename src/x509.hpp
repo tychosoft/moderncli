@@ -145,14 +145,13 @@ private:
         BIO_read(bio, buf, sizeof(buf) - 1);
         BIO_free(bio);
 
-        std::tm tm = {};
-        char month[4]{};
         int year{}, day{}, hour{}, minute{}, second{};
-        sscanf(buf, "%3s %d %d:%d:%d %d", month, &day, &hour, &minute, &second, &year); // NOLINT
-        auto it = std::find(std::begin(months), std::end(months), std::string(month));
+        sscanf(buf + 4, "%d %d:%d:%d %d", &day, &hour, &minute, &second, &year); // NOLINT
+        auto it = std::find(std::begin(months), std::end(months), std::string(buf, 3));
         if(it == std::end(months))
             return 0;
 
+        std::tm tm = {};
         tm.tm_mon = int(std::distance(std::begin(months), it));
         tm.tm_mday = day;
         tm.tm_hour = hour;
