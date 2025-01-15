@@ -52,9 +52,9 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(spanner.size() == 20);
 
         auto shared = bytearray_t(3, 7);
-        auto shared1 = shared;
+        auto shared1(shared);
         {
-            auto shared2 = shared;
+            auto shared2(shared);
             shared2[0] = 9;
         }
         assert(shared1.count() == 2);

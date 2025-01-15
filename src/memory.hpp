@@ -30,11 +30,12 @@ using key_t = std::pair<const uint8_t *, std::size_t>;
 template<typename T>
 class shared_array final {
 public:
-    using size_type = std::size_t;
+    using size_type = uint32_t;
     using pointer = T*;
     using const_pointer = const T*;
     using iterator = T*;
     using const_iterator = const T*;
+    using element_type = T;
 
     shared_array() = default;
     shared_array(const shared_array& other) = default;
@@ -44,7 +45,7 @@ public:
 
     shared_array(size_type size, const T& init) :
     array_(std::make_shared<T>(size)), size_(size) {
-        size_type pos = 0;
+        auto pos = size_type(0);
         auto ptr = get();
         while(pos < size)
             ptr[pos++] = init;
@@ -52,7 +53,7 @@ public:
 
     template<typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
     explicit shared_array(const crypto::key_t& key) :
-    array_(key.second ? std::make_shared<T>(key.second / sizeof(T)) : nullptr), size_(key.second / sizeof(T)) {
+    array_(key.second ? std::make_shared<T>(uint32_t(key.second / sizeof(T))) : nullptr), size_(key.second / sizeof(T)) {
         if(size_)
             memcpy(array_.get(), key.first, key.second); // FlawFinder: ignore
     }
@@ -131,13 +132,13 @@ public:
         return *array_;
     }
 
-    auto get() {
+    auto get() -> T* {
         if(!size_)
             throw std::out_of_range("Cannot return empty object");
         return array_.get();
     }
 
-    auto get() const {
+    auto get() const -> const T* {
         if(!size_)
             throw std::out_of_range("Cannot return empty object");
         return array_.get();
@@ -160,7 +161,7 @@ public:
     }
 
     auto view() const {
-        return size_ ? std::string_view(reinterpret_cast<const char *>(&array_[0]), size_) : std::string_view();
+        return size_ ? std::string_view(reinterpret_cast<const char *>(&array_[0]), size_ * sizeof(T)) : std::string_view();
     }
 
     auto count() const {
@@ -218,7 +219,7 @@ public:
         auto bsize = from.size() / 2;
         while(sizeof(T) > 1 && bsize % sizeof(T))
             ++bsize;
-        auto mem = shared_array(bsize / sizeof(T));
+        auto mem = shared_array(uint32_t(bsize / sizeof(T)));
         if(tycho::from_hex(from, mem.get(), bsize) < from.size() / 2)
             return shared_array();
         return mem;
@@ -229,7 +230,7 @@ public:
         auto alloc = bsize;
         while(sizeof(T) > 1 && alloc % sizeof(T))
             ++alloc;
-        auto mem = shared_array(alloc / sizeof(T));
+        auto mem = shared_array(uint32_t(alloc / sizeof(T)));
         if(tycho::from_b64(from, mem.get(), bsize) < bsize)
             return shared_array();
         return mem;
