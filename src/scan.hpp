@@ -379,6 +379,8 @@ template<typename T = unsigned>
 inline auto get_unsigned(std::string_view text, T min = 0, T max = std::numeric_limits<T>::max()) {
     static_assert(
         std::is_same_v<T, unsigned> ||
+        std::is_same_v<T, unsigned short> ||
+        std::is_same_v<T, unsigned long> ||
         std::is_same_v<T, uint32_t> ||
         std::is_same_v<T, uint16_t> ||
         std::is_same_v<T, uint8_t>,
@@ -387,37 +389,20 @@ inline auto get_unsigned(std::string_view text, T min = 0, T max = std::numeric_
     if(text.empty() || !isdigit(text.front()))
         throw std::invalid_argument("Value missing or invalid");
 
-    auto value = unsigned(scan::value(text, max));
+    auto value = T(scan::value(text, max));
     if(!text.empty() && isdigit(text.front()))
         throw std::overflow_error("Value too big");
 
     if(value < min)
             throw std::out_of_range("value too small");
 
-    return T(value);
+    return value;
 }
 
 template<typename T = unsigned>
 inline auto get_unsigned_or(std::string_view text, T or_else = 0, T min = 0, T max = std::numeric_limits<T>::max()) {
-    static_assert(
-        std::is_same_v<T, unsigned> ||
-        std::is_same_v<T, uint32_t> ||
-        std::is_same_v<T, uint16_t> ||
-        std::is_same_v<T, uint8_t>,
-        "Invalid unsigned type" );
-
     try {
-        if(text.empty() || !isdigit(text.front()))
-            throw std::invalid_argument("Value missing or invalid");
-
-        auto value = unsigned(scan::value(text, max));
-        if(!text.empty() && isdigit(text.front()))
-            throw std::overflow_error("Value too big");
-
-        if(value < min)
-            throw std::out_of_range("value too small");
-
-        return T(value);
+        return get_unsigned<T>(text, min, max);
     }
     catch(const std::exception& e) {
         return or_else;
@@ -428,32 +413,21 @@ template<typename T = int>
 inline auto get_integer(std::string_view text, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()) {
     static_assert(
         std::is_same_v<T, int> ||
+        std::is_same_v<T, long> ||
         std::is_same_v<T, short> ||
         std::is_same_v<T, int32_t> ||
         std::is_same_v<T, int16_t> ||
-        std::is_same_v<T, uint16_t> ||
         std::is_same_v<T, char> ||
-        std::is_same_v<T, int8_t> ||
-        std::is_same_v<T, uint8_t>,
-        "Invalid integer type" );
+        std::is_same_v<T, int8_t>,
+        "Invalid integer type");
+
     return T(get_value(text, int32_t(min), int32_t(max)));
 }
 
 template<typename T = int>
 inline auto get_integer_or(std::string_view text, T or_else = 0, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()) {
-    static_assert(
-        std::is_same_v<T, int> ||
-        std::is_same_v<T, short> ||
-        std::is_same_v<T, int32_t> ||
-        std::is_same_v<T, int16_t> ||
-        std::is_same_v<T, uint16_t> ||
-        std::is_same_v<T, char> ||
-        std::is_same_v<T, int8_t> ||
-        std::is_same_v<T, uint8_t>,
-        "Invalid integer type" );
-
     try {
-        return T(get_value(text, int32_t(min), int32_t(max)));
+        return get_integer<T>(text, min, max);
     }
     catch(const std::exception& e) {
         return T(or_else);
@@ -470,21 +444,11 @@ inline auto get_bool_or(std::string_view text, bool or_else) {
 }
 
 inline auto get_count_or(std::string_view text, uint16_t or_else = 0, uint16_t max = 65535) {
-    try {
-        return uint16_t(get_value(text, 1, max));
-    }
-    catch(const std::exception& e) {
-        return or_else;
-    }
+    return get_unsigned_or<uint16_t>(text, or_else, 1, max);
 }
 
 inline auto get_range_or(std::string_view text, uint32_t or_else = 0, uint32_t min = 1, uint32_t max = 65535UL) {
-    try {
-        return uint32_t(get_value(text, int32_t(min), int32_t(max)));
-    }
-    catch(const std::exception& e) {
-        return or_else;
-    }
+    return get_unsigned_or<uint32_t>(text, or_else, min, max);
 }
 
 inline auto get_seconds_or(std::string_view text, uint32_t or_else = 0) {
