@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <cstdint>
 #include <cctype>
+#include <limits>
 
 // low level utility scan functions
 namespace tycho::scan {
@@ -182,7 +183,6 @@ inline auto get_lower(std::string_view text, char quote = '\"') {
     return result;
 }
 
-
 inline auto get_literal(std::string_view text, char quote = '\"') {
     if(text.size() > 1 && text.front() == text.back() && text.front() == quote) {
         text.remove_prefix(1);
@@ -287,6 +287,42 @@ inline auto get_bool(std::string_view& text) {
     if(match(text, "off", true) && text.empty())
         return false;
     throw std::out_of_range("Bool not valid");
+}
+
+template<typename T = int>
+inline auto get_integer(const std::string_view text, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()) {
+    static_assert(
+        std::is_same_v<T, int> ||
+        std::is_same_v<T, short> ||
+        std::is_same_v<T, int32_t> ||
+        std::is_same_v<T, int16_t> ||
+        std::is_same_v<T, uint16_t> ||
+        std::is_same_v<T, char> ||
+        std::is_same_v<T, int8_t> ||
+        std::is_same_v<T, uint8_t>,
+        "IntegerType must be int32_t, int16_t, uint16_t, char, or uint8_t" );
+    return T(get_value(text, int32_t(min), int32_t(max)));
+}
+
+template<typename T = int>
+inline auto get_integer_or(const std::string_view text, T or_else = 0, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()) {
+    static_assert(
+        std::is_same_v<T, int> ||
+        std::is_same_v<T, short> ||
+        std::is_same_v<T, int32_t> ||
+        std::is_same_v<T, int16_t> ||
+        std::is_same_v<T, uint16_t> ||
+        std::is_same_v<T, char> ||
+        std::is_same_v<T, int8_t> ||
+        std::is_same_v<T, uint8_t>,
+        "IntegerType must be int32_t, int16_t, uint16_t, char, or uint8_t" );
+
+    try {
+        return T(get_value(text, int32_t(min), int32_t(max)));
+    }
+    catch(const std::exception& e) {
+        return T(or_else);
+    }
 }
 
 inline auto get_bool_or(std::string_view text, bool or_else) {

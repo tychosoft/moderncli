@@ -34,6 +34,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
         text = "\"hello\\nworld\""; // NOLINT
         assert(get_string(text) == "hello\nworld");
+
+        auto myint = get_integer<uint16_t>("23");
+        assert(myint == 23);
+        assert(sizeof(myint) == 2); // NOLINT
     }
     catch(std::exception& e) {
         printf("Error: %s\n", e.what());
