@@ -52,5 +52,11 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
     caller();
     assert(value == 2);
+
+    auto speed = 3600;
+    assert(const_list(speed, 9600, {300, 1200, 2400, 9600}) == 9600);
+
+    speed = 1200;
+    assert(const_list(speed, 9600, {300, 1200, 2400, 9600}) == 1200);
 }
 
