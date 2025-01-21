@@ -43,8 +43,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(const_copy(p) == 1);
     assert(const_max(value, mv) == 2);
 
-    assert(const_range(value, 1, 2));
-    assert(!const_range(value, 7, 10));
+    assert(in_range(value, 1, 2));
+    assert(!in_range(value, 7, 10));
 
     auto tv = tmparray<int>(3);
     tv[2] = 3;
@@ -54,9 +54,9 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(value == 2);
 
     auto speed = 3600;
-    assert(const_list(speed, 9600, {300, 1200, 2400, 9600}) == 9600);
+    assert(in_list(speed, 9600, {300, 1200, 2400, 9600}) == 9600);
 
     speed = 1200;
-    assert(const_list(speed, 9600, {300, 1200, 2400, 9600}) == 1200);
+    assert(in_list(speed, 9600, {300, 1200, 2400, 9600}) == 1200);
 }
 
