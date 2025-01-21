@@ -61,12 +61,12 @@ constexpr auto const_clamp(const T& value, const T& min, const T& max) {
 }
 
 template <typename T>
-constexpr auto const_range(const T& value, const T& min, const T& max) {
+constexpr auto in_range(const T& value, const T& min, const T& max) {
     return (value >= min && value <= max);
 }
 
 template <typename T>
-constexpr auto const_list(const T& value, const T& or_else, const std::initializer_list<T>& list) {
+constexpr auto in_list(const T& value, const T& or_else, const std::initializer_list<T>& list) {
     for(const auto& item : list) {
         // cppcheck-suppress useStlAlgorithm
         if(item == value)
@@ -76,7 +76,7 @@ constexpr auto const_list(const T& value, const T& or_else, const std::initializ
 }
 
 template<typename T>
-constexpr auto abs(T value) {
+constexpr auto const_abs(T value) {
     static_assert(std::is_integral_v<T> && !std::is_unsigned_v<T>, "T must be signed number");
 
     return (value < 0) ? -value : value;
