@@ -7,9 +7,10 @@
 #include <string_view>
 #include <string>
 #include <stdexcept>
+#include <limits>
 #include <cstdint>
 #include <cctype>
-#include <limits>
+#include <cmath>
 
 // low level utility scan functions
 namespace tycho::scan {
@@ -102,7 +103,7 @@ inline auto text(std::string_view& text, bool quoted = false) -> std::string {
     return result;
 }
 
-inline auto value(std::string_view& text, uint64_t max = 2147483647) -> uint32_t {
+inline auto value(std::string_view& text, uint64_t max = 2147483647) -> uint64_t {
     uint64_t value = 0;
     while(!text.empty() && isdigit(text.front())) {
         value *= 10;
@@ -114,6 +115,41 @@ inline auto value(std::string_view& text, uint64_t max = 2147483647) -> uint32_t
         text.remove_prefix(1);
     }
     return value;
+}
+
+inline auto decimal(std::string_view& text, uint64_t max = 2147483647) -> double {
+    auto integer = value(text, max);
+    double fraction = 0.0;
+    double divisor = 1.0;
+
+    if (!text.empty() && text.front() == '.') {
+        text.remove_prefix(1);
+        while(!text.empty() && isdigit(text.front())) {
+            divisor /= 10;
+            fraction += (text.front() - '0') * divisor;
+            text.remove_prefix(1);
+        }
+    }
+    return double(integer) + fraction;
+}
+
+inline auto real(std::string_view& text, uint64_t max = 2147483647) -> double {
+    double number = decimal(text, max);
+    if (!text.empty() && (text.front() == 'e' || text.front() == 'E')) {
+        text.remove_prefix(1);
+        bool negative = false;
+        if (!text.empty() && (text.front() == '+' || text.front() == '-')) {
+            negative = (text.front() == '-');
+            text.remove_prefix(1);
+        }
+
+        auto exponent = int(value(text));
+        if (negative)
+            number *= std::pow(10, -exponent);
+        else
+            number *= std::pow(10, exponent);
+    }
+    return number;
 }
 
 inline auto match(std::string_view& text, const std::string_view& find, bool insensitive = false) {
@@ -191,6 +227,56 @@ inline auto get_literal(std::string_view text, char quote = '\"') {
     return std::string{text};
 }
 
+inline auto get_decimal(std::string_view text) {
+    bool neg = false;
+    if(!text.empty() && text.front() == '-') {
+        neg = true;
+        text.remove_prefix(1);
+    }
+
+    auto value = scan::decimal(text);
+    if(!text.empty())
+        throw std::invalid_argument("Value invalid");
+
+    if(neg)
+        return -value;
+    return value;
+}
+
+inline auto get_decimal_or(std::string_view text, double or_else = 0.0) {
+    try {
+        return get_decimal(text);
+    }
+    catch(const std::exception& e) {
+        return or_else;
+    }
+}
+
+inline auto get_real(std::string_view text) {
+    bool neg = false;
+    if(!text.empty() && text.front() == '-') {
+        neg = true;
+        text.remove_prefix(1);
+    }
+
+    auto value = scan::real(text);
+    if(!text.empty())
+        throw std::invalid_argument("Value invalid");
+
+    if(neg)
+        return -value;
+    return value;
+}
+
+inline auto get_real_or(std::string_view text, double or_else = 0.0) {
+    try {
+        return get_real(text);
+    }
+    catch(const std::exception& e) {
+        return or_else;
+    }
+}
+
 inline auto get_value(std::string_view text, int32_t min = 1, int32_t max = 65535) -> int32_t {
     bool neg = false;
     if(min < 0 && !text.empty() && text.front() == '-') {
@@ -201,18 +287,18 @@ inline auto get_value(std::string_view text, int32_t min = 1, int32_t max = 6553
     if(text.empty() || !isdigit(text.front()))
         throw std::invalid_argument("Value missing or invalid");
 
-    auto value = scan::value(text, max);
+    auto value = int32_t(scan::value(text, max));
     if(!text.empty() && isdigit(text.front()))
         throw std::overflow_error("Value too big");
 
     if(neg) {
-        auto nv = -int32_t(value);
+        auto nv = -value;
         if(nv < min)
             throw std::out_of_range("value too small");
         return nv;
     }
 
-    auto rv = int32_t(value);
+    auto rv = value;
     if(min >= 0 && rv < min)
             throw std::out_of_range("value too small");
     return rv;
@@ -222,7 +308,7 @@ inline auto get_duration(std::string_view text, bool ms = false) -> unsigned {
     if(text.empty() || !isdigit(text.front()))
         throw std::invalid_argument("Duration missing or invalid");
 
-    auto value = scan::value(text);
+    auto value = unsigned(scan::value(text));
     unsigned scale = 1;
     if(ms)
         scale = 1000UL;
