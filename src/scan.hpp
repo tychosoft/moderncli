@@ -375,8 +375,57 @@ inline auto get_bool(std::string_view& text) {
     throw std::out_of_range("Bool not valid");
 }
 
+template<typename T = unsigned>
+inline auto get_unsigned(std::string_view text, T min = 0, T max = std::numeric_limits<T>::max()) {
+    static_assert(
+        std::is_same_v<T, unsigned> ||
+        std::is_same_v<T, uint32_t> ||
+        std::is_same_v<T, uint16_t> ||
+        std::is_same_v<T, uint8_t>,
+        "Invalid unsigned type" );
+
+    if(text.empty() || !isdigit(text.front()))
+        throw std::invalid_argument("Value missing or invalid");
+
+    auto value = unsigned(scan::value(text, max));
+    if(!text.empty() && isdigit(text.front()))
+        throw std::overflow_error("Value too big");
+
+    if(value < min)
+            throw std::out_of_range("value too small");
+
+    return T(value);
+}
+
+template<typename T = unsigned>
+inline auto get_unsigned_or(std::string_view text, T or_else = 0, T min = 0, T max = std::numeric_limits<T>::max()) {
+    static_assert(
+        std::is_same_v<T, unsigned> ||
+        std::is_same_v<T, uint32_t> ||
+        std::is_same_v<T, uint16_t> ||
+        std::is_same_v<T, uint8_t>,
+        "Invalid unsigned type" );
+
+    try {
+        if(text.empty() || !isdigit(text.front()))
+            throw std::invalid_argument("Value missing or invalid");
+
+        auto value = unsigned(scan::value(text, max));
+        if(!text.empty() && isdigit(text.front()))
+            throw std::overflow_error("Value too big");
+
+        if(value < min)
+            throw std::out_of_range("value too small");
+
+        return T(value);
+    }
+    catch(const std::exception& e) {
+        return or_else;
+    }
+}
+
 template<typename T = int>
-inline auto get_integer(const std::string_view text, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()) {
+inline auto get_integer(std::string_view text, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()) {
     static_assert(
         std::is_same_v<T, int> ||
         std::is_same_v<T, short> ||
@@ -386,12 +435,12 @@ inline auto get_integer(const std::string_view text, T min = std::numeric_limits
         std::is_same_v<T, char> ||
         std::is_same_v<T, int8_t> ||
         std::is_same_v<T, uint8_t>,
-        "IntegerType must be int32_t, int16_t, uint16_t, char, or uint8_t" );
+        "Invalid integer type" );
     return T(get_value(text, int32_t(min), int32_t(max)));
 }
 
 template<typename T = int>
-inline auto get_integer_or(const std::string_view text, T or_else = 0, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()) {
+inline auto get_integer_or(std::string_view text, T or_else = 0, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()) {
     static_assert(
         std::is_same_v<T, int> ||
         std::is_same_v<T, short> ||
@@ -401,7 +450,7 @@ inline auto get_integer_or(const std::string_view text, T or_else = 0, T min = s
         std::is_same_v<T, char> ||
         std::is_same_v<T, int8_t> ||
         std::is_same_v<T, uint8_t>,
-        "IntegerType must be int32_t, int16_t, uint16_t, char, or uint8_t" );
+        "Invalid integer type" );
 
     try {
         return T(get_value(text, int32_t(min), int32_t(max)));
