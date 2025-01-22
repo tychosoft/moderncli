@@ -43,12 +43,28 @@ public:
         return std::array<T,N>::operator[](index - Offset);
     }
 
+    auto at(size_type index) -> T& {
+        if(index < Offset || index >= N + Offset)
+            throw std::out_of_range("Index out of range");
+        return at(index - Offset);
+    }
+
+    auto at(size_type index) const -> const T& {
+        if(index < Offset || index >= N + Offset)
+            throw std::out_of_range("Index out of range");
+        return at(index - Offset);
+    }
+
     constexpr auto min() const {
         return Offset;
     }
 
     constexpr auto max() const {
         return size_type(Offset + N - 1);
+    }
+
+    auto find(const T& value) const {
+        return std::find(this->begin(), this->end(), value);
     }
 
     auto contains(const T& value) const {
