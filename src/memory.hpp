@@ -160,6 +160,18 @@ public:
         return size_ * sizeof(T);
     }
 
+    auto at(size_type index) -> T& {
+        if(index >= size_)
+            throw std::out_of_range("Index is out of range");
+        return array_.get()[index];
+    }
+
+    auto at(size_type index) const -> const T& {
+        if(index >= size_)
+            throw std::out_of_range("Index is out of range");
+        return array_[index];
+    }
+
     auto view() const {
         return size_ ? std::string_view(reinterpret_cast<const char *>(&array_[0]), size_ * sizeof(T)) : std::string_view();
     }
