@@ -59,8 +59,8 @@ inline auto begins_case(const std::string_view s, const std::string_view b) {
     return true;
 }
 
-inline auto ends_case(const std::string_view s, const std::string_view b) {
-    auto size = b.size();
+inline auto ends_case(const std::string_view s, const std::string_view e) {
+    auto size = e.size();
     if(!size)
         return false;
 
@@ -68,7 +68,7 @@ inline auto ends_case(const std::string_view s, const std::string_view b) {
         return false;
 
     auto fp = s.data() + s.size() - size;
-    auto tp = b.data();
+    auto tp = e.data();
     while(size--) {
         if((*fp != *tp) && (tolower(*fp) != *tp))
             return false;
@@ -78,11 +78,15 @@ inline auto ends_case(const std::string_view s, const std::string_view b) {
     return true;
 }
 
-constexpr auto begins_with(const std::string_view s, const std::string_view &b) {
+constexpr auto contains(const std::string_view s, const std::string_view c) {
+    return s.find(c) <= s.size();
+}
+
+constexpr auto begins_with(const std::string_view s, const std::string_view b) {
     return s.find(b) == 0;
 }
 
-constexpr auto ends_with(const std::string_view s, const std::string_view &e) {
+constexpr auto ends_with(const std::string_view s, const std::string_view e) {
     if(s.size() < e.size())
         return false;
     auto pos = s.rfind(e);
