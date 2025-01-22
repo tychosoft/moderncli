@@ -40,19 +40,49 @@ constexpr auto promoted_string(T str) -> std::enable_if_t<!is_char_pointer<T>::v
     return str;
 }
 
-template<typename S = std::string>
-constexpr auto begins_with(const S& from, const std::string_view &b) {
-    static_assert(is_string_type_v<S>, "S must be a string type");
+inline auto begins_case(const std::string_view s, const std::string_view b) {
+    auto size = b.size();
+    if(!size)
+        return false;
 
-    auto s = promoted_string(from);
+    if(s.size() < size)
+        return false;
+
+    auto fp = s.data();
+    auto tp = b.data();
+    while(size--) {
+        if((*fp != *tp) && (tolower(*fp) != *tp))
+            return false;
+        ++fp;
+        ++tp;
+    }
+    return true;
+}
+
+inline auto ends_case(const std::string_view s, const std::string_view b) {
+    auto size = b.size();
+    if(!size)
+        return false;
+
+    if(s.size() < size)
+        return false;
+
+    auto fp = s.data() + s.size() - size;
+    auto tp = b.data();
+    while(size--) {
+        if((*fp != *tp) && (tolower(*fp) != *tp))
+            return false;
+        ++fp;
+        ++tp;
+    }
+    return true;
+}
+
+constexpr auto begins_with(const std::string_view s, const std::string_view &b) {
     return s.find(b) == 0;
 }
 
-template<typename S = std::string>
-constexpr auto ends_with(const S& from, const std::string_view &e) {
-    static_assert(is_string_type_v<S>, "S must be a string type");
-
-    auto s = promoted_string(from);
+constexpr auto ends_with(const std::string_view s, const std::string_view &e) {
     if(s.size() < e.size())
         return false;
     auto pos = s.rfind(e);
@@ -61,19 +91,13 @@ constexpr auto ends_with(const S& from, const std::string_view &e) {
     return s.substr(pos) == e;
 }
 
-template<typename S = std::string>
-inline auto upper_case(const S& s) {
-    static_assert(is_string_type_v<S>, "S must be a string type");
-
+inline auto upper_case(const std::string_view s) {
     auto out = std::string{s};
     std::transform(out.begin(), out.end(), out.begin(), ::toupper);
     return out;
 }
 
-template<typename S = std::string>
-inline auto lower_case(const S& s) {
-    static_assert(is_string_type_v<S>, "S must be a string type");
-
+inline auto lower_case(const std::string_view s) {
     auto out = std::string{s};
     std::transform(out.begin(), out.end(), out.begin(), ::tolower);
     return out;
@@ -235,25 +259,6 @@ constexpr auto is_integer(const std::string_view str) {
         return is_unsigned(str.substr(1, str.size() - 1));
 
     return is_unsigned(str);
-}
-
-inline auto compare(const std::string_view from, const std::string_view to) {
-    auto size = to.size();
-    if(!size)
-        return false;
-
-    if(from.size() < size)
-        return false;
-
-    auto fp = from.data();
-    auto tp = to.data();
-    while(size--) {
-        if((*fp != *tp) && (tolower(*fp) != *tp))
-            return false;
-        ++fp;
-        ++tp;
-    }
-    return true;
 }
 
 constexpr auto eq(const char *p1, const char *p2) {
