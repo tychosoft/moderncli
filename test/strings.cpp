@@ -22,13 +22,30 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(list[2] == "gone");
 
     assert(upper_case("Hi There") == "HI THERE");
-    assert(lower_case<std::string>("Hi There") == "hi there");
-    assert(strip("   testing ") == "testing");
-    assert(begins_with<std::string>("belong", "be"));
+    assert(lower_case(std::string("Hi There")) == "hi there");
+    static_assert(strip("   testing ") == "testing");
+    static_assert(strip(" \t\r  ").empty());
+    assert(strip(std::string("   testing ")) == "testing");
+    assert(strip(std::string("   testing ")).size() == 7);
+    assert(begins_with(std::string("belong"), "be"));
     static_assert(ends_with("belong", "ong"));
+    static_assert(!begins_with("belong", "tr"));
 
-    assert(unquote("'able '") == "able ");
-    assert(unquote("'able ") == "'able ");
+    static_assert(unquote("'able '") == "able ");
+    static_assert(unquote("'able ") == "'able ");
+    assert(unquote(std::string("'able ")) == "'able ");
+    assert(unquote(std::string("'able '")) == "able ");
+
+    static_assert(!is_quoted(";able'"));
+    assert(is_quoted(std::string("'able'")));
+    char qt[] = {'{', 'a', '}', 0};
+    qt[1] = 'b';
+    assert(is_quoted(qt));
+
+    static_assert(!is_unsigned("23e"));
+    static_assert(is_unsigned("246"));
+    assert(is_unsigned(std::string("246")) == true);
+    assert(is_integer(std::string("-246")) == true);
 
     assert(to_hex(buf, sizeof(buf)) == "03ff");
     assert(from_hex(hex, tmp, sizeof(tmp)) == sizeof(tmp));
@@ -36,8 +53,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     hex[2] = 'z';
     assert(from_hex(hex, tmp, sizeof(tmp)) == 1);
 
-    assert(!eq("yes", "no"));
-    assert(eq("yes", "yes"));
+    char yes[] = {'y', 'e', 's', 0};
+    yes[0] = 'y';
+    assert(!eq("yes", "no"));                           // NOLINT
+    assert(eq("yes", yes));
 
     static_assert(u8verify("\xc3\xb1"));
     static_assert(!u8verify("\xa0\xa1"));

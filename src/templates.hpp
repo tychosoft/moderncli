@@ -160,7 +160,7 @@ inline auto try_proc(Func proc) {
     }
 }
 
-inline void runtime_assert(bool check, const char *error) {
+inline void runtime_assert(bool check, const char *error = "runtime assert") {
     if(!check) throw std::runtime_error(error);
 }
 

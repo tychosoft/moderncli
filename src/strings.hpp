@@ -21,74 +21,98 @@ namespace tycho {
 template <typename T>
 inline constexpr bool is_string_type_v = std::is_convertible_v<T, std::string_view>;
 
+template<typename T>
+struct is_char_pointer : std::false_type {};
+
+template<>
+struct is_char_pointer<char*> : std::true_type {};
+
+template<>
+struct is_char_pointer<const char*> :  std::true_type {};
+
+template <typename T>
+constexpr auto promoted_string(T str) -> std::enable_if_t<is_char_pointer<T>::value, std::string_view> {
+    return std::string_view(str);
+}
+
+template <typename T>
+constexpr auto promoted_string(T str) -> std::enable_if_t<!is_char_pointer<T>::value, T> {
+    return str;
+}
+
 template<typename S = std::string>
-constexpr auto begins_with(const S& s, const std::string_view &b) {
+constexpr auto begins_with(const S& from, const std::string_view &b) {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
+    auto s = promoted_string(from);
     return s.find(b) == 0;
 }
 
 template<typename S = std::string>
-constexpr auto ends_with(const S& s, const std::string_view &e) {
+constexpr auto ends_with(const S& from, const std::string_view &e) {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
+    auto s = promoted_string(from);
     if(s.size() < e.size())
         return false;
     auto pos = s.rfind(e);
-    if(pos == S::npos)
+    if(pos > s.size())
         return false;
     return s.substr(pos) == e;
 }
 
 template<typename S = std::string>
-constexpr auto upper_case(const S& s) {
+inline auto upper_case(const S& s) {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
-    S out = s;
+    auto out = std::string{s};
     std::transform(out.begin(), out.end(), out.begin(), ::toupper);
     return out;
 }
 
 template<typename S = std::string>
-constexpr auto lower_case(const S& s) {
+inline auto lower_case(const S& s) {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
-    S out = s;
+    auto out = std::string{s};
     std::transform(out.begin(), out.end(), out.begin(), ::tolower);
     return out;
 }
 
 template<typename S = std::string>
-constexpr auto trim(const S& str) -> S {
+constexpr auto trim(const S& from) {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
+    auto str = promoted_string(from);
     auto last = str.find_last_not_of(" \t\f\v\n\r");
-    if(last == S::npos)
-        return "";
+    if(last > str.size())
+        return str.substr(0, 0);
     return str.substr(0, ++last);
 }
 
 template<typename S = std::string>
-constexpr auto strip(const S& str) -> S {
+constexpr auto strip(const S& from) {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
+    auto str = promoted_string(from);
     const std::size_t first = str.find_first_not_of(" \t\f\v\n\r");
     const std::size_t last = str.find_last_not_of(" \t\f\v\n\r");
-    if(last == S::npos)
-        return "";
+    if(last > str.size())
+        return str.substr(0, 0);
     return str.substr(first, (last-first+1));
 }
 
 template<typename S = std::string>
-constexpr auto unquote(const S& str, std::string_view pairs = R"(""''{})") -> S {
+constexpr auto unquote(const S& from, std::string_view pairs = R"(""''{})") {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
+    auto str = promoted_string(from);
     if(str.empty())
-        return "";
-    auto pos = pairs.find_first_of(str[0]);
-    if(pos == S::npos || (pos & 0x01))
         return str;
-    auto len = str.length();
+    auto pos = pairs.find_first_of(str[0]);
+    if(pos > str.size() || (pos & 0x01))
+        return str;
+    auto len = str.size();
     if(--len < 1)
         return str;
     if(str[len] == pairs[++pos])
@@ -164,15 +188,16 @@ finish:
             prev = current;
         current = str.find_first_of(delim, prev);
     }
-    if(prev < str.length())
+    if(prev < str.size())
         result.emplace_back(str.substr(prev));
     return result;
 }
 
 template<typename S = std::string_view>
-inline auto is_line(const S& str) {
+constexpr auto is_line(const S& from) {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
+    auto str = promoted_string(from);
     if(str.size() < 1)
         return false;
 
@@ -182,33 +207,53 @@ inline auto is_line(const S& str) {
     return false;
 }
 
-// convenience function for string conversions if not explicit for template
+template<typename S = std::string_view>
+constexpr auto is_quoted(const S& from, std::string_view pairs = R"(""''{})") {
+    static_assert(is_string_type_v<S>, "S must be a string type");
 
-inline auto upper_case(const char *s) {
-    return upper_case(std::string(s));
+    auto str = promoted_string(from);
+    if(str.size() < 2)
+        return false;
+    auto pos = pairs.find_first_of(str[0]);
+    if(pos == std::string_view::npos || (pos & 0x01))
+        return false;
+    auto len = str.size();
+    return str[--len] == pairs[++pos];
 }
 
-inline auto lower_case(const char *s) {
-    return lower_case(std::string(s));
+template<typename S = std::string_view>
+constexpr auto is_unsigned(const S& from) {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
+    auto str = promoted_string(from);
+    auto len = str.size();
+    if(!len)
+        return false;
+
+    auto pos = size_t(0);
+    while(pos < len) {
+        if(str[pos] < '0' || str[pos] > '9')
+            return false;
+        ++pos;
+    }
+    return true;
 }
 
-inline auto strip(const char *s) {
-    return strip(std::string(s));
+template<typename S = std::string_view>
+constexpr auto is_integer(const S& from) {
+    static_assert(is_string_type_v<S>, "S must be a string type");
+
+    auto str = promoted_string(from);
+    if(str.empty())
+            return false;
+
+    if(str[0] == '-')
+        return is_unsigned(str.substr(1, str.size() - 1));
+
+    return is_unsigned(str);
 }
 
-inline auto unquote(const char *s, const char *p = R"(""''{})") {
-    return unquote(std::string(s), std::string(p));
-}
-
-constexpr auto begins_with(const char *s, const char *b) {
-    return begins_with<std::string_view>(s, b);
-}
-
-constexpr auto ends_with(const char *s, const char *e) {
-    return ends_with<std::string_view>(s, e);
-}
-
-inline auto eq(const char *p1, const char *p2) {
+constexpr auto eq(const char *p1, const char *p2) {
     if(!p1 && !p2)
         return true;
 
