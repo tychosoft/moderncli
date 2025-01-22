@@ -58,6 +58,9 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(!eq("yes", "no"));                           // NOLINT
     assert(eq("yes", yes));
 
+    assert(!compare("hi", "hi, there"));
+    assert(compare("Hi, there", "hi"));
+
     static_assert(u8verify("\xc3\xb1"));
     static_assert(!u8verify("\xa0\xa1"));
 }

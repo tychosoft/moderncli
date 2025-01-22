@@ -193,12 +193,8 @@ finish:
     return result;
 }
 
-template<typename S = std::string_view>
-constexpr auto is_line(const S& from) {
-    static_assert(is_string_type_v<S>, "S must be a string type");
-
-    auto str = promoted_string(from);
-    if(str.size() < 1)
+constexpr auto is_line(const std::string_view str) {
+    if(str.empty())
         return false;
 
     if(str[str.size() - 1] == '\n')
@@ -207,11 +203,7 @@ constexpr auto is_line(const S& from) {
     return false;
 }
 
-template<typename S = std::string_view>
-constexpr auto is_quoted(const S& from, std::string_view pairs = R"(""''{})") {
-    static_assert(is_string_type_v<S>, "S must be a string type");
-
-    auto str = promoted_string(from);
+constexpr auto is_quoted(const std::string_view str, std::string_view pairs = R"(""''{})") {
     if(str.size() < 2)
         return false;
     auto pos = pairs.find_first_of(str[0]);
@@ -221,11 +213,7 @@ constexpr auto is_quoted(const S& from, std::string_view pairs = R"(""''{})") {
     return str[--len] == pairs[++pos];
 }
 
-template<typename S = std::string_view>
-constexpr auto is_unsigned(const S& from) {
-    static_assert(is_string_type_v<S>, "S must be a string type");
-
-    auto str = promoted_string(from);
+constexpr auto is_unsigned(const std::string_view str) {
     auto len = str.size();
     if(!len)
         return false;
@@ -239,11 +227,7 @@ constexpr auto is_unsigned(const S& from) {
     return true;
 }
 
-template<typename S = std::string_view>
-constexpr auto is_integer(const S& from) {
-    static_assert(is_string_type_v<S>, "S must be a string type");
-
-    auto str = promoted_string(from);
+constexpr auto is_integer(const std::string_view str) {
     if(str.empty())
             return false;
 
@@ -251,6 +235,25 @@ constexpr auto is_integer(const S& from) {
         return is_unsigned(str.substr(1, str.size() - 1));
 
     return is_unsigned(str);
+}
+
+inline auto compare(const std::string_view from, const std::string_view to) {
+    auto size = to.size();
+    if(!size)
+        return false;
+
+    if(from.size() < size)
+        return false;
+
+    auto fp = from.data();
+    auto tp = to.data();
+    while(size--) {
+        if((*fp != *tp) && (tolower(*fp) != *tp))
+            return false;
+        ++fp;
+        ++tp;
+    }
+    return true;
 }
 
 constexpr auto eq(const char *p1, const char *p2) {
