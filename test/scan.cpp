@@ -41,6 +41,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
         auto mydec = get_decimal("-17.05");
         assert(mydec == -17.05);
+
+        assert(get_hex("f0") == 240);
     }
     catch(std::exception& e) {
         printf("Error: %s\n", e.what());

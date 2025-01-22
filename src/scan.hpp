@@ -14,6 +14,8 @@
 
 // low level utility scan functions
 namespace tycho::scan {
+constexpr std::string_view hex_digits("0123456789abcdef");
+
 inline auto count(const std::string_view& text, char code) {
     std::size_t count = 0;
     for(const char ch : text)
@@ -33,6 +35,23 @@ inline auto pow(long base, long exp) {
         base *= base;
     }
     return result;
+}
+
+inline auto hex(std::string_view& text, unsigned digits = 8) -> uint64_t {
+    uint64_t val = 0;
+
+    if(digits > 8)
+        return val;
+
+    while(digits-- && !text.empty()) {
+        auto pos = hex_digits.find(char(tolower(text.front())));
+        if(pos > 15)
+            return val;
+        val <<= 4;
+        val |= pos;
+        text.remove_prefix(1);
+    }
+    return val;
 }
 
 inline auto text(std::string_view& text, bool quoted = false) -> std::string {
@@ -291,6 +310,9 @@ inline auto get_value(std::string_view text, int32_t min = 1, int32_t max = 6553
     if(!text.empty() && isdigit(text.front()))
         throw std::overflow_error("Value too big");
 
+    if(!text.empty())
+        throw std::invalid_argument("value invalid");
+
     if(neg) {
         auto nv = -value;
         if(nv < min)
@@ -376,6 +398,35 @@ inline auto get_bool(std::string_view& text) {
 }
 
 template<typename T = unsigned>
+inline auto get_hex(std::string_view text) {
+    static_assert(
+        std::is_same_v<T, unsigned> ||
+        std::is_same_v<T, unsigned short> ||
+        std::is_same_v<T, unsigned long> ||
+        std::is_same_v<T, unsigned long long> ||
+        std::is_same_v<T, uint64_t> ||
+        std::is_same_v<T, uint32_t> ||
+        std::is_same_v<T, uint16_t> ||
+        std::is_same_v<T, uint8_t>,
+        "Invalid unsigned type" );
+
+    auto value = T(scan::hex(text, sizeof(T) * 2));
+    if(!text.empty())
+        throw std::overflow_error("Value too big or invalid");
+    return value;
+}
+
+template<typename T = unsigned>
+inline auto get_hex_or(std::string_view text, const T& or_else) {
+    try {
+        return get_hex<T>(text);
+    }
+    catch(const std::exception& e) {
+        return or_else;
+    }
+}
+
+template<typename T = unsigned>
 inline auto get_unsigned(std::string_view text, T min = 0, T max = std::numeric_limits<T>::max()) {
     static_assert(
         std::is_same_v<T, unsigned> ||
@@ -392,6 +443,9 @@ inline auto get_unsigned(std::string_view text, T min = 0, T max = std::numeric_
     auto value = T(scan::value(text, max));
     if(!text.empty() && isdigit(text.front()))
         throw std::overflow_error("Value too big");
+
+    if(!text.empty())
+        throw std::invalid_argument("value invalid");
 
     if(value < min)
             throw std::out_of_range("value too small");
