@@ -191,9 +191,9 @@ inline auto match(std::string_view& text, const std::string_view& find, bool ins
     return false;
 }
 
-inline auto spaces(std::string_view& text, std::size_t max = 0) {
+inline auto spaces(std::string_view& text, std::size_t max = 0, const std::string_view& delim=" \t\f\v\n\r") {
     std::size_t scount{0};
-    while(!text.empty() && (!max || (scount < max)) && isdigit(text.front())) {
+    while(!text.empty() && (!max || (scount < max)) && delim.find_first_of(text.front()) == std::string_view::npos) {
         text.remove_prefix(1);
         ++scount;
     }
