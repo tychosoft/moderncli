@@ -28,7 +28,7 @@ using key_t = std::pair<const uint8_t *, std::size_t>;
 } // end namespace
 
 template<typename T>
-class shared_array final {
+class shared_memory final {
 public:
     using size_type = uint32_t;
     using pointer = T*;
@@ -37,13 +37,13 @@ public:
     using const_iterator = const T*;
     using element_type = T;
 
-    shared_array() = default;
-    shared_array(const shared_array& other) = default;
+    shared_memory() = default;
+    shared_memory(const shared_memory& other) = default;
 
-    explicit shared_array(size_type size) :
+    explicit shared_memory(size_type size) :
     array_(std::make_shared<T>(size)), size_(size) {}
 
-    shared_array(size_type size, const T& init) :
+    shared_memory(size_type size, const T& init) :
     array_(std::make_shared<T>(size)), size_(size) {
         auto pos = size_type(0);
         auto ptr = get();
@@ -52,25 +52,25 @@ public:
     }
 
     template<typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
-    explicit shared_array(const crypto::key_t& key) :
+    explicit shared_memory(const crypto::key_t& key) :
     array_(key.second ? std::make_shared<T>(uint32_t(key.second / sizeof(T))) : nullptr), size_(key.second / sizeof(T)) {
         if(size_)
             memcpy(array_.get(), key.first, key.second); // FlawFinder: ignore
     }
 
-    shared_array(const T* from, size_type size) :
+    shared_memory(const T* from, size_type size) :
     array_(size ? std::make_shared<T>(size) : nullptr), size_(size) {
         if(size)
             memcpy(array_.get(), from, sizeof(T) * size);   // FlawFinder: ignore
     }
 
-    shared_array(shared_array&& other) noexcept :
+    shared_memory(shared_memory&& other) noexcept :
     array_(std::move(other.array_)), size_(other.size_) {
         other.size_ = 0;
     }
 
     // finalize shared data
-    ~shared_array() {
+    ~shared_memory() {
         if(!empty() && count() == 1)
             zero();
     }
@@ -91,7 +91,7 @@ public:
         return size_ == 0;
     }
 
-    auto operator=(shared_array&& other) noexcept -> auto& {
+    auto operator=(shared_memory&& other) noexcept -> auto& {
         if(this != &other) {
             array_ = std::move(other.array_);
             size_ = other.size_;
@@ -220,20 +220,20 @@ public:
     auto subarray(size_type pos, size_t count = 0) const {
         if(pos + count > size_)
             throw std::out_of_range("Invalid subarray range");
-        return shared_array(get() + pos, count ? count : size_ - pos);
+        return shared_memory(get() + pos, count ? count : size_ - pos);
     }
 
     auto clone() const {
-        return shared_array(get(), size_);
+        return shared_memory(get(), size_);
     }
 
     static auto from_hex(std::string_view from) {
         auto bsize = from.size() / 2;
         while(sizeof(T) > 1 && bsize % sizeof(T))
             ++bsize;
-        auto mem = shared_array(uint32_t(bsize / sizeof(T)));
+        auto mem = shared_memory(uint32_t(bsize / sizeof(T)));
         if(tycho::from_hex(from, mem.get(), bsize) < from.size() / 2)
-            return shared_array();
+            return shared_memory();
         return mem;
     }
 
@@ -242,9 +242,9 @@ public:
         auto alloc = bsize;
         while(sizeof(T) > 1 && alloc % sizeof(T))
             ++alloc;
-        auto mem = shared_array(uint32_t(alloc / sizeof(T)));
+        auto mem = shared_memory(uint32_t(alloc / sizeof(T)));
         if(tycho::from_b64(from, mem.get(), bsize) < bsize)
-            return shared_array();
+            return shared_memory();
         return mem;
     }
 
@@ -503,10 +503,10 @@ private:
     }
 };
 
-using bytearray_t = shared_array<uint8_t>;
-using chararray_t = shared_array<char>;
-using wordarray_t = shared_array<uint16_t>;
-using longarray_t = shared_array<uint32_t>;
+using bytearray_t = shared_memory<uint8_t>;
+using chararray_t = shared_memory<char>;
+using wordarray_t = shared_memory<uint16_t>;
+using longarray_t = shared_memory<uint32_t>;
 using mempager_t = mempager;
 
 template<typename T>
@@ -667,7 +667,7 @@ inline auto operator new(std::size_t size, tycho::mempager& pager) -> void * {
 inline void operator delete([[maybe_unused]] void *page, [[maybe_unused]] tycho::mempager& pager) {}
 
 template <typename T>
-inline auto operator<<(std::ostream& out, const tycho::shared_array<T>& bin) -> std::ostream& {
+inline auto operator<<(std::ostream& out, const tycho::shared_memory<T>& bin) -> std::ostream& {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     out << bin.to_hex();
     return out;
