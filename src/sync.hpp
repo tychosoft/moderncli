@@ -310,6 +310,9 @@ public:
 
     void wait() noexcept {
         std::unique_lock lock(lock_);
+        if(!count_)
+            return;
+
         auto sequence = sequence_;
         if (--count_ == 0) {
             sequence_++;
@@ -323,8 +326,10 @@ public:
 
     auto wait_for(const sync_millisecs& timeout) noexcept {
         std::unique_lock lock(lock_);
-        auto sequence = sequence_;
+        if(!count_)
+            return false;
 
+        auto sequence = sequence_;
         if (--count_ == 0) {
             sequence_++;
             count_ = limit_;
@@ -336,8 +341,10 @@ public:
 
     auto wait_until(const sync_timepoint& time_point) noexcept {
         std::unique_lock lock(lock_);
-        auto sequence = sequence_;
+        if(!count_)
+            return false;
 
+        auto sequence = sequence_;
         if (--count_ == 0) {
             sequence_++;
             count_ = limit_;
@@ -350,6 +357,20 @@ public:
     auto count() const noexcept {
         const std::lock_guard lock(lock_);
         return count_;
+    }
+
+    auto release() noexcept {
+        const std::lock_guard lock(lock_);
+        count_ = 0;
+        ++sequence_;
+        cond_.notify_all();
+    }
+
+    auto reset(unsigned limit) noexcept {
+        const std::lock_guard lock(lock_);
+        count_ = limit_ = limit;
+        ++sequence_;
+        cond_.notify_all();
     }
 
 private:
