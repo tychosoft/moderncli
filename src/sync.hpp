@@ -192,19 +192,24 @@ public:
 
     void post() noexcept {
         const std::unique_lock lock(lock_);
-        ++count_;
-        cond_.notify_one();
+
+        if(count_ < ~0U) {
+            ++count_;
+            cond_.notify_one();
+        }
     }
 
     void wait() noexcept {
         std::unique_lock lock(lock_);
-        cond_.wait(lock, [this]{return count_ > 0;});
+        if(!count_)
+            cond_.wait(lock, [this]{return count_ > 0;});
+
         --count_;
     }
 
     auto wait_for(const sync_millisecs& timeout) noexcept {
         std::unique_lock lock(lock_);
-        if(cond_.wait_for(lock, timeout, [this]{return count_ > 0;})) {
+        if(count_ || cond_.wait_for(lock, timeout, [this]{return count_ > 0;})) {
             --count_;
             return true;
         }
@@ -213,7 +218,7 @@ public:
 
     auto wait_until(const sync_timepoint& time_point) noexcept {
         std::unique_lock lock(lock_);
-        if(cond_.wait_until(lock, time_point, [this]{return count_ > 0;})) {
+        if(count_ || cond_.wait_until(lock, time_point, [this]{return count_ > 0;})) {
             --count_;
             return true;
         }
@@ -223,6 +228,12 @@ public:
     auto count() const noexcept {
         const std::lock_guard lock(lock_);
         return count_;
+    }
+
+    auto release() noexcept {
+        const std::lock_guard lock(lock_);
+        count_ = ~0U;
+        cond_.notify_all();
     }
 
 private:
