@@ -190,44 +190,80 @@ public:
     semaphore_t(const semaphore_t&) = delete;
     auto operator=(const semaphore_t&) = delete;
 
+    operator bool() const noexcept {
+        return !empty();
+    }
+
+    auto operator!() const noexcept {
+        return empty();
+    }
+
+    auto operator++() noexcept -> auto& {
+        wait();
+        return *this;
+    }
+
+    auto operator--() noexcept -> auto& {
+        post();
+        return *this;
+    }
+
     void post() noexcept {
         const std::unique_lock lock(lock_);
 
-        if(count_ < ~0U) {
-            ++count_;
+        if(active_) {
+            --active_;
             cond_.notify_one();
         }
     }
 
+    auto test() noexcept {
+        const std::unique_lock lock(lock_);
+        if(++active_ <= count_)
+            return true;
+        --active_;
+        return false;
+    }
+
     void wait() noexcept {
         std::unique_lock lock(lock_);
-        if(!count_)
-            cond_.wait(lock, [this]{return count_ > 0;});
-
-        --count_;
+        if(++active_ > count_)
+            cond_.wait(lock, [this]{return active_ <= count_;});
     }
 
     auto wait_for(const sync_millisecs& timeout) noexcept {
         std::unique_lock lock(lock_);
-        if(count_ || cond_.wait_for(lock, timeout, [this]{return count_ > 0;})) {
-            --count_;
+        ++active_;
+        if(active_ <= count_ || cond_.wait_for(lock, timeout, [this]{return active_ <= count_;}))
             return true;
-        }
+
+        --active_;
         return false;
     }
 
     auto wait_until(const sync_timepoint& time_point) noexcept {
         std::unique_lock lock(lock_);
-        if(count_ || cond_.wait_until(lock, time_point, [this]{return count_ > 0;})) {
-            --count_;
+        ++active_;
+        if(active_ <= count_ || cond_.wait_until(lock, time_point, [this]{return active_ <= count_;}))
             return true;
-        }
+
+        --active_;
         return false;
     }
 
-    auto count() const noexcept {
+    auto empty() const noexcept -> bool {
+        const std::lock_guard lock(lock_);
+        return count_ == ~0U;
+    }
+
+    auto size() const noexcept {
         const std::lock_guard lock(lock_);
         return count_;
+    }
+
+    auto active() const noexcept {
+        const std::lock_guard lock(lock_);
+        return active_;
     }
 
     auto release() noexcept {
@@ -236,10 +272,34 @@ public:
         cond_.notify_all();
     }
 
+    auto reset(unsigned count) noexcept {
+        const std::lock_guard lock(lock_);
+        count_ = count;
+        cond_.notify_all();
+    }
+
 private:
     mutable std::mutex lock_;
     std::condition_variable cond_;
     unsigned count_{0};
+    unsigned active_{0};
+};
+
+class semaphore_guard {
+public:
+    semaphore_guard(const semaphore_guard&) = delete;
+    auto operator=(const semaphore_guard&) -> auto& = delete;
+
+    explicit semaphore_guard(semaphore_t& sem) : sem_(sem) {
+        sem_.wait();
+    }
+
+    ~semaphore_guard() {
+        sem_.post();
+    }
+
+private:
+    semaphore_t& sem_;
 };
 
 class barrier_t final {

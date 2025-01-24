@@ -40,8 +40,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(sizeof(myint) == 2); // NOLINT
 
         auto mydec = get_decimal("-17.05");
-        double expected = -17.05;
-        double tolerance = std::numeric_limits<double>::epsilon() * 100;
+        const double expected = -17.05;
+        const double tolerance = std::numeric_limits<double>::epsilon() * 100;
         assert(std::fabs(mydec - expected) < tolerance);
 
         assert(get_hex("f0") == 240);
