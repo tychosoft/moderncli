@@ -59,5 +59,6 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
     auto future = tycho::await(test_async, 42);
     assert(future.get() == 42);
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
 }
 

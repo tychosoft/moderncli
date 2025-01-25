@@ -15,6 +15,11 @@ namespace tycho {
 using sync_timepoint = std::chrono::steady_clock::time_point;
 using sync_millisecs = std::chrono::milliseconds;
 
+class semaphore_cancelled : public std::runtime_error {
+public:
+    semaphore_cancelled() : std::runtime_error("Future cancelled") {};
+};
+
 inline auto system_clock(std::time_t offset = 0) {
     return std::time(nullptr) + offset;
 }
@@ -198,7 +203,7 @@ public:
         return empty();
     }
 
-    auto operator++() noexcept -> auto& {
+    auto operator++() -> auto& {
         wait();
         return *this;
     }
@@ -219,33 +224,51 @@ public:
 
     auto test() noexcept {
         const std::unique_lock lock(lock_);
+        if(count_ == ~0U)
+            return false;
+
         if(++active_ <= count_)
             return true;
         --active_;
         return false;
     }
 
-    void wait() noexcept {
+    void wait() {
         std::unique_lock lock(lock_);
         if(++active_ > count_)
             cond_.wait(lock, [this]{return active_ <= count_;});
+
+        if(count_ == ~0U) {
+            --active_;
+            throw semaphore_cancelled();
+        }
     }
 
-    auto wait_for(const sync_millisecs& timeout) noexcept {
+    auto wait_for(const sync_millisecs& timeout) {
         std::unique_lock lock(lock_);
         ++active_;
-        if(active_ <= count_ || cond_.wait_for(lock, timeout, [this]{return active_ <= count_;}))
+        if(active_ <= count_ || cond_.wait_for(lock, timeout, [this]{return active_ <= count_;})) {
+            if(count_ == ~0U) {
+                --active_;
+                throw semaphore_cancelled();
+            }
             return true;
+        }
 
         --active_;
         return false;
     }
 
-    auto wait_until(const sync_timepoint& time_point) noexcept {
+    auto wait_until(const sync_timepoint& time_point) {
         std::unique_lock lock(lock_);
         ++active_;
-        if(active_ <= count_ || cond_.wait_until(lock, time_point, [this]{return active_ <= count_;}))
+        if(active_ <= count_ || cond_.wait_until(lock, time_point, [this]{return active_ <= count_;})) {
+            if(count_ == ~0U) {
+                --active_;
+                throw semaphore_cancelled();
+            }
             return true;
+        }
 
         --active_;
         return false;
