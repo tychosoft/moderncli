@@ -21,6 +21,20 @@ namespace tycho {
 using action_t = void (*)();
 using error_t = void (*)(const std::exception&);
 
+class future_cancelled : public std::runtime_error {
+public:
+    future_cancelled() : std::runtime_error("Future cancelled") {};
+};
+
+template<typename T, typename Pred>
+inline auto get_future(std::function<T>& future, Pred pred, std::chrono::milliseconds interval = std::chrono::milliseconds(100)) {
+    do {    // NOLINT
+        if(!pred())
+            throw future_cancelled();
+    } while(future.wait_for(interval) != std::future_status::ready);
+    return future.get();
+}
+
 template<typename Func, typename... Args>
 inline auto await(Func&& func, Args&&... args) -> std::future<typename std::invoke_result_t<Func, Args...>> {
     return std::async(std::launch::async, std::forward<Func>(func), std::forward<Args>(args)...);
@@ -287,6 +301,11 @@ public:
     auto size() const noexcept {
         const std::lock_guard lock(mutex_);
         return tasks_.size();
+    }
+
+    auto active() const noexcept {
+        const std::lock_guard lock(mutex_);
+        return running_;
     }
 
 private:
