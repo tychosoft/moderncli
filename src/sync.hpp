@@ -222,17 +222,6 @@ public:
         }
     }
 
-    auto test() noexcept {
-        const std::unique_lock lock(lock_);
-        if(count_ == ~0U)
-            return false;
-
-        if(++active_ <= count_)
-            return true;
-        --active_;
-        return false;
-    }
-
     void wait() {
         std::unique_lock lock(lock_);
         if(++active_ > count_)
@@ -242,6 +231,18 @@ public:
             --active_;
             throw semaphore_cancelled();
         }
+    }
+
+    auto try_wait() {
+        std::unique_lock lock(lock_);
+        if(++active_ > count_)
+            cond_.wait(lock, [this]{return active_ <= count_;});
+
+        if(count_ == ~0U) {
+            --active_;
+            return false;
+        }
+        return true;
     }
 
     auto wait_for(const sync_millisecs& timeout) {
