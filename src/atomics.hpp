@@ -8,6 +8,7 @@
 #include <optional>
 #include <type_traits>
 #include <stdexcept>
+#include <list>
 
 namespace tycho::atomic {
 template<typename T = unsigned>
@@ -241,7 +242,7 @@ private:
     T data_[S];
 };
 
-template<typename K, typename V, size_t S = 16>
+template<typename K, typename V, std::size_t S = 16>
 class dictionary_t {
 public:
     dictionary_t(const dictionary_t&) = delete;
@@ -442,6 +443,18 @@ public:
         return count_.load();
     }
 
+    auto keys() const {
+        std::list<K> list;
+        for(auto& bucket : table_) {
+            auto current = bucket.load();
+            while(current != nullptr) {
+                list.push_back(current->key);
+                current = current->next.load();
+            }
+        }
+        return list;
+    }
+
     template<typename Func>
     void each(Func func) {
         for(auto& bucket : table_) {
@@ -464,9 +477,9 @@ private:
     };
 
     std::atomic<node*> table_[S];
-    std::atomic<size_t> count_{0};
+    std::atomic<std::size_t> count_{0};
 
-    auto key_index(const K& key) const -> size_t {
+    auto key_index(const K& key) const -> std::size_t {
         return std::hash<K>()(key) % S;
     }
 };

@@ -218,7 +218,7 @@ public:
         return true;
     }
 
-    auto dispatch(task_t task, size_t max = 0) {
+    auto dispatch(task_t task, std::size_t max = 0) {
         std::unique_lock lock(mutex_);
         if(!running_)
             return false;

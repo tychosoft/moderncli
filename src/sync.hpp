@@ -144,13 +144,13 @@ public:
     std::shared_lock<std::shared_mutex>(obj.lock), sync_(obj), ptr_(&obj.data) {}
     ~reader_ptr() = default;
 
-    auto operator->() const {
+    auto operator->() const -> const U* {
         if (!owns_lock())
             throw std::runtime_error("read lock error");
         return ptr_;
     }
 
-    auto operator*() const -> U& {
+    auto operator*() const -> const U& {
         if (!owns_lock())
             throw std::runtime_error("read lock error");
         return *ptr_;

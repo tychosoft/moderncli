@@ -246,7 +246,7 @@ constexpr auto is_unsigned(const std::string_view str) {
     if(!len)
         return false;
 
-    auto pos = size_t(0);
+    auto pos = std::size_t(0);
     while(pos < len) {
         if(str[pos] < '0' || str[pos] > '9')
             return false;

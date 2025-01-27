@@ -101,7 +101,7 @@ constexpr auto multiple_of(T value, T mult) {
 }
 
 template<typename T>
-inline auto tmparray(size_t size) {
+inline auto tmparray(std::size_t size) {
     return std::make_unique<T[]>(size);
 }
 
