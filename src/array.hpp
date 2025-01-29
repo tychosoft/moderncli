@@ -8,6 +8,7 @@
 #include <array>
 #include <algorithm>
 #include <iterator>
+#include <optional>
 #include <stdexcept>
 #include <cstdint>
 #include <type_traits>
@@ -46,13 +47,37 @@ public:
     auto at(size_type index) -> T& {
         if(index < Offset || index >= N + Offset)
             throw std::out_of_range("Index out of range");
-        return at(index - Offset);
+        return std::array<T, N>::at(index - Offset);
     }
 
     auto at(size_type index) const -> const T& {
         if(index < Offset || index >= N + Offset)
             throw std::out_of_range("Index out of range");
-        return at(index - Offset);
+        return std::array<T, N>::at(index - Offset);
+    }
+
+    auto get(size_type index) const -> const std::optional<T> {
+        if(index < Offset || index >= N + Offset)
+            return std::nullopt;
+        return std::array<T, N>::at(index - Offset);
+    }
+
+    auto get(size_type index) -> std::optional<T> {
+        if(index < Offset || index >= N + Offset)
+            return std::nullopt;
+        return std::array<T, N>::at(index - Offset);
+    }
+
+    auto get_or(size_type index, const T* or_else = nullptr) const -> const T* {
+        if(index < Offset || index >= N + Offset)
+            return or_else;
+        return this->data() + (index - Offset);
+    }
+
+    auto get_or(size_type index, T* or_else = nullptr) -> T* {
+        if(index < Offset || index >= N + Offset)
+            return or_else;
+        return this->data() + (index - Offset);
     }
 
     constexpr auto min() const {

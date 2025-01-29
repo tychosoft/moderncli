@@ -35,6 +35,11 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         sa[10] = "first";
         sa[89] = "last";
         assert(sa[10] == "first");
+        assert(sa.at(10) == "first");
+
+        auto ptr = sa.get_or(10);
+        assert(ptr->size() == 5);
+        assert(!sa.get(0));
 
         tycho::slice<std::string> slicer(20);
         assert(slicer.size() == 20);
