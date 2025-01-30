@@ -56,35 +56,29 @@ public:
         return std::array<T, N>::at(index - Offset);
     }
 
-    auto get(size_type index) const -> const std::optional<T> {
+    auto get(size_type index) noexcept -> std::optional<T> {
         if(index < Offset || index >= N + Offset)
             return std::nullopt;
         return std::array<T, N>::at(index - Offset);
     }
 
-    auto get(size_type index) -> std::optional<T> {
-        if(index < Offset || index >= N + Offset)
-            return std::nullopt;
-        return std::array<T, N>::at(index - Offset);
-    }
-
-    auto get_or(size_type index, const T* or_else = nullptr) const -> const T* {
+    auto get_or(size_type index, const T* or_else = nullptr) const noexcept -> const T* {
         if(index < Offset || index >= N + Offset)
             return or_else;
         return this->data() + (index - Offset);
     }
 
-    auto get_or(size_type index, T* or_else = nullptr) -> T* {
+    auto get_or(size_type index, T* or_else = nullptr) noexcept -> T* {
         if(index < Offset || index >= N + Offset)
             return or_else;
         return this->data() + (index - Offset);
     }
 
-    constexpr auto min() const {
+    constexpr auto min() const noexcept {
         return Offset;
     }
 
-    constexpr auto max() const {
+    constexpr auto max() const noexcept {
         return size_type(Offset + N - 1);
     }
 
@@ -214,68 +208,96 @@ public:
     }
 };
 
-template<typename T>
+template<typename T, std::size_t Offset = 0>
 class span {
 public:
     using size_type = std::size_t;
     using value_type = T;
 
-    constexpr span(T* ptr, size_type size) : ptr_(ptr), size_(size) {}
+    constexpr span(T* ptr, size_type size) noexcept : ptr_(ptr), size_(size) {}
 
     template<size_type S>
-    explicit constexpr span(T(&arr)[S]) : span(arr, S) {}
+    explicit constexpr span(T(&arr)[S]) noexcept : span(arr, S) {}
 
     template <typename Container, typename = std::enable_if_t<std::is_same_v<T, typename Container::value_type>>>
     explicit span(Container& container) : span(container.data(), container.size()) {}
 
     constexpr auto operator[](size_type index) const -> T& {
-        if(index >= size_)
+        if(index < Offset || index >= Offset + size_)
             throw std::out_of_range("Span index past end");
-        return ptr_[index];
+        return ptr_[index - Offset];
     }
 
     constexpr auto at(size_type index) const -> T& {
-        if(index >= size_)
+        if(index < Offset || index >= Offset + size_)
             throw std::out_of_range("Span index past end");
-        return ptr_[index];
+        return ptr_[index - Offset];
     }
 
-    constexpr auto size_bytes() const {
+    constexpr auto get(size_type index) const noexcept -> std::optional<T>  {
+        if(index < Offset || index >= Offset + size_)
+            return std::nullopt;
+        return ptr_[index - Offset];
+    }
+
+    constexpr auto get_or(size_type index, const T* or_else) const noexcept -> T* {
+        if(index < Offset || index >= Offset + size_)
+            return or_else;
+        return ptr_ + (index - Offset);
+    }
+
+    constexpr auto size_bytes() const noexcept {
         return size_ * sizeof(T);
     }
 
-    constexpr auto size() const {
+    constexpr auto size() const noexcept {
         return size_;
     }
 
-    constexpr auto data() const -> T* {
+    constexpr auto min() const noexcept {
+        return Offset;
+    }
+
+    constexpr auto max() const noexcept {
+        return size_type(Offset + size_ - 1);
+    }
+
+    constexpr auto data() const noexcept -> T* {
         return ptr_;
     }
 
-    constexpr auto begin() const {
+    constexpr auto begin() const noexcept {
         return ptr_;
     }
 
-    constexpr auto end() const {
+    constexpr auto end() const noexcept {
         return ptr_ + size_;
     }
 
-    constexpr auto front() const -> T& {
+    constexpr auto front() const noexcept -> T& {
         return ptr_[0];
     }
 
-    constexpr auto back() const -> T& {
+    constexpr auto back() const noexcept -> T& {
         return ptr_[size_ - 1];
     }
 
-    constexpr auto empty() const {
+    constexpr auto empty() const noexcept {
         return size_ == 0;
     }
 
     auto subspan(size_type pos, size_type count = 0) const {
-        if(pos + count > size_)
+        if(pos < Offset || (pos + count - Offset) > size_)
             throw std::out_of_range("Invalid subspan range");
-        return span(ptr_ + pos, count ? count : size_ - pos);
+        return span(ptr_ + (pos - Offset), count ? count : size_ - pos - Offset);
+    }
+
+    auto find(const T& value) const {
+        return std::find(this->begin(), this->end(), value);
+    }
+
+    auto contains(const T& value) const {
+        return std::find(this->begin(), this->end(), value) != this->end();
     }
 
 private:
