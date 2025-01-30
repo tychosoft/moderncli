@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <climits>
+#include <optional>
 
 #if __has_include(<unistd.h>)
 #include <unistd.h>
@@ -46,7 +47,7 @@ public:
     shared_memory(size_type size, const T& init) :
     array_(std::make_shared<T>(size)), size_(size) {
         auto pos = size_type(0);
-        auto ptr = get();
+        auto ptr = data();
         while(pos < size)
             ptr[pos++] = init;
     }
@@ -132,13 +133,31 @@ public:
         return *array_;
     }
 
-    auto get() -> T* {
+    auto get_or(size_type index, T* or_else = nullptr) -> T* {
+        if(index >= size_)
+            return or_else;
+        return *array_ + index;
+    }
+
+    auto get_or(size_type index, const T* or_else = nullptr) const -> T* {
+        if(index >= size_)
+            return or_else;
+        return *array_ + index;
+    }
+
+    auto get(size_type index) const -> std::optional<T> {
+        if(index >= size_)
+            return {};
+        return at(index);
+    }
+
+    auto data() -> T* {
         if(!size_)
             throw std::out_of_range("Cannot return empty object");
         return array_.get();
     }
 
-    auto get() const -> const T* {
+    auto data() const -> const T* {
         if(!size_)
             throw std::out_of_range("Cannot return empty object");
         return array_.get();
@@ -169,7 +188,7 @@ public:
     auto at(size_type index) const -> const T& {
         if(index >= size_)
             throw std::out_of_range("Index is out of range");
-        return array_[index];
+        return array_.get()[index];
     }
 
     auto view() const {
@@ -190,27 +209,27 @@ public:
     }
 
     auto to_hex() const {
-        return to_hex(get(), size_bytes());
+        return to_hex(data(), size_bytes());
     }
 
     auto to_b64() const {
-        return to_b64(get(), size_bytes());
+        return to_b64(data(), size_bytes());
     }
 
     auto begin() const {
-        return get();
+        return data();
     }
 
     auto begin() {
-        return get();
+        return data();
     }
 
     auto end() {
-        return get() + size_;
+        return data() + size_ - 1;
     }
 
     auto end() const {
-        return get() + size_;
+        return data() + size_ - 1;
     }
 
     auto contains(const T& value) const {
@@ -220,11 +239,11 @@ public:
     auto subarray(size_type pos, size_t count = 0) const {
         if(pos + count > size_)
             throw std::out_of_range("Invalid subarray range");
-        return shared_memory(get() + pos, count ? count : size_ - pos);
+        return shared_memory(data() + pos, count ? count : size_ - pos);
     }
 
     auto clone() const {
-        return shared_memory(get(), size_);
+        return shared_memory(data(), size_);
     }
 
     static auto from_hex(std::string_view from) {
