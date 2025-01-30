@@ -143,6 +143,24 @@ public:
         return this->data();
     }
 
+    auto get_or(size_type index, const T* or_else = nullptr) const -> const T* {
+        if(index < this->size())
+            return this->data() + index;
+        return or_else;
+    }
+
+    auto get_or(size_type index, T* or_else = nullptr) -> T* {
+        if(index < this->size())
+            return this->data() + index;
+        return or_else;
+    }
+
+    auto get(size_type index) const -> std::optional<T> {
+        if(index < this->size())
+            return this->at(index);
+        return std::nullopt;
+    }
+
     auto find(const T& value) const {
         return std::find(this->begin(), this->end(), value);
     }
@@ -240,7 +258,13 @@ public:
         return ptr_[index - Offset];
     }
 
-    constexpr auto get_or(size_type index, const T* or_else) const noexcept -> T* {
+    constexpr auto get_or(size_type index, const T* or_else = nullptr) const noexcept -> const T* {
+        if(index < Offset || index >= Offset + size_)
+            return or_else;
+        return ptr_ + (index - Offset);
+    }
+
+    constexpr auto get_or(size_type index, T* or_else = nullptr) noexcept -> T* {
         if(index < Offset || index >= Offset + size_)
             return or_else;
         return ptr_ + (index - Offset);
