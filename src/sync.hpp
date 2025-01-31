@@ -7,6 +7,7 @@
 #include <mutex>
 #include <chrono>
 #include <thread>
+#include <memory>
 #include <shared_mutex>
 #include <condition_variable>
 #include <stdexcept>
@@ -48,6 +49,101 @@ inline auto sync_remains(const sync_timepoint& end) {
     return std::chrono::duration_cast<sync_millisecs>(end - sync_clock());
 }
 
+class sync_t final {
+public:
+    sync_t() : sync_(std::make_shared<object>()) {}
+
+    auto operator*() -> std::mutex& {
+        return sync_->lock;
+    }
+
+    auto mutex() -> std::mutex& {
+        return sync_->lock;
+    }
+
+    void notify_one() {
+        sync_->cond.notify_one();
+    }
+
+    void notify_all() {
+        sync_->cond.notify_all();
+    }
+
+    void lock() {
+        sync_->lock.lock();
+    }
+
+    auto try_lock() {
+        return sync_->lock.try_lock();
+    }
+
+    void unlock() {
+        sync_->lock.unlock();
+    }
+
+    void wait() {
+        std::unique_lock sync(sync_->lock);
+        sync_->cond.wait(sync);
+    }
+
+    template<typename Pred>
+    void wait(Pred pred) {
+        std::unique_lock sync(sync_->lock);
+        sync_->cond.wait(sync, pred);
+    }
+
+    auto wait_for(const sync_millisecs& duration) {
+        std::unique_lock sync(sync_->lock);
+        return sync_->cond.wait_for(sync, duration);
+    }
+
+    template<typename Pred>
+    auto wait_for(const sync_millisecs& duration, Pred pred) {
+        std::unique_lock sync(sync_->lock);
+        return sync_->cond.wait_for(sync, duration, pred);
+    }
+
+    auto wait_until(const sync_timepoint& timepoint) {
+        std::unique_lock sync(sync_->lock);
+        return sync_->cond.wait_until(sync, timepoint);
+    }
+
+    template<typename Pred>
+    auto wait_for(const sync_timepoint& timepoint, Pred pred) {
+        std::unique_lock sync(sync_->lock);
+        return sync_->cond.wait_until(sync, timepoint, pred);
+    }
+
+private:
+    friend class guard_t;
+
+    struct object {
+        std::mutex  lock;
+        std::condition_variable cond;
+    };
+
+    std::shared_ptr<object> sync_;
+};
+
+class guard_t final {
+public:
+    guard_t() = delete;
+    guard_t(const guard_t&) = delete;
+    auto operator=(const guard_t&) -> auto& = delete;
+
+    explicit guard_t(sync_t& sync) :
+    sync_(sync) {
+        sync_.mutex().lock();
+    }
+
+    ~guard_t() {
+        sync_.mutex().unlock();
+    }
+
+private:
+    sync_t &sync_;  // NOLINT
+};
+
 template <typename T>
 class unique_sync final {
 public:
@@ -81,7 +177,7 @@ class sync_ptr final : public std::unique_lock<std::mutex> {
 public:
     sync_ptr() = delete;
     sync_ptr(const sync_ptr&) = delete;
-    auto operator=(const sync_ptr&) = delete;
+    auto operator=(const sync_ptr&) -> auto& = delete;
 
     explicit sync_ptr(unique_sync<U>& obj) :
     unique_lock(obj.lock), sync_(obj), ptr_(&obj.data) {}
@@ -109,7 +205,7 @@ class guard_ptr final {
 public:
     guard_ptr() = delete;
     guard_ptr(const guard_ptr&) = delete;
-    auto operator=(const guard_ptr&) = delete;
+    auto operator=(const guard_ptr&) -> auto& = delete;
 
     explicit guard_ptr(unique_sync<U>& obj) :
     sync_(obj), ptr_(&obj.data) {
@@ -138,7 +234,7 @@ class reader_ptr final : public std::shared_lock<std::shared_mutex> {
 public:
     reader_ptr() = delete;
     reader_ptr(const reader_ptr&) = delete;
-    auto operator=(const reader_ptr&) = delete;
+    auto operator=(const reader_ptr&) -> auto& = delete;
 
     explicit reader_ptr(shared_sync<U>& obj) :
     std::shared_lock<std::shared_mutex>(obj.lock), sync_(obj), ptr_(&obj.data) {}
@@ -166,7 +262,7 @@ class writer_ptr final : public std::unique_lock<std::shared_mutex> {
 public:
     writer_ptr() = delete;
     writer_ptr(const writer_ptr&) = delete;
-    auto operator=(const writer_ptr&) = delete;
+    auto operator=(const writer_ptr&) -> auto& = delete;
 
     explicit writer_ptr(shared_sync<U>& obj) :
     std::unique_lock<std::shared_mutex>(obj.lock), sync_(obj), ptr_(&obj.data) {}
@@ -193,7 +289,7 @@ class semaphore_t final {
 public:
     explicit semaphore_t(unsigned count = 0) noexcept : count_(count) {}
     semaphore_t(const semaphore_t&) = delete;
-    auto operator=(const semaphore_t&) = delete;
+    auto operator=(const semaphore_t&) -> auto& = delete;
 
     operator bool() const noexcept {
         return !empty();
@@ -330,7 +426,7 @@ class barrier_t final {
 public:
     explicit barrier_t(unsigned limit) noexcept : count_(limit), limit_(limit) {}
     barrier_t(const barrier_t&) = delete;
-    auto operator=(const barrier_t&) = delete;
+    auto operator=(const barrier_t&) -> auto& = delete;
 
     void wait() noexcept {
         std::unique_lock lock(lock_);
