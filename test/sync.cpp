@@ -38,7 +38,9 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(&(sync1.mutex()) == &(sync2.mutex()));
 
         // conversion to guard scope
-        const guard_t lock(sync1);
+        {
+            const std::lock_guard lock(sync1);
+        }
     }
     catch(...) {
         ::exit(1);

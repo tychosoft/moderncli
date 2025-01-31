@@ -125,25 +125,6 @@ private:
     std::shared_ptr<object> sync_;
 };
 
-class guard_t final {
-public:
-    guard_t() = delete;
-    guard_t(const guard_t&) = delete;
-    auto operator=(const guard_t&) -> auto& = delete;
-
-    explicit guard_t(sync_t& sync) :
-    sync_(sync) {
-        sync_.mutex().lock();
-    }
-
-    ~guard_t() {
-        sync_.mutex().unlock();
-    }
-
-private:
-    sync_t &sync_;  // NOLINT
-};
-
 template <typename T>
 class unique_sync final {
 public:
