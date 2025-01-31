@@ -11,6 +11,7 @@
 #include <memory>
 #include <iostream>
 #include <string_view>
+#include <queue>
 #include <utility>
 #include <cstring>
 #include <cstdint>
@@ -29,7 +30,7 @@ using key_t = std::pair<const uint8_t *, std::size_t>;
 } // end namespace
 
 template<typename T>
-class shared_memory final {
+class shared_mem final {
 public:
     using size_type = uint32_t;
     using pointer = T*;
@@ -38,13 +39,13 @@ public:
     using const_iterator = const T*;
     using element_type = T;
 
-    shared_memory() = default;
-    shared_memory(const shared_memory& other) = default;
+    shared_mem() = default;
+    shared_mem(const shared_mem& other) = default;
 
-    explicit shared_memory(size_type size) :
+    explicit shared_mem(size_type size) :
     array_(std::make_shared<T>(size)), size_(size) {}
 
-    shared_memory(size_type size, const T& init) :
+    shared_mem(size_type size, const T& init) :
     array_(std::make_shared<T>(size)), size_(size) {
         auto pos = size_type(0);
         auto ptr = data();
@@ -53,25 +54,25 @@ public:
     }
 
     template<typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
-    explicit shared_memory(const crypto::key_t& key) :
+    explicit shared_mem(const crypto::key_t& key) :
     array_(key.second ? std::make_shared<T>(uint32_t(key.second / sizeof(T))) : nullptr), size_(key.second / sizeof(T)) {
         if(size_)
             memcpy(array_.get(), key.first, key.second); // FlawFinder: ignore
     }
 
-    shared_memory(const T* from, size_type size) :
+    shared_mem(const T* from, size_type size) :
     array_(size ? std::make_shared<T>(size) : nullptr), size_(size) {
         if(size)
             memcpy(array_.get(), from, sizeof(T) * size);   // FlawFinder: ignore
     }
 
-    shared_memory(shared_memory&& other) noexcept :
+    shared_mem(shared_mem&& other) noexcept :
     array_(std::move(other.array_)), size_(other.size_) {
         other.size_ = 0;
     }
 
     // finalize shared data
-    ~shared_memory() {
+    ~shared_mem() {
         if(!empty() && count() == 1)
             zero();
     }
@@ -92,7 +93,7 @@ public:
         return size_ == 0;
     }
 
-    auto operator=(shared_memory&& other) noexcept -> auto& {
+    auto operator=(shared_mem&& other) noexcept -> auto& {
         if(this != &other) {
             array_ = std::move(other.array_);
             size_ = other.size_;
@@ -239,20 +240,20 @@ public:
     auto subarray(size_type pos, size_t count = 0) const {
         if(pos + count > size_)
             throw std::out_of_range("Invalid subarray range");
-        return shared_memory(data() + pos, count ? count : size_ - pos);
+        return shared_mem(data() + pos, count ? count : size_ - pos);
     }
 
     auto clone() const {
-        return shared_memory(data(), size_);
+        return shared_mem(data(), size_);
     }
 
     static auto from_hex(std::string_view from) {
         auto bsize = from.size() / 2;
         while(sizeof(T) > 1 && bsize % sizeof(T))
             ++bsize;
-        auto mem = shared_memory(uint32_t(bsize / sizeof(T)));
+        auto mem = shared_mem(uint32_t(bsize / sizeof(T)));
         if(tycho::from_hex(from, mem.get(), bsize) < from.size() / 2)
-            return shared_memory();
+            return shared_mem();
         return mem;
     }
 
@@ -261,9 +262,9 @@ public:
         auto alloc = bsize;
         while(sizeof(T) > 1 && alloc % sizeof(T))
             ++alloc;
-        auto mem = shared_memory(uint32_t(alloc / sizeof(T)));
+        auto mem = shared_mem(uint32_t(alloc / sizeof(T)));
         if(tycho::from_b64(from, mem.get(), bsize) < bsize)
-            return shared_memory();
+            return shared_mem();
         return mem;
     }
 
@@ -273,6 +274,91 @@ private:
     std::shared_ptr<T> array_;
     size_type size_{0};
 };
+
+template<typename T>
+class mempool {
+public:
+    using size_type = std::size_t;
+    using value_type = T;
+
+    mempool(const mempool&) = delete;
+    auto operator=(const mempool&) -> auto& = delete;
+
+    mempool(T* ptr, size_type size) noexcept : ptr_(ptr), size_(size) {}
+
+    explicit mempool(size_type size) : ptr_(new T[size]), size_(size), dynamic(true) {}
+
+    template<size_type S>
+    explicit mempool(T(&arr)[S]) noexcept : mempool(arr, S) {}
+
+    template<typename Container, typename = std::enable_if_t<std::is_same_v<T, typename Container::value_type>>>
+    explicit mempool(Container& container) : mempool(container.data(), container.size()) {}
+
+    ~mempool() {
+        if(dynamic && ptr_)
+            delete[] ptr_;
+    }
+
+    operator bool() {
+        return !empty();
+    }
+
+    auto operator!() {
+        return empty();
+    }
+
+    auto operator*() -> T& {
+        return *get();
+    }
+
+    void put(T* ptr) {
+        free_.push(ptr);
+    }
+
+    void put(T& obj) {
+        free_.push(&obj);
+    }
+
+    auto get() -> T* {
+        if(free_.size()) {
+            auto ptr = free_.front();
+            free_.pop();
+            return ptr;
+        }
+        if(used_ < size_) {
+            auto ptr = ptr_ + used_;
+            ++used_;
+            return ptr;
+        }
+        throw std::out_of_range("Pool exhausted");
+    }
+
+    auto clear() {
+        used_ = 0;
+        free_.clear();
+    }
+
+    constexpr auto size() const noexcept {
+        return used_ - free_.size();
+    }
+
+    constexpr auto used() const noexcept {
+        return used_;
+    }
+
+    constexpr auto empty() const noexcept {
+        return used_ >= size_ && free_.size() == 0;
+    }
+
+private:
+    T *ptr_{nullptr};
+    size_type size_{0};
+    size_type used_{0};
+    std::queue<T*> free_;
+    bool dynamic{false};
+};
+
+
 
 class imemstream : protected std::streambuf, public std::istream {
 public:
@@ -522,10 +608,12 @@ private:
     }
 };
 
-using bytearray_t = shared_memory<uint8_t>;
-using chararray_t = shared_memory<char>;
-using wordarray_t = shared_memory<uint16_t>;
-using longarray_t = shared_memory<uint32_t>;
+template<typename T>
+using shared_memory = shared_mem<T>;
+using bytearray_t = shared_mem<uint8_t>;
+using chararray_t = shared_mem<char>;
+using wordarray_t = shared_mem<uint16_t>;
+using longarray_t = shared_mem<uint32_t>;
 using mempager_t = mempager;
 
 template<typename T>
@@ -677,6 +765,21 @@ inline auto mem_index(std::string_view s) {
 inline auto key_index(const char *cp, std::size_t max) {
     return mem_index(reinterpret_cast<const uint8_t *>(cp), mem_size(cp, max));
 }
+
+template<typename T, std::size_t S>
+constexpr auto make_pool(T(&arr)[S]) {
+        return mempool<T>(arr);
+}
+
+template<typename Container>
+inline auto make_pool(Container& container) -> mempool<typename Container::value_type> {
+    return mempool<typename Container::value_type>(container);
+}
+
+template<typename T>
+inline auto make_pool(std::size_t size) {
+    return mempool<T>(size);
+}
 } // end namespace
 
 inline auto operator new(std::size_t size, tycho::mempager& pager) -> void * {
@@ -685,8 +788,8 @@ inline auto operator new(std::size_t size, tycho::mempager& pager) -> void * {
 
 inline void operator delete([[maybe_unused]] void *page, [[maybe_unused]] tycho::mempager& pager) {}
 
-template <typename T>
-inline auto operator<<(std::ostream& out, const tycho::shared_memory<T>& bin) -> std::ostream& {
+template<typename T>
+inline auto operator<<(std::ostream& out, const tycho::shared_mem<T>& bin) -> std::ostream& {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     out << bin.to_hex();
     return out;

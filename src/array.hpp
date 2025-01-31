@@ -240,6 +240,14 @@ public:
     template <typename Container, typename = std::enable_if_t<std::is_same_v<T, typename Container::value_type>>>
     explicit span(Container& container) : span(container.data(), container.size()) {}
 
+    operator bool() {
+        return !empty();
+    }
+
+    auto operator!() {
+        return empty();
+    }
+
     constexpr auto operator[](size_type index) const -> T& {
         if(index < Offset || index >= Offset + size_)
             throw std::out_of_range("Span index past end");
@@ -338,7 +346,7 @@ constexpr auto make_span(T(&arr)[S]) {
 }
 
 template<typename Container>
-auto make_span(Container& container) -> span<typename Container::value_type> {
+inline auto make_span(Container& container) -> span<typename Container::value_type> {
     return span<typename Container::value_type>(container);
 }
 } // end namespace

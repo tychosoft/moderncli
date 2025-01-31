@@ -31,11 +31,28 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(strings[1] == "goodbye");
         assert(strings.contains("goodbye"));
 
+        tycho::array<std::string, 10> st;
+        st[0] = "first";
+        st[9] = "last";
+        assert(st[0] == "first");
+        assert(st.get_or(10) == nullptr);
+        assert(st.get(1));
+        assert(!st.get(10));
+
         tycho::array<std::string, 80, 10> sa;
         sa[10] = "first";
         sa[89] = "last";
         assert(sa[10] == "first");
         assert(sa.at(10) == "first");
+
+        auto pool = make_pool(sa);
+        assert(!pool.empty());
+        assert(*pool == "first");
+        assert(pool.size() == 1);
+
+        const tycho::span<std::string> span(sa);
+        assert(span[0] == "first");
+        assert(span[79] == "last");
 
         auto ptr = sa.get_or(10);
         assert(ptr->size() == 5);
