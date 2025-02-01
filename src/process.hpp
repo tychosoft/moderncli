@@ -221,6 +221,18 @@ public:
         return (static_cast<uint8_t *>(addr_))[pos];
     }
 
+    auto get_or(std::size_t pos, const void *or_else = nullptr) const -> const void * {
+        if(addr_ == MAP_FAILED || pos >= size_)
+            return or_else;
+        return (static_cast<uint8_t *>(addr_)) + pos;
+    }
+
+    auto get_or(std::size_t pos, void *or_else = nullptr) -> void * {
+        if(addr_ == MAP_FAILED || pos >= size_)
+            return or_else;
+        return (static_cast<uint8_t *>(addr_)) + pos;
+    }
+
     auto data() const noexcept {
         return addr_;
     }
@@ -637,6 +649,18 @@ public:
 
     auto size() const noexcept {
         return size_;
+    }
+
+    auto get_or(std::size_t pos, const void *or_else = nullptr) const -> const void * {
+        if(addr_ == MAP_FAILED || pos >= size_)
+            return or_else;
+        return (static_cast<uint8_t *>(addr_)) + pos;
+    }
+
+    auto get_or(std::size_t pos, void *or_else = nullptr) -> void * {
+        if(addr_ == MAP_FAILED || pos >= size_)
+            return or_else;
+        return (static_cast<uint8_t *>(addr_)) + pos;
     }
 
     auto data() const noexcept {

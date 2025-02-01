@@ -11,7 +11,7 @@
 #include <memory>
 #include <iostream>
 #include <string_view>
-#include <queue>
+#include <list>
 #include <utility>
 #include <cstring>
 #include <cstdint>
@@ -284,9 +284,22 @@ public:
     mempool(const mempool&) = delete;
     auto operator=(const mempool&) -> auto& = delete;
 
-    mempool(T* ptr, size_type size) noexcept : ptr_(ptr), size_(size) {}
+    mempool() = default;
 
-    explicit mempool(size_type size) : ptr_(new T[size]), size_(size), dynamic(true) {}
+    mempool(T* ptr, size_type size) noexcept :
+    ptr_(ptr), size_(size) {}
+
+    mempool(void *ptr, size_type size) noexcept :
+    ptr_(reinterpret_cast<T*>(ptr)), size_(size) {}
+
+    explicit mempool(mempool&& other) noexcept : ptr_(other.ptr_), size_(other.size_), used_(other.used_), free_(std::move(other.free_)), dynamic_(other.dynamic_) {
+        other.dynamic_ = false;
+        other.ptr_ = nullptr;
+        other.size_ = 0;
+        other.used_ = 0;
+    }
+
+    explicit mempool(size_type size) : ptr_(new T[size]), size_(size), dynamic_(true) {}
 
     template<size_type S>
     explicit mempool(T(&arr)[S]) noexcept : mempool(arr, S) {}
@@ -295,12 +308,27 @@ public:
     explicit mempool(Container& container) : mempool(container.data(), container.size()) {}
 
     ~mempool() {
-        if(dynamic && ptr_)
+        if(dynamic_ && ptr_)
             delete[] ptr_;
     }
 
     operator bool() {
         return !empty();
+    }
+
+    auto operator=(mempool&& other) noexcept -> auto& {
+        if(ptr_ && dynamic_)
+            delete[] ptr_;
+        ptr_ = other.ptr_;
+        size_ = other.size_;
+        used_ = other.used_;
+        free_ = std::move(other.free_);
+        dynamic_ = other.dynamic_;
+
+        other.dynamic_ = false;
+        other.ptr_ = nullptr;
+        other.size_ = other.used_ = 0;
+        return *this;
     }
 
     auto operator!() {
@@ -311,21 +339,43 @@ public:
         return *get();
     }
 
-    void put(T* ptr) {
-        free_.push(ptr);
+    void release(T* ptr) {
+        free_.push_back(ptr);
     }
 
-    void put(T& obj) {
-        free_.push(&obj);
+    void release(T& obj) {
+        free_.push_back(&obj);
+    }
+
+    void reuse(T* ptr) {
+        free_.push_front(ptr);
+    }
+
+    void reuse(T& obj) {
+        free_.push_front(&obj);
+    }
+
+    auto get_or(T *or_else = nullptr) -> T* {
+        if(!free_.empty()) {
+            auto ptr = free_.front();
+            free_.pop_front();
+            return ptr;
+        }
+        if(ptr_ && used_ < size_) {
+            auto ptr = ptr_ + used_;
+            ++used_;
+            return ptr;
+        }
+        return or_else;
     }
 
     auto get() -> T* {
-        if(free_.size()) {
+        if(!free_.empty()) {
             auto ptr = free_.front();
-            free_.pop();
+            free_.pop_front();
             return ptr;
         }
-        if(used_ < size_) {
+        if(ptr_ && used_ < size_) {
             auto ptr = ptr_ + used_;
             ++used_;
             return ptr;
@@ -346,19 +396,25 @@ public:
         return used_;
     }
 
+    constexpr auto free() const noexcept {
+        return size_ - used_ + free_.size();
+    }
+
+    constexpr auto max() const noexcept {
+        return size_;
+    }
+
     constexpr auto empty() const noexcept {
-        return used_ >= size_ && free_.size() == 0;
+        return ptr_ == nullptr || (used_ >= size_ && free_.empty());
     }
 
 private:
     T *ptr_{nullptr};
     size_type size_{0};
     size_type used_{0};
-    std::queue<T*> free_;
-    bool dynamic{false};
+    std::list<T*> free_;
+    bool dynamic_{false};
 };
-
-
 
 class imemstream : protected std::streambuf, public std::istream {
 public:

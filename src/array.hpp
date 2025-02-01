@@ -232,7 +232,13 @@ public:
     using size_type = std::size_t;
     using value_type = T;
 
-    constexpr span(T* ptr, size_type size) noexcept : ptr_(ptr), size_(size) {}
+    constexpr span() = default;
+
+    constexpr span(T* ptr, size_type size) noexcept :
+    ptr_(ptr), size_(size) {}
+
+    constexpr span(void *ptr, size_type size) noexcept :
+    ptr_(reinterpret_cast<T *>(ptr)), size_(size) {}
 
     template<size_type S>
     explicit constexpr span(T(&arr)[S]) noexcept : span(arr, S) {}
