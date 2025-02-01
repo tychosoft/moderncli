@@ -5,7 +5,9 @@
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "atomics.hpp"
 #include "templates.hpp"
+
 #include <cstdint>
+#include <string>
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     const atomic::once_t once;
