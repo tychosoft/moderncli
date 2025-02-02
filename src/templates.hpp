@@ -24,7 +24,7 @@ constexpr auto is_null(const T& ptr) {
 }
 
 template<typename T>
-constexpr auto void_off(void *ptr, off_t offset) {
+constexpr auto void_ptr(void *ptr, std::size_t offset) {
     return reinterpret_cast<T*>(static_cast<uint8_t *>(ptr) + offset);
 }
 
