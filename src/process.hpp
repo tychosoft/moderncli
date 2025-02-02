@@ -185,6 +185,12 @@ public:
         CloseHandle(fm);
     }
 
+    map_t(map_t&& other) noexcept :
+    addr_(other.addr_), size_(other.size_) {
+        other.addr_ = MAP_FAILED;
+        other.size_ = 0;
+    }
+
     ~map_t() {
         if(addr_ != MAP_FAILED)
             UnmapViewOfFile(addr_);
@@ -203,6 +209,14 @@ public:
             throw std::runtime_error("no mapped handle");
 
         return addr_;
+    }
+
+    auto operator=(map_t&& other) noexcept -> auto& {
+        addr_ = other.addr_;
+        size_ = other.size_;
+        other.addr_ = MAP_FAILED;
+        other.size_ = 0;
+        return *this;
     }
 
     auto operator[](std::size_t pos) -> uint8_t& {
@@ -266,6 +280,13 @@ public:
             return true;
 
         return false;
+    }
+
+    auto detach() {
+        auto tmp = addr_;
+        addr_ = MAP_FAILED;
+        size_ = 0;
+        return tmp;
     }
 
     auto set(handle_t h, std::size_t size, bool rw = true, [[maybe_unused]]bool priv = false, off_t offset = 0) noexcept -> void *{
@@ -611,6 +632,12 @@ public:
 
     map_t(handle_t fd, std::size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept : addr_(::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset)), size_(size) {}
 
+    map_t(map_t&& other) noexcept :
+    addr_(other.addr_), size_(other.size_) {
+        other.addr_ = MAP_FAILED;
+        other.size_ = 0;
+    }
+
     ~map_t() {
         if(addr_ != MAP_FAILED)
             munmap(addr_, size_);
@@ -629,6 +656,14 @@ public:
             throw std::runtime_error("no mapped handle");
 
         return addr_;
+    }
+
+    auto operator=(map_t&& other) noexcept -> auto& {
+        addr_ = other.addr_;
+        size_ = other.size_;
+        other.addr_ = MAP_FAILED;
+        other.size_ = 0;
+        return *this;
     }
 
     auto operator[](std::size_t pos) -> uint8_t& {
@@ -677,6 +712,13 @@ public:
 
     auto unlock() noexcept {
         return (addr_ == MAP_FAILED) ? false : ::munlock(addr_, size_) == 0;
+    }
+
+    auto detach() {
+        auto tmp = addr_;
+        addr_ = MAP_FAILED;
+        size_ = 0;
+        return tmp;
     }
 
     auto set(handle_t fd, std::size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept {
