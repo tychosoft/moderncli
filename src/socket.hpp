@@ -396,6 +396,7 @@ private:
 #ifdef  AF_UNIX
         case AF_UNIX: {
             const auto sun = reinterpret_cast<const struct sockaddr_un *>(&store_);
+            // FlawFinder: ignore
             return offsetof(struct sockaddr_un, sun_path) + strlen(sun->sun_path);
         }
 #endif
@@ -847,6 +848,11 @@ public:
 #endif
 
     Socket() = default;
+
+    explicit Socket(int family, int type = 0, int protocol = 0) {
+        so_ = set_error(make_socket(::socket(family, type, protocol)));
+    }
+
     Socket(const Socket& from) = delete;
     auto operator=(const Socket& from) = delete;
 
@@ -1137,7 +1143,7 @@ public:
         return io_error(::recv(so_, static_cast<char *>(to), int(size), flags));
     }
 
-    auto send(const void *from, std::size_t size, const address_t addr, int flags = 0) const noexcept {
+    auto send(const void *from, std::size_t size, const address_t& addr, int flags = 0) const noexcept {
         if(so_ == -1)
             return io_error(-EBADF);
 
@@ -1287,6 +1293,7 @@ inline auto inet_size(const struct sockaddr *addr) noexcept -> socklen_t {
 #ifdef  AF_UNIX
     case AF_UNIX: {
         const auto un = reinterpret_cast<const struct sockaddr_un *>(addr);
+        // FlawFinder: ignore
         return offsetof(struct sockaddr_un, sun_path) + strlen(un->sun_path);
     }
 #endif
