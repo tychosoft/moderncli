@@ -383,6 +383,10 @@ public:
         throw std::out_of_range("Pool exhausted");
     }
 
+    auto begin() const -> T* {
+        return ptr_;
+    }
+
     auto clear() {
         used_ = 0;
         free_.clear();

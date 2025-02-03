@@ -23,7 +23,7 @@ constexpr auto is_null(const T& ptr) {
         return ptr.operator bool();
 }
 
-template<typename T>
+template<typename T=void>
 constexpr auto void_ptr(void *ptr, std::size_t offset) {
     return reinterpret_cast<T*>(static_cast<uint8_t *>(ptr) + offset);
 }
