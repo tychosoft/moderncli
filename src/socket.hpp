@@ -5,7 +5,9 @@
 #define TYCHO_SOCKET_HPP_
 
 #include <string>
+#include <string_view>
 #include <ostream>
+#include <stdexcept>
 #include <cstring>
 #include <cstdint>
 
@@ -106,6 +108,30 @@ public:
     auto operator=(const std::string& addr) noexcept -> auto& {
         set(addr);
         return *this;
+    }
+
+    auto operator==(const address_t& other) const noexcept {
+        return memcmp(&store_, &other.store_, size()) == 0;
+    }
+
+    auto operator!=(const address_t& other) const noexcept {
+        return memcmp(&store_, &other.store_, size()) != 0;
+    }
+
+    auto operator<(const address_t& other) const noexcept {
+        return memcmp(&store_, &other.store_, size()) < 0;
+    }
+
+    auto operator>(const address_t& other) const noexcept {
+        return memcmp(&store_, &other.store_, size()) > 0;
+    }
+
+    auto operator<=(const address_t& other) const noexcept {
+        return memcmp(&store_, &other.store_, size()) <= 0;
+    }
+
+    auto operator>=(const address_t& other) const noexcept {
+        return memcmp(&store_, &other.store_, size()) >= 0;
     }
 
     operator bool() const noexcept {
@@ -325,6 +351,7 @@ public:
             // FlawFinder: ignore
             memcpy(&store_, addr, size_(addr->sa_family));
     }
+
 private:
     struct sockaddr_storage store_{AF_UNSPEC};
 
@@ -1477,6 +1504,24 @@ inline auto is_ipv4(const std::string_view& addr) {
 
 inline auto is_ipv6(const std::string_view& addr) {
     return addr.find_first_of(':') != std::string_view::npos;
+}
+
+inline auto get_ipaddress(const std::string_view& from, uint16_t port = 0) {
+    address_t address;
+    if(is_ipv4(from) || is_ipv6(from))
+        address.set(std::string{from}, port);
+    if(address.empty())
+        throw std::out_of_range("Invalid ip address");
+    return address;
+}
+
+inline auto get_ipaddress_or(const std::string_view& from, address_t or_else = address_t(), uint16_t port = 0) {
+    address_t address;
+    if(is_ipv4(from) || is_ipv6(from))
+        address.set(std::string{from}, port);
+    if(address.empty())
+        return or_else;
+    return address;
 }
 } // end namespace
 
