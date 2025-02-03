@@ -111,27 +111,27 @@ public:
     }
 
     auto operator==(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, size()) == 0;
+        return memcmp(&store_, &other.store_, std::max(size(), other.size())) == 0;
     }
 
     auto operator!=(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, size()) != 0;
+        return memcmp(&store_, &other.store_, std::max(size(), other.size())) != 0;
     }
 
     auto operator<(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, size()) < 0;
+        return memcmp(&store_, &other.store_, std::max(size(), other.size())) < 0;
     }
 
     auto operator>(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, size()) > 0;
+        return memcmp(&store_, &other.store_, std::max(size(), other.size())) > 0;
     }
 
     auto operator<=(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, size()) <= 0;
+        return memcmp(&store_, &other.store_, std::max(size(), other.size())) <= 0;
     }
 
     auto operator>=(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, size()) >= 0;
+        return memcmp(&store_, &other.store_, std::max(size(), other.size())) >= 0;
     }
 
     operator bool() const noexcept {
@@ -235,6 +235,12 @@ public:
         }
     }
 
+#ifdef  AF_UNIX
+    auto un() const noexcept {
+        return store_.ss_family == AF_UNIX ? reinterpret_cast<const struct sockaddr_un*>(&store_) : nullptr;
+    }
+#endif
+
     auto in() const noexcept {
         return store_.ss_family == AF_INET ? reinterpret_cast<const struct sockaddr_in*>(&store_) : nullptr;
     }
@@ -277,6 +283,17 @@ public:
             ipv6->sin6_family = AF_INET6;
             ipv6->sin6_port = htons(in_port);
         }
+#ifdef  AF_UNIX
+        else if(strchr(cp, '/') != nullptr) {
+            auto sun = reinterpret_cast<struct sockaddr_un *>(&store_);
+            sun->sun_family = AF_UNIX;
+            auto tp = sun->sun_path;
+            auto ep = tp + sizeof(sun->sun_path) - 1;
+            while(*cp && tp < ep)
+                *(tp++) = *(cp++);
+            *tp = 0;
+        }
+#endif
         else if(strchr(cp, ':') != nullptr) {
             auto ipv6 = reinterpret_cast<struct sockaddr_in6*>(&store_);
             if(str == "::*" || str == "::" || str == "[::]")
@@ -317,8 +334,8 @@ public:
             break;
 #ifdef  AF_UNIX
         case AF_UNIX: {
-            auto un = reinterpret_cast<const struct sockaddr_un*>(&store_);
-            return {un->sun_path};
+            auto sun = reinterpret_cast<const struct sockaddr_un*>(&store_);
+            return {sun->sun_path};
         }
 #endif
         default:
@@ -370,6 +387,23 @@ private:
         }
     }
 
+    auto size_(int family) const noexcept -> socklen_t {
+        switch(family) {
+        case AF_INET:
+            return sizeof(struct sockaddr_in);
+        case AF_INET6:
+            return sizeof(struct sockaddr_in6);
+#ifdef  AF_UNIX
+        case AF_UNIX: {
+            const auto sun = reinterpret_cast<const struct sockaddr_un *>(&store_);
+            return offsetof(struct sockaddr_un, sun_path) + strlen(sun->sun_path);
+        }
+#endif
+        default:
+            return sizeof(store_);
+        }
+    }
+
     static auto zero_(const void *addr, std::size_t size) -> bool {
         auto ptr = static_cast<const std::byte *>(addr);
         while(size--) {
@@ -378,17 +412,6 @@ private:
             ++ptr;
         }
         return true;
-    }
-
-    static auto size_(int family) noexcept -> socklen_t {
-        switch(family) {
-        case AF_INET:
-            return sizeof(struct sockaddr_in);
-        case AF_INET6:
-            return sizeof(struct sockaddr_in6);
-        default:
-            return sizeof(struct sockaddr_storage);
-        }
     }
 };
 
@@ -1261,6 +1284,12 @@ inline auto inet_size(const struct sockaddr *addr) noexcept -> socklen_t {
         return sizeof(struct sockaddr_in);
     case AF_INET6:
         return sizeof(struct sockaddr_in6);
+#ifdef  AF_UNIX
+    case AF_UNIX: {
+        const auto un = reinterpret_cast<const struct sockaddr_un *>(addr);
+        return offsetof(struct sockaddr_un, sun_path) + strlen(un->sun_path);
+    }
+#endif
     default:
         return 0;
     }
@@ -1395,6 +1424,12 @@ inline auto inet_in6(struct sockaddr_storage& store) {
     return store.ss_family == AF_INET6 ? reinterpret_cast<struct sockaddr_in6 *>(&store) : nullptr;
 }
 
+#ifdef  AF_UNIX
+inline auto inet_un(struct sockaddr_storage& store) {
+    return store.ss_family == AF_UNIX ? reinterpret_cast<struct sockaddr_un *>(&store) : nullptr;
+}
+#endif
+
 inline auto inet_any(const std::string& host, int any = AF_INET) {
     if(host == "*")
         return any;
@@ -1467,6 +1502,12 @@ inline auto inet_bind(const std::string& host, const std::string& service = "", 
         port = 0;
     }
 
+#ifdef AF_UNIX
+    if((family == AF_UNIX || family == AF_UNSPEC) && host.find_first_of('/') != std::string::npos) {
+        return address_t(host);
+    }
+#endif
+
     if((family != AF_INET6) && (host == "any" || host == "*"))
         return address_t(AF_INET, port);
 
@@ -1505,6 +1546,12 @@ inline auto is_ipv4(const std::string_view& addr) {
 inline auto is_ipv6(const std::string_view& addr) {
     return addr.find_first_of(':') != std::string_view::npos;
 }
+
+#ifdef AF_UNIX
+inline auto is_unix(const std::string_view& addr) {
+    return addr.find_first_of('/') != std::string_view::npos;
+}
+#endif
 
 inline auto get_ipaddress(const std::string_view& from, uint16_t port = 0) {
     address_t address;
