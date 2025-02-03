@@ -849,9 +849,8 @@ public:
 
     Socket() = default;
 
-    explicit Socket(int family, int type = 0, int protocol = 0) {
-        so_ = set_error(make_socket(::socket(family, type, protocol)));
-    }
+    explicit Socket(int family, int type = 0, int protocol = 0) :
+    so_(set_error(make_socket(::socket(family, type, protocol)))) {}
 
     Socket(const Socket& from) = delete;
     auto operator=(const Socket& from) = delete;

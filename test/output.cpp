@@ -11,6 +11,8 @@ using namespace tycho;
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     auto now = gmt_time(time(nullptr));
     output() << "hello " << "world, " << to_string(now, GENERIC_DATETIME);
+
+    assert(iso_time("3:30") == 12600);
 }
 
 
