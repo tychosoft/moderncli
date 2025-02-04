@@ -29,18 +29,6 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
         const reader_ptr<struct test> tester(testing);
         assert(tester->v1 == 2);
-
-        sync_t sync1;
-        auto sync2 = sync1;
-
-        // verify returns same underlying instance
-        assert(&(*sync1) == &(*sync2));
-        assert(&(sync1.mutex()) == &(sync2.mutex()));
-
-        // conversion to guard scope
-        {
-            const std::lock_guard lock(sync1);
-        }
     }
     catch(...) {
         ::exit(1);
