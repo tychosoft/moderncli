@@ -48,6 +48,14 @@ using ssize_t = SSIZE_T;
 #define SOCKET int
 #endif
 
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL    0   // NOLINT
 #endif
