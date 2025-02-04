@@ -135,10 +135,12 @@ public:
     }
 
     auto operator==(const shared_mem& other) const noexcept {
+        if(array_.get() == other.array_.get()) return true;
         return memcmp(array_.get(), other.array_.get(), size_bytes()) == 0;
     }
 
     auto operator!=(const shared_mem& other) const noexcept {
+        if(array_.get() == other.array_.get()) return false;
         return memcmp(array_.get(), other.array_.get(), size_bytes()) != 0;
     }
 
