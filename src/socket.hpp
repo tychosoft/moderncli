@@ -48,14 +48,6 @@ using ssize_t = SSIZE_T;
 #define SOCKET int
 #endif
 
-#ifdef max
-#undef max
-#endif
-
-#ifdef min
-#undef min
-#endif
-
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL    0   // NOLINT
 #endif
@@ -119,27 +111,27 @@ public:
     }
 
     auto operator==(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, std::max(size(), other.size())) == 0;
+        return memcmp(&store_, &other.store_, max_(size(), other.size())) == 0;
     }
 
     auto operator!=(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, std::max(size(), other.size())) != 0;
+        return memcmp(&store_, &other.store_, max_(size(), other.size())) != 0;
     }
 
     auto operator<(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, std::max(size(), other.size())) < 0;
+        return memcmp(&store_, &other.store_, max_(size(), other.size())) < 0;
     }
 
     auto operator>(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, std::max(size(), other.size())) > 0;
+        return memcmp(&store_, &other.store_, max_(size(), other.size())) > 0;
     }
 
     auto operator<=(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, std::max(size(), other.size())) <= 0;
+        return memcmp(&store_, &other.store_, max_(size(), other.size())) <= 0;
     }
 
     auto operator>=(const address_t& other) const noexcept {
-        return memcmp(&store_, &other.store_, std::max(size(), other.size())) >= 0;
+        return memcmp(&store_, &other.store_, max_(size(), other.size())) >= 0;
     }
 
     operator bool() const noexcept {
@@ -411,6 +403,10 @@ private:
         default:
             return sizeof(store_);
         }
+    }
+
+    static auto max_(socklen_t x, socklen_t y) -> socklen_t {
+        return (x > y) ? x : y;
     }
 
     static auto zero_(const void *addr, std::size_t size) -> bool {
