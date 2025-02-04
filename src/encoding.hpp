@@ -90,10 +90,10 @@ inline auto size_b64(std::string_view from) {
     }
 }
 
-inline auto from_b64(std::string_view from, uint8_t *to, std::size_t max) {
+inline auto from_b64(std::string_view from, uint8_t *to, std::size_t maxsize) {
     auto out = size_b64(from);
 
-    if(out > max)
+    if(out > maxsize)
         return std::size_t(0);
 
     uint32_t val = 0;
@@ -137,11 +137,11 @@ inline auto to_hex(const crypto::key_t& key) {
 
 inline auto from_hex(std::string_view from, uint8_t *to, std::size_t size) {
     auto hex = from.data();
-    auto max = size * 2;
-    if(from.size() <= max)
-        max = from.size();
+    auto maxsize = size * 2;
+    if(from.size() <= maxsize)
+        maxsize = from.size();
 
-    for(auto pos = std::size_t(0); pos < max; pos += 2) {
+    for(auto pos = std::size_t(0); pos < maxsize; pos += 2) {
         char buf[3]{};
         buf[0] = hex[pos];
         buf[1] = hex[pos + 1];
@@ -152,7 +152,7 @@ inline auto from_hex(std::string_view from, uint8_t *to, std::size_t size) {
             return pos / 2;
         *(to++) = uint8_t(value);
     }
-    return max / 2;
+    return maxsize / 2;
 }
 } // end namespace
 
