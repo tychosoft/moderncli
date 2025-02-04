@@ -135,29 +135,15 @@ public:
     }
 
     auto operator==(const shared_mem& other) const noexcept {
+        if(size_bytes() != other.size_bytes()) return false;
         if(array_.get() == other.array_.get()) return true;
         return memcmp(array_.get(), other.array_.get(), size_bytes()) == 0;
     }
 
     auto operator!=(const shared_mem& other) const noexcept {
+        if(size_bytes() != other.size_bytes()) return true;
         if(array_.get() == other.array_.get()) return false;
         return memcmp(array_.get(), other.array_.get(), size_bytes()) != 0;
-    }
-
-    auto operator<(const shared_mem& other) const noexcept {
-        return memcmp(array_.get(), other.array_.get(), size_bytes()) < 0;
-    }
-
-    auto operator>(const shared_mem& other) const noexcept {
-        return memcmp(array_.get(), other.array_.get(), size_bytes()) > 0;
-    }
-
-    auto operator<=(const shared_mem& other) const noexcept {
-        return memcmp(array_.get(), other.array_.get(), size_bytes()) <= 0;
-    }
-
-    auto operator>=(const shared_mem& other) const noexcept {
-        return memcmp(array_.get(), other.array_.get(), size_bytes()) >= 0;
     }
 
     auto get_or(size_type index, T* or_else = nullptr) -> T* {

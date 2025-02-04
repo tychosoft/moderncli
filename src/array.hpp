@@ -11,6 +11,7 @@
 #include <optional>
 #include <stdexcept>
 #include <cstdint>
+#include <cstring>
 #include <type_traits>
 
 namespace tycho {
@@ -356,4 +357,30 @@ inline auto make_span(Container& container) -> span<typename Container::value_ty
     return span<typename Container::value_type>(container);
 }
 } // end namespace
+
+namespace std {
+template<>
+struct hash<tycho::byteslice_t> {
+    auto operator()(const tycho::byteslice_t& obj) const {
+        std::size_t result{0U};
+        const auto data = obj.data();
+        for(std::size_t pos = 0; pos < obj.size(); ++pos) {
+            result = (result * 131) + data[pos];
+        }
+        return result;
+    }
+};
+} // end namespace
+
+auto inline operator==(const tycho::byteslice_t& lhs, const tycho::byteslice_t& rhs) {
+    if(lhs.size() != rhs.size()) return false;
+    if(lhs.data() == rhs.data()) return true;
+    return memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
+}
+
+auto inline operator!=(const tycho::byteslice_t& lhs, const tycho::byteslice_t& rhs) {
+    if(lhs.size() != rhs.size()) return true;
+    if(lhs.data() == rhs.data()) return false;
+    return memcmp(lhs.data(), rhs.data(), lhs.size()) != 0;
+}
 #endif
