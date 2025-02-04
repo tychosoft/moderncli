@@ -1582,6 +1582,20 @@ inline auto get_ipaddress_or(const std::string_view& from, address_t or_else = a
 }
 } // end namespace
 
+namespace std {
+template<>
+struct hash<tycho::address_t> {
+    auto operator()(const tycho::address_t& obj) const {
+        std::size_t result{0U};
+        const auto data = reinterpret_cast<const char *>(obj.data());
+        for(std::size_t pos = 0; pos < obj.size(); ++pos) {
+            result = (result * 131) + data[pos];
+        }
+        return result;
+    }
+};
+} // end namespace
+
 inline auto operator<<(std::ostream& out, const tycho::address_t& addr) -> std::ostream& {
     out << addr.to_string();
     return out;

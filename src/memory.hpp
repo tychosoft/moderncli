@@ -134,6 +134,30 @@ public:
         return *array_;
     }
 
+    auto operator==(const shared_mem& other) const noexcept {
+        return memcmp(array_.get(), other.array_.get(), size_bytes()) == 0;
+    }
+
+    auto operator!=(const shared_mem& other) const noexcept {
+        return memcmp(array_.get(), other.array_.get(), size_bytes()) != 0;
+    }
+
+    auto operator<(const shared_mem& other) const noexcept {
+        return memcmp(array_.get(), other.array_.get(), size_bytes()) < 0;
+    }
+
+    auto operator>(const shared_mem& other) const noexcept {
+        return memcmp(array_.get(), other.array_.get(), size_bytes()) > 0;
+    }
+
+    auto operator<=(const shared_mem& other) const noexcept {
+        return memcmp(array_.get(), other.array_.get(), size_bytes()) <= 0;
+    }
+
+    auto operator>=(const shared_mem& other) const noexcept {
+        return memcmp(array_.get(), other.array_.get(), size_bytes()) >= 0;
+    }
+
     auto get_or(size_type index, T* or_else = nullptr) -> T* {
         if(index >= size_)
             return or_else;
@@ -249,8 +273,11 @@ public:
 
     static auto from_hex(std::string_view from) {
         auto bsize = from.size() / 2;
-        while(sizeof(T) > 1 && bsize % sizeof(T))
-            ++bsize;
+        if constexpr (sizeof(T) > 1) {
+            // cppcheck-suppress moduloofone
+            while(bsize % sizeof(T))
+                ++bsize;
+        }
         auto mem = shared_mem(uint32_t(bsize / sizeof(T)));
         if(tycho::from_hex(from, mem.get(), bsize) < from.size() / 2)
             return shared_mem();
@@ -840,6 +867,20 @@ template<typename T>
 inline auto make_pool(std::size_t size) {
     return mempool<T>(size);
 }
+} // end namespace
+
+namespace std {
+template<>
+struct hash<tycho::bytearray_t> {
+    auto operator()(const tycho::bytearray_t& obj) const {
+        std::size_t result{0U};
+        const auto data = obj.data();
+        for(std::size_t pos = 0; pos < obj.size(); ++pos) {
+            result = (result * 131) + data[pos];
+        }
+        return result;
+    }
+};
 } // end namespace
 
 inline auto operator new(std::size_t size, tycho::mempager& pager) -> void * {
