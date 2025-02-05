@@ -6,6 +6,7 @@
 
 #include <string>
 #include <utility>
+#include <memory>
 #include <cstdint>
 #include <openssl/bn.h>
 
@@ -455,6 +456,23 @@ inline auto gcd(const bignum_t& a, const bignum_t& b) noexcept -> bignum_t {
     return result;
 }
 } // end namespace
+
+namespace std {
+template<>
+struct hash<tycho::crypto::bignum_t> {
+    auto operator()(const tycho::crypto::bignum_t& bn) const {
+        auto size = bn.size();
+        auto data = std::make_unique<uint8_t[]>(size);
+        bn.put(data.get(), size);
+        std::size_t result{0U};
+        for(std::size_t pos = 0; pos < size; ++pos) {
+            result = (result * 131) + data[pos];
+        }
+        return result;
+    }
+};
+} // end namespace
+
 
 inline auto operator<<(std::ostream& out, const tycho::crypto::bignum_t& bn) -> std::ostream& {
     out << bn.to_string();
