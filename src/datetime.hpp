@@ -198,7 +198,7 @@ inline auto iso_time(std::string_view text, std::time_t or_else = MAX_TIME) -> s
 
     if(!text.empty() || min > 59 || sec > 59)
         return or_else;
-    return (hour * 3600U) + (min * 60U) + sec;
+    return (static_cast<time_t>(hour) * 3600U) + (static_cast<long long>(min) * 60U) + sec;
 }
 } // end namespace
 
