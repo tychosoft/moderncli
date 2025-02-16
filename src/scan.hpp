@@ -19,9 +19,8 @@ constexpr std::string_view hex_digits("0123456789abcdef");
 inline auto count(const std::string_view& text, char code) {
     std::size_t count = 0;
     for(const char ch : text) {
-        // cppcheck-suppress useStlAlgorithm
         if(ch == code) 
-            ++count;
+            ++count;    // cppcheck-suppress useStlAlgorithm
     }
     return count;
 }

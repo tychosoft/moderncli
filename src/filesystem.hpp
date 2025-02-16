@@ -24,9 +24,14 @@ using ssize_t = SSIZE_T;
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-extern "C" {
+#if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
+#undef  _WIN32_WINNT
+#define _WIN32_WINNT    0x0600  // NOLINT
+#endif
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <aclapi.h>
 #include <io.h>
-}
 #endif
 
 #if defined(__OpenBSD__)
@@ -102,7 +107,8 @@ inline auto append(int fd) noexcept {
 }
 
 inline auto open(const fsys::path& path, mode flags = mode::rw) noexcept {  // FlawFinder: ignore
-    return _open(path.u8string().c_str(), flags | _O_BINARY, 0664);
+    const auto filename = path.string();
+    return _open(filename.c_str(), flags | _O_BINARY, 0664);
 }
 
 inline auto close(int fd) noexcept {
@@ -117,6 +123,25 @@ inline auto write(int fd, const void *buf, std::size_t len) {
     return _write(fd, buf, len);
 }
 
+inline auto exclusive_open(const fsys::path& path, [[maybe_unused]] bool all = false) {
+    auto filename = path.string();
+    auto handle = CreateFile(filename.c_str(), GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if(handle == INVALID_HANDLE_VALUE) return -1;
+    auto fd = _open_osfhandle((intptr_t)handle, _O_RDWR);
+    if(fd == -1)
+        CloseHandle(handle);
+    return fd;
+}
+
+inline auto shared_access(const fsys::path& path) {
+    auto filename = path.string();
+    auto handle = CreateFile(filename.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if(handle == INVALID_HANDLE_VALUE) return -1;
+    auto fd = _open_osfhandle((intptr_t)handle, _O_RDONLY);
+    if(fd == -1)
+        CloseHandle(handle);
+    return fd;
+}
 
 inline auto native_handle(int fd) {
     auto handle = _get_osfhandle(fd);
@@ -172,6 +197,27 @@ inline auto write(int fd, const void *buf, std::size_t len) {
 
 inline auto native_handle(int fd) {
     return fd;
+}
+
+inline auto exclusive_open(const fsys::path& path, bool all = false) {
+    const auto file = path.string();
+    auto fd = ::open(file.c_str(), O_RDWR | O_CREAT | O_EXCL, all ? 0644 : 0640); // FlawFinder: ignore
+    if(fd == -1) return -1;
+    struct flock lock{};
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 0;
+    if(fcntl(fd, F_SETLK, &lock) == -1) {
+        close(fd);
+        return -1;
+    }
+    return fd;
+}
+
+inline auto shared_access(const fsys::path& path) {
+    const auto filename = path.string();
+    return ::open(filename.c_str(), O_RDONLY);  // FlawFinder: ignore
 }
 
 inline auto native_handle(std::FILE *fp) {
@@ -412,9 +458,6 @@ struct std::formatter<tycho::fsys::path> {
     }
 };
 #endif
-
-
-
 
 inline auto operator<<(std::ostream& out, const tycho::fsys::path& path) -> std::ostream& {
     out << path.u8string();
