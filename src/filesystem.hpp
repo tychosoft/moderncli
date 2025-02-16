@@ -123,6 +123,14 @@ inline auto write(int fd, const void *buf, std::size_t len) {
     return _write(fd, buf, len);
 }
 
+inline auto sync(int fd) {
+    auto handle = (HANDLE)_get_osfhandle(fd);
+    if(handle == INVALID_HANDLE_VALUE) return -1;
+    if(FlushFileBuffers(handle))
+        return 0;
+    return -1;
+}
+
 inline auto exclusive_open(const fsys::path& path, [[maybe_unused]] bool all = false) {
     auto filename = path.string();
     auto handle = CreateFile(filename.c_str(), GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -193,6 +201,10 @@ inline auto read(int fd, void *buf, std::size_t len) { // FlawFinder: ignore
 
 inline auto write(int fd, const void *buf, std::size_t len) {
     return ::write(fd, buf, len);
+}
+
+inline auto sync(int fd) {
+    return ::fsync(fd);
 }
 
 inline auto native_handle(int fd) {
