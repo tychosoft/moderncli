@@ -62,11 +62,6 @@ constexpr auto format(std::ostream& out, format_string<Args...> fmt, Args&&... a
 }
 
 template<class... Args>
-[[deprecated]] constexpr void format(std::ostream& out, format_string<Args...> fmt, Args&&... args) {
-    out << fmt::format(fmt, std::forward<Args>(args)...);
-}
-
-template<class... Args>
 constexpr void print(format_string<Args...> fmt, Args&&... args) {
     std::cout << format(fmt, std::forward<Args>(args)...);
 }

@@ -1275,55 +1275,10 @@ inline auto system_hostname() noexcept -> std::string {
     return {buf};
 }
 
-[[deprecated]] inline auto inet_host(struct sockaddr *addr, const std::string& host) noexcept {
-    if(!addr) return false;
-    switch(addr->sa_family) {
-    case AF_INET:
-        if(inet_pton(AF_INET, host.c_str(), &(reinterpret_cast<struct sockaddr_in *>(addr))->sin_addr.s_addr))
-            return true;
-        break;
-    case AF_INET6:
-        if(inet_pton(AF_INET6, host.c_str(), &(reinterpret_cast<struct sockaddr_in6 *>(addr))->sin6_addr.s6_addr))
-            return true;
-        break;
-    default:
-        break;
-    }
-    return false;
-}
-
 inline auto inet_host(const struct sockaddr *addr) noexcept -> std::string {
     if(!addr) return {};
     const address_t address(addr);
     return address.to_string();
-}
-
-[[deprecated]] inline auto inet_host(const std::string& host = "", int type = SOCK_STREAM, int any = AF_UNSPEC) {
-    struct addrinfo hints{0}, *info{nullptr};
-    auto fqdn(host);
-    if(fqdn.empty())
-        fqdn = system_hostname();
-
-    if(fqdn.empty()) return fqdn;
-    if(fqdn.size() > 2 && fqdn[0] == '[' && fqdn[fqdn.size() - 1] == ']') {
-        fqdn.erase(0, 1);
-        fqdn.erase(fqdn.size() - 1, 1);
-        any = AF_INET6;
-    }
-    else if(fqdn.find(':') != std::string::npos)
-        any = AF_INET6;
-
-    auto hostid = fqdn.c_str();
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = any;              // either IPV4 or IPV6
-    hints.ai_socktype = type;
-    hints.ai_flags = AI_CANONNAME;
-
-    if(getaddrinfo(hostid, nullptr, &hints, &info) == 0 && info) {
-        fqdn = info->ai_canonname;
-        freeaddrinfo(info);
-    }
-    return fqdn;
 }
 
 inline auto inet_family(const std::string& host, int any = AF_UNSPEC) {
@@ -1341,25 +1296,6 @@ inline auto inet_family(const std::string& host, int any = AF_UNSPEC) {
     }
     if(dots == 3) return AF_INET;
     return AF_UNSPEC;
-}
-
-[[deprecated]] inline auto inet_store(struct sockaddr_storage& addr, const std::string& host, const std::string& service = "", int any = AF_UNSPEC) {
-    struct addrinfo hints{}, *list = nullptr;                                       memset(&hints, 0, sizeof(hints));
-    memset(&addr, 0, sizeof(addr));
-    hints.ai_family = inet_family(host, any);
-    auto svc = service.c_str();
-    if(service.empty())
-        svc = nullptr;
-    if(getaddrinfo(host.c_str(), svc, &hints, &list))
-        list = nullptr;
-
-    if(list) {
-        auto asize = inet_size(list->ai_addr);
-        memcpy(&addr, list->ai_addr, asize); // FlawFinder: size valid
-        freeaddrinfo(list);
-        return true;
-    }
-    return false;
 }
 
 inline auto inet_in4(struct sockaddr_storage& store) {
