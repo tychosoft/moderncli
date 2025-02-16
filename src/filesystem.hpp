@@ -387,18 +387,34 @@ inline auto to_string(const fsys::path& path) {
 } // end namespace
 
 #if defined(TYCHO_PRINT_HPP_) && (__cplusplus < 202002L)
-template <> class fmt::formatter<tycho::fsys::path> {
+template <>
+class fmt::formatter<tycho::fsys::path> {
 public:
-    [[deprecated]] static constexpr auto parse(format_parse_context& ctx) {
+    static constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
 
     template <typename Context>
-    [[deprecated]] constexpr auto format(tycho::fsys::path const& path, Context& ctx) const {
+    constexpr auto format(const tycho::fsys::path& path, Context& ctx) const {
         return format_to(ctx.out(), "{}", std::string{path.u8string()});
     }
 };
+#elif defined(TYCHO_PRINT_HPP)
+template <>
+struct std::formatter<tycho::fsys::path> {
+    constexpr auto parse(std::format_parse_context& ctx) {
+        return ctx.begin();
+    }
+
+    template <typename FormatContext>
+    auto format(const tycho::fsys::path& path, FormatContext& ctx) const {
+        return std::format_to(ctx.out(), "{}", path.u8string());
+    }
+};
 #endif
+
+
+
 
 inline auto operator<<(std::ostream& out, const tycho::fsys::path& path) -> std::ostream& {
     out << path.u8string();

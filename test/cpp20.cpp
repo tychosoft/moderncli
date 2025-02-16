@@ -7,6 +7,7 @@
 #include "ranges.hpp"
 #include "memory.hpp"
 #include "array.hpp"
+#include "filesystem.hpp"
 #include <vector>
 #include <ranges>
 #include <span>
