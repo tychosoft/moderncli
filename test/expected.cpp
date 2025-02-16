@@ -24,7 +24,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
         assert(e1.error() == 23);
         assert(e2.value() == "hello");
-    } catch(...) {
+    } 
+    catch(...) {
         abort();
     }
 }

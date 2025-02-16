@@ -30,9 +30,7 @@ public:
     }
 
     explicit pubkey_t(const BIGNUM *bignum, const std::string& curve = "secp521r1") noexcept : key_(EVP_EC_gen(curve.c_str())) {
-        if(!key_)
-            return;
-
+        if(!key_) return;
         auto bytes = BN_num_bytes(bignum);
         auto temp = std::make_unique<uint8_t[]>(bytes);
         auto ptr = &temp[0];
@@ -50,9 +48,7 @@ public:
     }
 
     explicit pubkey_t(const key_t key, const std::string& curve = "secp521r1") noexcept : key_(EVP_EC_gen(curve.c_str())) {
-        if(!key_)
-            return;
-
+        if(!key_) return;
         OSSL_PARAM params[] = {
             OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_PUB_KEY, const_cast<uint8_t *>(key.first), key.second),
             OSSL_PARAM_construct_end()
@@ -87,10 +83,8 @@ public:
     }
 
     auto operator=(const pubkey_t& other) noexcept -> auto& {
-        if(&other == this)
-            return *this;
-        if(key_ == other.key_)
-            return *this;
+        if(&other == this) return *this;
+        if(key_ == other.key_) return *this;
         if(key_)
             EVP_PKEY_free(key_);
         key_ = other.key_;
@@ -115,15 +109,12 @@ public:
         if(key_)
             ctx_ = EVP_MD_CTX_new();
 
-        if(!ctx_)
-            return;
-
+        if(!ctx_) return;
         EVP_DigestSignInit(ctx_, nullptr, md, nullptr, key_);
     }
 
     sign_t(sign_t&& other) noexcept {
-        if(this == &other)
-            return;
+        if(this == &other) return;
         ctx_ = other.ctx_;
         key_ = other.key_;
         other.key_ = nullptr;
@@ -169,8 +160,7 @@ public:
     }
 
     auto finish() noexcept {
-        if(!ctx_ || size_ > 0)
-            return false;
+        if(!ctx_ || size_ > 0) return false;
         return EVP_DigestSignFinal(ctx_, data_, &size_) > 0;
     }
 
@@ -187,15 +177,12 @@ public:
         if(key_)
             ctx_ = EVP_MD_CTX_new();
 
-        if(!ctx_)
-            return;
-
+        if(!ctx_) return;
         EVP_DigestVerifyInit(ctx_, nullptr, md, nullptr, key_);
     }
 
     verify_t(verify_t&& other) noexcept {
-        if(this == &other)
-            return;
+        if(this == &other) return;
         ctx_ = other.ctx_;
         key_ = other.key_;
         other.key_ = nullptr;

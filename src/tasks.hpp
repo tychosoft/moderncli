@@ -29,8 +29,7 @@ public:
 template<typename T, typename Pred>
 inline auto get_future(std::function<T>& future, Pred pred, std::chrono::milliseconds interval = std::chrono::milliseconds(100)) {
     do {    // NOLINT
-        if(!pred())
-            throw future_cancelled();
+        if(!pred()) throw future_cancelled();
     } while(future.wait_for(interval) != std::future_status::ready);
     return future.get();
 }
@@ -54,7 +53,9 @@ public:
     using period_t = std::chrono::milliseconds;
     using timepoint_t = std::chrono::steady_clock::time_point;
 
-    explicit timer_queue(error_t handler = [](const std::exception& e){}) noexcept : errors_(std::move(handler)), thread_(std::thread(&timer_queue::run, this)) {}
+    explicit timer_queue(error_t handler = [](const std::exception& e){}) noexcept : 
+    errors_(std::move(handler)), thread_(std::thread(&timer_queue::run, this)) {}
+    
     timer_queue(const timer_queue&) = delete;
     auto operator=(const timer_queue&) -> auto& = delete;
 
@@ -73,9 +74,7 @@ public:
     }
 
     void shutdown() noexcept {
-        if(stop_)
-            return;
-
+        if(stop_) return;
         const std::lock_guard lock(lock_);
         stop_ = true;
         cond_.notify_all();
@@ -114,8 +113,7 @@ public:
     auto find(uint64_t id) const noexcept {
         const std::lock_guard lock(lock_);
         for(const auto& [expires, item] : timers_) {
-            if(std::get<0>(item) == id)
-                return expires;
+            if(std::get<0>(item) == id) return expires;
         }
         return timepoint_t::min();
     }
@@ -127,8 +125,7 @@ public:
 
     auto empty() const noexcept {
         const std::lock_guard lock(lock_);
-        if(stop_)
-            return true;
+        if(stop_) return true;
         return timers_.empty();
     }
 
@@ -145,8 +142,7 @@ private:
     void run() noexcept {
         for(;;) {
             std::unique_lock lock(lock_);
-            if (stop_ && timers_.empty())
-                return;
+            if (stop_ && timers_.empty()) return;
             if(timers_.empty()) {
                 cond_.wait(lock);
                 lock.unlock();
@@ -209,9 +205,7 @@ public:
 
     auto priority(task_t task) {
         std::unique_lock lock(mutex_);
-        if(!running_)
-            return false;
-
+        if(!running_) return false;
         tasks_.push_front(std::move(task));
         lock.unlock();
         cvar_.notify_one();
@@ -220,12 +214,8 @@ public:
 
     auto dispatch(task_t task, std::size_t max = 0) {
         std::unique_lock lock(mutex_);
-        if(!running_)
-            return false;
-
-        if(max && tasks_.size() >= max)
-            return false;
-
+        if(!running_) return false;
+        if(max && tasks_.size() >= max) return false;
         tasks_.push_back(std::move(task));
         lock.unlock();
         cvar_.notify_one();
@@ -240,18 +230,14 @@ public:
 
     void startup() {
         const std::unique_lock lock(mutex_);
-        if(running_)
-            return;
-
+        if(running_) return;
         running_ = true;
         thread_ = std::thread(&task_queue::process, this);
     }
 
     void shutdown() {
         std::unique_lock lock(mutex_);
-        if(!running_)
-            return;
-
+        if(!running_) return;
         running_ = false;
         lock.unlock();
 
@@ -262,26 +248,21 @@ public:
 
     auto shutdown(shutdown_strategy handler) -> auto& {
         const std::lock_guard lock(mutex_);
-        if(running_)
-            throw std::runtime_error("cannot modify running task queue");
+        if(running_) throw std::runtime_error("cannot modify running task queue");
         shutdown_ = handler;
         return *this;
     }
 
     auto timeout(timeout_strategy handler) -> auto& {
         const std::lock_guard lock(mutex_);
-        if(running_)
-            throw std::runtime_error("cannot modify running task queue");
-
+        if(running_) throw std::runtime_error("cannot modify running task queue");
         timeout_ = handler;
         return *this;
     }
 
     auto errors(error_t handler) -> auto& {
         const std::lock_guard lock(mutex_);
-        if(running_)
-            throw std::runtime_error("cannot modify running task queue");
-
+        if(running_) throw std::runtime_error("cannot modify running task queue");
         errors_ = std::move(handler);
         return *this;
     }
@@ -293,8 +274,7 @@ public:
 
     auto empty() const noexcept {
         const std::lock_guard lock(mutex_);
-        if(!running_)
-            return true;
+        if(!running_) return true;
         return tasks_.empty();
     }
 
@@ -325,15 +305,11 @@ private:
     void process() noexcept {
         for(;;) {
             std::unique_lock lock(mutex_);
-            if(!running_)
-                break;
-
+            if(!running_) break;
             if(tasks_.empty())
                 cvar_.wait_for(lock, timeout_());
 
-            if(tasks_.empty())
-                continue;
-
+            if(tasks_.empty()) continue;
             try {
                 auto func(std::move(tasks_.front()));
                 tasks_.pop_front();

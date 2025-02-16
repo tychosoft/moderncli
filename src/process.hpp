@@ -87,9 +87,7 @@ public:
     }
 
     auto operator=(const ref_t& other) noexcept -> ref_t& {
-        if(&other == this)
-            return *this;
-
+        if(&other == this) return *this;
         if(handle_ != invalid_handle())
             CloseHandle(handle_);
 
@@ -205,9 +203,7 @@ public:
     }
 
     auto operator*() const {
-        if(addr_ == MAP_FAILED)
-            throw std::runtime_error("no mapped handle");
-
+        if(addr_ == MAP_FAILED) throw std::runtime_error("no mapped handle");
         return addr_;
     }
 
@@ -220,30 +216,24 @@ public:
     }
 
     auto operator[](std::size_t pos) -> uint8_t& {
-        if(addr_ == MAP_FAILED)
-            throw std::runtime_error("no mapped handle");
-        if(pos >= size_)
-            throw std::runtime_error("outside of map range");
+        if(addr_ == MAP_FAILED) throw std::runtime_error("no mapped handle");
+        if(pos >= size_) throw std::runtime_error("outside of map range");
         return (static_cast<uint8_t *>(addr_))[pos];
     }
 
     auto operator[](std::size_t pos) const -> const uint8_t& {
-        if(addr_ == MAP_FAILED)
-            throw std::runtime_error("no mapped handle");
-        if(pos >= size_)
-            throw std::runtime_error("outside of map range");
+        if(addr_ == MAP_FAILED) throw std::runtime_error("no mapped handle");
+        if(pos >= size_) throw std::runtime_error("outside of map range");
         return (static_cast<uint8_t *>(addr_))[pos];
     }
 
     auto get_or(std::size_t pos, const void *or_else = nullptr) const -> const void * {
-        if(addr_ == MAP_FAILED || pos >= size_)
-            return or_else;
+        if(addr_ == MAP_FAILED || pos >= size_) return or_else;
         return (static_cast<uint8_t *>(addr_)) + pos;
     }
 
     auto get_or(std::size_t pos, void *or_else = nullptr) -> void * {
-        if(addr_ == MAP_FAILED || pos >= size_)
-            return or_else;
+        if(addr_ == MAP_FAILED || pos >= size_) return or_else;
         return (static_cast<uint8_t *>(addr_)) + pos;
     }
 
@@ -256,29 +246,19 @@ public:
     }
 
     auto sync([[maybe_unused]]bool wait = false) noexcept {
-        if(addr_ == MAP_FAILED)
-            return false;
-
+        if(addr_ == MAP_FAILED) return false;
         return FlushViewOfFile(addr_, size_) == TRUE;
     }
 
     auto lock() noexcept {
-        if(addr_ == MAP_FAILED)
-            return false;
-
-        if(VirtualLock((LPVOID)addr_, size_))
-            return true;
-
+        if(addr_ == MAP_FAILED) return false;
+        if(VirtualLock((LPVOID)addr_, size_)) return true;
         return false;
     }
 
     auto unlock() noexcept {
-        if(addr_ == MAP_FAILED)
-            return false;
-
-        if(VirtualUnlock((LPVOID)addr_, size_))
-            return true;
-
+        if(addr_ == MAP_FAILED) return false;
+        if(VirtualUnlock((LPVOID)addr_, size_)) return true;
         return false;
     }
 
@@ -353,8 +333,7 @@ inline void time(struct timeval *tp) noexcept {
 }
 
 inline auto is_tty(handle_t handle) noexcept {
-    if(handle == INVALID_HANDLE_VALUE)
-        return false;
+    if(handle == INVALID_HANDLE_VALUE) return false;
     auto type = GetFileType(handle);
     return type == FILE_TYPE_CHAR;
 }
@@ -471,9 +450,7 @@ public:
     }
 
     auto operator=(const ref_t& other) noexcept -> ref_t& {
-        if(&other == this)
-            return *this;
-
+        if(&other == this) return *this;
         if(handle_ != invalid_handle())
             ::close(handle_);
         handle_ = dup(other.handle_);
@@ -535,7 +512,8 @@ public:
     map_t(const map_t&) = delete;
     auto operator=(const map_t&) -> auto& = delete;
 
-    map_t(handle_t fd, std::size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept : addr_(::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset)), size_(size) {}
+    map_t(handle_t fd, std::size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept : 
+    addr_(::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset)), size_(size) {}
 
     map_t(map_t&& other) noexcept :
     addr_(other.addr_), size_(other.size_) {
@@ -557,9 +535,7 @@ public:
     }
 
     auto operator*() const {
-        if(addr_ == MAP_FAILED)
-            throw std::runtime_error("no mapped handle");
-
+        if(addr_ == MAP_FAILED) throw std::runtime_error("no mapped handle");
         return addr_;
     }
 
@@ -572,18 +548,14 @@ public:
     }
 
     auto operator[](std::size_t pos) -> uint8_t& {
-        if(addr_ == MAP_FAILED)
-            throw std::runtime_error("no mapped handle");
-        if(pos >= size_)
-            throw std::runtime_error("outside of map range");
+        if(addr_ == MAP_FAILED) throw std::runtime_error("no mapped handle");
+        if(pos >= size_) throw std::runtime_error("outside of map range");
         return (static_cast<uint8_t *>(addr_))[pos];
     }
 
     auto operator[](std::size_t pos) const -> const uint8_t& {
-        if(addr_ == MAP_FAILED)
-            throw std::runtime_error("no mapped handle");
-        if(pos >= size_)
-            throw std::runtime_error("outside of map range");
+        if(addr_ == MAP_FAILED) throw std::runtime_error("no mapped handle");
+        if(pos >= size_) throw std::runtime_error("outside of map range");
         return (static_cast<uint8_t *>(addr_))[pos];
     }
 
@@ -592,14 +564,12 @@ public:
     }
 
     auto get_or(std::size_t pos, const void *or_else = nullptr) const -> const void * {
-        if(addr_ == MAP_FAILED || pos >= size_)
-            return or_else;
+        if(addr_ == MAP_FAILED || pos >= size_) return or_else;
         return (static_cast<uint8_t *>(addr_)) + pos;
     }
 
     auto get_or(std::size_t pos, void *or_else = nullptr) -> void * {
-        if(addr_ == MAP_FAILED || pos >= size_)
-            return or_else;
+        if(addr_ == MAP_FAILED || pos >= size_) return or_else;
         return (static_cast<uint8_t *>(addr_)) + pos;
     }
 
@@ -649,12 +619,8 @@ inline void time(struct timeval *tp) noexcept {
 }
 
 inline auto is_tty(handle_t fd) noexcept {
-    if(fd < 0)
-        return false;
-
-    if(isatty(fd))
-        return true;
-
+    if(fd < 0) return false;
+    if(isatty(fd)) return true;
     return false;
 }
 
@@ -851,15 +817,11 @@ inline auto env(const std::string& id, std::size_t max = 256) noexcept -> std::o
     auto buf = std::make_unique<char []>(max);
     // FlawFinder: ignore
     const char *out = getenv(id.c_str());
-    if(!out)
-        return {};
-
+    if(!out) return {};
     buf[max - 1] = 0;
     // FlawFinder: ignore
     strncpy(&buf[0], out, max);
-    if(buf[max - 1] != 0)
-        return {};
-
+    if(buf[max - 1] != 0) return {};
     return std::string(&buf[0]);
 }
 
@@ -907,7 +869,6 @@ inline auto priority(int priority) {
     int policy{};
 
     std::memset(&sp, 0, sizeof(sp));
-
     policy = SCHED_OTHER;
 #ifdef  SCHED_FIFO
     if(priority > 0) {

@@ -17,7 +17,8 @@ public:
     using iterator = std::unordered_map<std::string, keys>::const_iterator;
 
     keyfile() noexcept : ptr_(std::make_shared<keyfile::data>()) {}
-    explicit keyfile(const std::initializer_list<std::string>& paths) noexcept :    ptr_(std::make_shared<keyfile::data>()) {
+    explicit keyfile(const std::initializer_list<std::string>& paths) noexcept :
+    ptr_(std::make_shared<keyfile::data>()) {
         for(const auto& path : paths)
             ptr_->load(path);
     }
@@ -57,11 +58,13 @@ public:
     }
 
     void remove(const std::string& id) {
-        if(ptr_) ptr_->remove(id);
+        if(ptr_) 
+            ptr_->remove(id);
     }
 
     auto load(const std::string& path) -> auto& {
-        if(ptr_) ptr_->load(path);
+        if(ptr_) 
+            ptr_->load(path);
         return *this;
     }
 
@@ -146,18 +149,13 @@ private:
         auto load(const std::string& path) -> bool {
             const std::string_view whitespace(" \t\n\r");
             std::ifstream file(path);
-            if(!file.is_open())
-                return false;
-
+            if(!file.is_open()) return false;
             std::string buffer;
             std::string section = "_";
-
             while(std::getline(file, buffer)) {
                 auto input = std::string_view(buffer);
                 auto first = input.find_first_not_of(whitespace);
-                if(first == std::string::npos)
-                    continue;
-
+                if(first == std::string::npos) continue;
                 input.remove_prefix(first);
                 auto last = input.find_last_not_of(whitespace);
                 if(last != std::string::npos)
@@ -168,13 +166,10 @@ private:
                     continue;
                 }
 
-                if(input.empty() || !isalnum(input[0]))
-                    continue;
-
+                if(input.empty() || !isalnum(input[0])) continue;
                 auto pos = input.find_first_of('=');
-                if(pos < 1 || pos == std::string::npos)
-                    continue;
 
+                if(pos < 1 || pos == std::string::npos) continue;
                 auto key = input.substr(0, pos);
                 auto value = input.substr(++pos);
                 last = key.find_last_not_of(whitespace);
@@ -191,8 +186,7 @@ private:
 
         auto save(const std::string& path) -> bool {
             std::ofstream out(path, std::ios::binary);
-            if(!out.is_open())
-                return false;
+            if(!out.is_open()) return false;
             for(auto const& [key, value] : sections["_"]) {
                 if(!value.empty())
                     out << key << " = " << value << std::endl;
@@ -200,10 +194,8 @@ private:
             if(!sections["_"].empty())
                 out << std::endl;
             for(auto const& [id, keys] : sections) {
-                if(id == "_")
-                    continue;
-                if(keys.empty())
-                    continue;
+                if(id == "_") continue;
+                if(keys.empty()) continue;
                 out << "[" << id << "]" << std::endl;
                 for(auto const& [key, value] : keys) {
                     if(!value.empty())

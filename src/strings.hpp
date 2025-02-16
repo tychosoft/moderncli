@@ -42,17 +42,12 @@ constexpr auto promoted_string(T str) -> std::enable_if_t<!is_char_pointer<T>::v
 
 inline auto begins_case(const std::string_view s, const std::string_view b) {
     auto size = b.size();
-    if(!size)
-        return false;
-
-    if(s.size() < size)
-        return false;
-
+    if(!size) return false;
+    if(s.size() < size) return false;
     auto fp = s.data();
     auto tp = b.data();
     while(size--) {
-        if((*fp != *tp) && (tolower(*fp) != *tp))
-            return false;
+        if((*fp != *tp) && (tolower(*fp) != *tp)) return false;
         ++fp;
         ++tp;
     }
@@ -61,17 +56,12 @@ inline auto begins_case(const std::string_view s, const std::string_view b) {
 
 inline auto ends_case(const std::string_view s, const std::string_view e) {
     auto size = e.size();
-    if(!size)
-        return false;
-
-    if(s.size() < size)
-        return false;
-
+    if(!size) return false;
+    if(s.size() < size) return false;
     auto fp = s.data() + s.size() - size;
     auto tp = e.data();
     while(size--) {
-        if((*fp != *tp) && (tolower(*fp) != *tp))
-            return false;
+        if((*fp != *tp) && (tolower(*fp) != *tp)) return false;
         ++fp;
         ++tp;
     }
@@ -87,11 +77,9 @@ constexpr auto begins_with(const std::string_view s, const std::string_view b) {
 }
 
 constexpr auto ends_with(const std::string_view s, const std::string_view e) {
-    if(s.size() < e.size())
-        return false;
+    if(s.size() < e.size()) return false;
     auto pos = s.rfind(e);
-    if(pos > s.size())
-        return false;
+    if(pos > s.size()) return false;
     return s.substr(pos) == e;
 }
 
@@ -113,8 +101,7 @@ constexpr auto trim(const S& from) {
 
     auto str = promoted_string(from);
     auto last = str.find_last_not_of(" \t\f\v\n\r");
-    if(last > str.size())
-        return str.substr(0, 0);
+    if(last > str.size()) return str.substr(0, 0);
     return str.substr(0, ++last);
 }
 
@@ -125,8 +112,7 @@ constexpr auto strip(const S& from) {
     auto str = promoted_string(from);
     const std::size_t first = str.find_first_not_of(" \t\f\v\n\r");
     const std::size_t last = str.find_last_not_of(" \t\f\v\n\r");
-    if(last > str.size())
-        return str.substr(0, 0);
+    if(last > str.size()) return str.substr(0, 0);
     return str.substr(first, (last-first+1));
 }
 
@@ -135,16 +121,12 @@ constexpr auto unquote(const S& from, std::string_view pairs = R"(""''{})") {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
     auto str = promoted_string(from);
-    if(str.empty())
-        return str;
+    if(str.empty()) return str;
     auto pos = pairs.find_first_of(str[0]);
-    if(pos > str.size() || (pos & 0x01))
-        return str;
+    if(pos > str.size() || (pos & 0x01)) return str;
     auto len = str.size();
-    if(--len < 1)
-        return str;
-    if(str[len] == pairs[++pos])
-        return str.substr(1, --len);
+    if(--len < 1) return str;
+    if(str[len] == pairs[++pos]) return str.substr(1, --len);
     return str;
 }
 
@@ -161,8 +143,7 @@ constexpr auto join(const std::vector<S>& list, const std::string_view& delim = 
 }
 
 template<typename S = std::string>
-inline auto split(const S& str, std::string_view delim = " ", unsigned max = 0)
-{
+inline auto split(const S& str, std::string_view delim = " ", unsigned max = 0) {
     static_assert(is_string_type_v<S>, "S must be a string type");
 
     std::vector<S> result;
@@ -222,66 +203,45 @@ finish:
 }
 
 constexpr auto is_line(const std::string_view str) {
-    if(str.empty())
-        return false;
-
-    if(str[str.size() - 1] == '\n')
-        return true;
-
+    if(str.empty()) return false;
+    if(str[str.size() - 1] == '\n') return true;
     return false;
 }
 
 constexpr auto is_quoted(const std::string_view str, std::string_view pairs = R"(""''{})") {
-    if(str.size() < 2)
-        return false;
+    if(str.size() < 2) return false;
     auto pos = pairs.find_first_of(str[0]);
-    if(pos == std::string_view::npos || (pos & 0x01))
-        return false;
+    if(pos == std::string_view::npos || (pos & 0x01)) return false;
     auto len = str.size();
     return str[--len] == pairs[++pos];
 }
 
 constexpr auto is_unsigned(const std::string_view str) {
     auto len = str.size();
-    if(!len)
-        return false;
-
+    if(!len) return false;
     auto pos = std::size_t(0);
     while(pos < len) {
-        if(str[pos] < '0' || str[pos] > '9')
-            return false;
+        if(str[pos] < '0' || str[pos] > '9') return false;
         ++pos;
     }
     return true;
 }
 
 constexpr auto is_integer(const std::string_view str) {
-    if(str.empty())
-            return false;
-
-    if(str[0] == '-')
-        return is_unsigned(str.substr(1, str.size() - 1));
-
+    if(str.empty()) return false;
+    if(str[0] == '-') return is_unsigned(str.substr(1, str.size() - 1));
     return is_unsigned(str);
 }
 
 constexpr auto eq(const char *p1, const char *p2) {
-    if(!p1 && !p2)
-        return true;
-
-    if(!p1 || !p2)
-        return false;
-
+    if(!p1 && !p2) return true;
+    if(!p1 || !p2) return false;
     return strcmp(p1, p2) == 0;
 }
 
 inline auto eq(const char *p1, const char *p2, std::size_t len) {
-    if(!p1 && !p2)
-        return true;
-
-    if(!p1 || !p2)
-        return false;
-
+    if(!p1 && !p2) return true;
+    if(!p1 || !p2) return false;
     return strncmp(p1, p2, len) == 0;
 }
 
@@ -295,9 +255,7 @@ constexpr auto str_size(const char *cp, std::size_t max = 256) -> std::size_t {
 }
 
 inline auto str_copy(char *cp, std::size_t max, std::string_view view) {
-    if(!cp)
-        return std::size_t(0);
-
+    if(!cp) return std::size_t(0);
     auto count = view.size();
     auto dp = view.data();
     if(count >= max)
@@ -317,12 +275,8 @@ inline auto str_append(char *cp, std::size_t max, ...) {  // NOLINT
     va_start(list, max);
     for(;;) {
         auto sp = va_arg(list, const char *); // NOLINT
-        if(!sp)
-            break;
-
-        if(pos >= max)
-            continue;
-
+        if(!sp) break;
+        if(pos >= max) continue;
         auto size = str_size(sp);
         if(size + pos >= max) {
             pos = max;
@@ -347,20 +301,15 @@ constexpr auto u8verify(const std::string_view& u8) noexcept {
     auto len = u8.size();
     while (len && *str) {
         if ((*str & 0b10000000) != 0) {
-            if ((*str & 0b01000000) == 0)
-                return false;
+            if ((*str & 0b01000000) == 0) return false;
             if ((*str & 0b00100000) != 0) {
                 if ((*str & 0b00010000) != 0) {
-                    if ((*str & 0b00001000) != 0)
-                        return false;
-                    if (!--len || ((*++str & 0b11000000) != 0b10000000))
-                        return false;
+                    if ((*str & 0b00001000) != 0) return false;
+                    if (!--len || ((*++str & 0b11000000) != 0b10000000)) return false;
                 }
-                if (!--len || ((*++str & 0b11000000) != 0b10000000))
-                    return false;
+                if (!--len || ((*++str & 0b11000000) != 0b10000000)) return false;
             }
-            if (!--len || ((*++str & 0b11000000) != 0b10000000))
-                return false;
+            if (!--len || ((*++str & 0b11000000) != 0b10000000)) return false;
         }
         --len;
         ++str;

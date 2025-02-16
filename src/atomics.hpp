@@ -101,10 +101,8 @@ public:
 
     auto size() const noexcept -> std::size_t {
         auto count = count_.load();
-        if(count < 0)
-            return std::size_t(0);
-        if(count > S)
-            return S;
+        if(count < 0) return std::size_t(0);
+        if(count > S) return S;
         return count;
     }
 
@@ -199,9 +197,7 @@ public:
             next -= S;
 
         const auto head = head_.load(std::memory_order_acquire);
-        if(next == head)
-            return false;
-
+        if(next == head) return false;
         data_[tail] = item;
         tail_.store(next, std::memory_order_release);
         return true;
@@ -210,9 +206,7 @@ public:
     auto pull(T& item) noexcept {
         auto head = head_.load(std::memory_order_relaxed);
         const auto tail = tail_.load(std::memory_order_acquire);
-        if(head == tail)
-            return false;
-
+        if(head == tail) return false;
         item = data_[head];
         if(++head >= S)
             head -= S;
@@ -224,9 +218,7 @@ public:
     auto pop() noexcept -> std::optional<T> {
         auto head = head_.load(std::memory_order_relaxed);
         const auto tail = tail_.load(std::memory_order_acquire);
-        if(head == tail)
-            return {};
-
+        if(head == tail) return {};
         auto item = data_[head];
         if(++head >= S)
             head -= S;
@@ -372,8 +364,7 @@ public:
         auto index = key_index(key);
         auto current = table_[index].load();
         while(current != nullptr) {
-            if(current->key == key)
-                return current->value;
+            if(current->key == key) return current->value;
             current = current->next.load();
         }
         return std::nullopt;
@@ -384,8 +375,7 @@ public:
         auto current = table_[index].load();
 
         while(current != nullptr) {
-            if(current->key == key)
-                return true;
+            if(current->key == key) return true;
             current = current->next.load();
         }
         return false;
@@ -395,8 +385,7 @@ public:
         auto index = key_index(key);
         auto current = table_[index].load();
         while(current != nullptr) {
-            if(current->key == key)
-                return current->value;
+            if(current->key == key) return current->value;
             current = current->next.load();
         }
         throw std::out_of_range("Key not in dictionary");
@@ -406,8 +395,7 @@ public:
         auto index = key_index(key);
         auto current = table_[index].load();
         while(current != nullptr) {
-            if(current->key == key)
-                return current->value;
+            if(current->key == key) return current->value;
             current = current->next.load();
         }
         throw std::out_of_range("Key not in dictionary");

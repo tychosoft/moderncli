@@ -117,10 +117,8 @@ public:
             char buf{0};
             err_ = 0;
             auto result = ::read(device_, &buf, 1); // FlawFinder: ignore
-            if(result < 0)
-                throw std::system_error(err_ = int(-result), std::generic_category(), "Serial i/o error");
-            if(result < 1)
-                return EOF;
+            if(result < 0) throw std::system_error(err_ = int(-result), std::generic_category(), "Serial i/o error");
+            if(result < 1) return EOF;
             if(echo && echo_code != EOF && (eol == EOF || buf != eol))
                 put(echo_code);
             else if(echo)
@@ -131,47 +129,34 @@ public:
     }
 
     auto get(void *data, std::size_t size, bool echo = false) const {
-        if(!data || !size)
-            return std::size_t(0U);
-
+        if(!data || !size) return std::size_t(0U);
         err_ = 0;
         auto count = ::read(device_, data, size);   // FlawFinder: safe
-        if(count < 0)
-            throw std::system_error(err_ = int(-count), std::generic_category(), "Serial i/o error");
+        if(count < 0) throw std::system_error(err_ = int(-count), std::generic_category(), "Serial i/o error");
         if(count > 0 && echo)
             put(data, count);
-        if(count > 0)
-            return std::size_t(count);
+        if(count > 0) return std::size_t(count);
         return std::size_t(0U);
     }
 
     auto put(int code) const -> bool {
-        if(device_ < 0)
-            return false;
-
-        if(code == EOF)
-            return true;
+        if(device_ < 0) return false;
+        if(code == EOF) return true;
 
         char buf = static_cast<char>(code);
         err_ = 0;
         auto result = ::write(device_, &buf, 1);
-        if(result < 0)
-            throw std::system_error(err_ = int(-result), std::generic_category(), "Serial i/o error");
-        if(result < 1)
-            return false;
+        if(result < 0) throw std::system_error(err_ = int(-result), std::generic_category(), "Serial i/o error");
+        if(result < 1) return false;
         return true;
     }
 
     auto put(const void *data, std::size_t size) const -> std::size_t {
-        if(!size || device_ < 0)
-            return std::size_t(0U);
-
+        if(!size || device_ < 0) return std::size_t(0U);
         err_ = 0;
         auto count = ::write(device_, data, size);
-        if(count > 0)
-            return std::size_t(count);
-        if(count < 0)
-            throw std::system_error(err_ = int(-count), std::generic_category(), "Serial i/o error");
+        if(count > 0) return std::size_t(count);
+        if(count < 0) throw std::system_error(err_ = int(-count), std::generic_category(), "Serial i/o error");
         return std::size_t(0U);
     }
 
@@ -180,21 +165,17 @@ public:
     }
 
     auto is_packet() const noexcept {
-        if(device_ < 0)
-            return false;
+        if(device_ < 0) return false;
         return 0 == (current_.c_lflag & ICANON);
     }
 
     auto timed() const noexcept {
-        if(is_packet())
-            return timed_;
+        if(is_packet()) return timed_;
         return uint8_t(0);
     }
 
     auto timed_mode(std::size_t size, uint8_t timer = 1) noexcept -> std::size_t {
-        if(device_ < 0)
-            return 0U;
-
+        if(device_ < 0) return 0U;
 #ifdef  _PC_MAX_INPUT
         auto max = fpathconf(device_, _PC_MAX_INPUT);
 #else
@@ -217,8 +198,7 @@ public:
     }
 
     auto line_mode(const char *nl = "\r\n", uint8_t min = 1) noexcept {
-        if(device_ < 0)
-            return std::size_t(0U);
+        if(device_ < 0) return std::size_t(0U);
 
         if(!nl)
             nl = "";
@@ -266,9 +246,7 @@ public:
     }
 
     void dtr(unsigned msec = 120) {
-        if(device_ < 0)
-            return;
-
+        if(device_ < 0) return;
         struct termios temp{};
         tcgetattr(device_, &temp);
         cfsetospeed(&current_, 0);
@@ -282,9 +260,7 @@ public:
     }
 
     void flow(bool hw = true, bool sw = true) {
-        if(device_ < 0)
-            return;
-
+        if(device_ < 0) return;
         current_.c_cflag &= ~CRTSCTS;
         current_.c_iflag &= ~(IXON | IXANY | IXOFF);
 
@@ -312,12 +288,8 @@ public:
         if(s.size() > pos && strchr("12", s[pos]))
             stop = s[pos++];
 
-        if(s.size() > pos)
-            return false;
-
-        if(device_ < 0)
-            return false;
-
+        if(s.size() > pos) return false;
+        if(device_ < 0) return false;
         current_.c_cflag &= ~(PARENB | PARODD | CSTOPB | CSIZE);
 
         switch(bits) {
@@ -433,9 +405,7 @@ public:
             return false;
         }
 
-        if(device_ < 0)
-            return false;
-
+        if(device_ < 0) return false;
         cfsetispeed(&current_, rate);
         cfsetospeed(&current_, rate);
         tcsetattr(device_, TCSANOW, &current_);
@@ -449,16 +419,13 @@ private:
     mutable int err_{0};
 
     void reset() {
-        if(device_ < 0)
-            return;
-
+        if(device_ < 0) return;
         current_.c_oflag = current_.c_lflag = 0;
         current_.c_cflag = CLOCAL | CREAD | HUPCL;
         current_.c_iflag = IGNBRK;
 
         memset(&current_.c_cc, 0, sizeof(current_.c_cc));
         current_.c_cc[VMIN] = 1;
-
         current_.c_cflag |= original_.c_cflag & (CRTSCTS | CSIZE | PARENB | PARODD | CSTOPB);
         current_.c_iflag |= original_.c_iflag & (IXON | IXANY | IXOFF);
 
@@ -548,8 +515,7 @@ public:
                 err_ = errno;
                 throw std::system_error(err_, std::generic_category(), "Serial i/o error");
             }
-            if(count < 1)
-                return EOF;
+            if(count < 1) return EOF;
             if(echo && echo_code != EOF && (eol == EOF || buf != eol))
                 put(echo_code);
             else if(echo)
@@ -560,8 +526,7 @@ public:
     }
 
     auto get(void *data, std::size_t size, bool echo = false) const {
-        if(!data || !size)
-             return std::size_t(0U);
+        if(!data || !size) return std::size_t(0U);
         DWORD count{0};
         err_ = 0;
         if(ReadFile(device_, data, DWORD(size), &count, nullptr) == FALSE) {
@@ -570,33 +535,25 @@ public:
         }
         if(count > 0 && echo)
             put(data, count);
-        if(count > 0)
-            return std::size_t(count);
+        if(count > 0) return std::size_t(count);
         return std::size_t(0U);
     }
 
     auto put(const void *data, std::size_t size) const -> std::size_t {
-        if(!size || device_ == invalid_)
-            return std::size_t(0U);
-
+        if(!size || device_ == invalid_) return std::size_t(0U);
         DWORD count{0};
         err_ = 0;
         if(WriteFile(device_, data, DWORD(size), &count, nullptr) == FALSE) {
             err_ = errno;
             throw std::system_error(errno, std::generic_category(), "Serial i/o error");
         }
-        if(count > 0)
-            return std::size_t(count);
+        if(count > 0) return std::size_t(count);
         return std::size_t(0U);
     }
 
     auto put(int code) const -> bool {
-        if(device_ == invalid_)
-            return false;
-
-        if(code == EOF)
-            return true;
-
+        if(device_ == invalid_) return false;
+        if(code == EOF) return true;
         char buf = static_cast<char>(code);
         DWORD count{0};
         err_ = 0;
@@ -604,8 +561,7 @@ public:
             err_ = errno;
             throw std::system_error(err_, std::generic_category(), "Serial i/o error");
         }
-        if(count < 1)
-            return false;
+        if(count < 1) return false;
         return true;
     }
 
@@ -614,9 +570,7 @@ public:
     }
 
     auto timed_mode(std::size_t size, uint8_t timer = 1) noexcept -> std::size_t {
-        if(device_ == invalid_)
-            return std::size_t(0);
-
+        if(device_ == invalid_) return std::size_t(0);
         COMMTIMEOUTS timed{};
         timed.WriteTotalTimeoutMultiplier = 0;
         timed.WriteTotalTimeoutConstant = 0;
@@ -632,7 +586,8 @@ public:
         else if(!size && timer > 0) {
             timed.ReadIntervalTimeout = timer * 100;
             timed.ReadTotalTimeoutConstant = 0;
-        } else {
+        } 
+        else {
             timed.ReadIntervalTimeout = MAXDWORD;
             timed.ReadTotalTimeoutConstant = 0;
         }
@@ -660,18 +615,14 @@ public:
     }
 
     void hup() const {
-        if(device_ == invalid_)
-            return;
-
+        if(device_ == invalid_) return;
         SetCommBreak(device_);
         Sleep(100L);
         ClearCommBreak(device_);
     }
 
     void dtr(unsigned msec = 120) {
-        if(device_ == invalid_)
-            return;
-
+        if(device_ == invalid_) return;
         EscapeCommFunction(device_, CLRDTR);
         if(msec) {
             Sleep(msec);
@@ -680,9 +631,7 @@ public:
     }
 
     void flow(bool hw = true, bool sw = true) {
-        if(device_ == invalid_)
-            return;
-
+        if(device_ == invalid_) return;
         active_.XonChar = 0x11;
         active_.XoffChar = 0x13;
         active_.XonLim = 100;
@@ -704,9 +653,7 @@ public:
     }
 
     auto format(const std::string_view& s) {
-        if(device_ == invalid_)
-            return false;
-
+        if(device_ == invalid_) return false;
         unsigned pos = 0;
         unsigned bits = 8;
         unsigned stop = 1;
@@ -721,9 +668,7 @@ public:
         if(s.size() > pos && strchr("12", s[pos]))
             stop = s[pos] - '0';
 
-        if(s.size() > pos)
-            return false;
-
+        if(s.size() > pos) return false;
         switch(parity) {
         case 'o':
         case 'O':
@@ -759,8 +704,7 @@ public:
     }
 
     auto speed(unsigned long rate) {
-        if(device_ == invalid_)
-            return 0UL;
+        if(device_ == invalid_) return 0UL;
         active_.BaudRate = rate;
         if(SetCommState(device_, &active_) == FALSE)
             GetCommState(device_, &active_);
@@ -799,14 +743,10 @@ inline auto getline(const serial_t& sio, char *buf, std::size_t max, int eol = '
     auto count = std::size_t(0);
     while(count < max) {
         auto code = sio.get(echo, echo_code, eol);
-        if(code == EOF)
-            return count;
-        if(ignore && strchr(ignore, code))
-            continue;
+        if(code == EOF) return count;
+        if(ignore && strchr(ignore, code)) continue;
         buf[count++] = static_cast<char>(code);
-        if(eol && code == eol) {
-            break;
-        }
+        if(eol && code == eol) break;
     }
     buf[count] = 0;
     return count;
@@ -814,8 +754,7 @@ inline auto getline(const serial_t& sio, char *buf, std::size_t max, int eol = '
 
 inline auto putline(const serial_t& sio, std::string_view msg, const std::string_view& eol = "\n") {
     auto result = sio.put(msg);
-    if(result > 0 && sio.put(eol) == eol.size())
-        return result;
+    if(result > 0 && sio.put(eol) == eol.size()) return result;
     return std::size_t(0U);
 }
 
@@ -823,13 +762,10 @@ inline auto expect(const serial_t& sio, const std::string_view& match) {
     auto count = 0U;
     while(count < match.size()) {
         auto code = sio.get();
-        if(code == EOF)
-            return false;
+        if(code == EOF) return false;
         // strip lead-in noise...
-        if(!count && match[0] != code)
-            continue;
-        if(match[count] != code)
-            return false;
+        if(!count && match[0] != code) continue;
+        if(match[count] != code) return false;
         ++count;
     }
     return true;
@@ -839,8 +775,7 @@ inline auto until(const serial_t& sio, int match = EOF, unsigned max = 1) {
     auto count = 0U;
     while(count < max) {
         auto code = sio.get();
-        if(code == EOF)
-            return false;
+        if(code == EOF) return false;
         if(match == EOF || code == match)
             ++count;
     };

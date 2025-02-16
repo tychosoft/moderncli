@@ -26,7 +26,7 @@ public:
         if(!certs.certfile.empty())
             SSL_CTX_use_certificate_file(ctx_, certs.certfile.c_str(), SSL_FILETYPE_PEM);
         if(!certs.keyfile.empty())
-                SSL_CTX_use_PrivateKey_file(ctx_, certs.keyfile.c_str(), SSL_FILETYPE_PEM);
+            SSL_CTX_use_PrivateKey_file(ctx_, certs.keyfile.c_str(), SSL_FILETYPE_PEM);
 
         if(!certs.keyfile.empty() || !SSL_CTX_check_private_key(ctx_)) {
             SSL_CTX_free(ctx_);
@@ -38,13 +38,9 @@ public:
             SSL_CTX_set_verify(ctx_, SSL_VERIFY_PEER, nullptr);
 
         ssl_ = SSL_new(ctx_);
-        if(!ssl_)
-            return;
-
+        if(!ssl_) return;
         SSL_set_fd(ssl_, super::io_socket());
-        if(SSL_accept(ssl_) <= 0)
-            return;
-
+        if(SSL_accept(ssl_) <= 0) return;
         bio_ = SSL_get_wbio(ssl_);
         peer_cert = SSL_get_peer_certificate(ssl_);
         if(peer_cert && !certs.capath.empty()) {
@@ -63,9 +59,7 @@ public:
 
     explicit secure_stream(const struct sockaddr *peer, const secure_certs& certs = secure_certs{}, std::size_t size = S, const SSL_METHOD *method = TLS_client_method()) :
     socket_stream<S>(peer, size), ctx_(SSL_CTX_new(method)) {
-        if(!super::is_open() || !ctx_)
-            return;
-
+        if(!super::is_open() || !ctx_) return;
         if(!certs.certfile.empty())
             SSL_CTX_use_certificate_file(ctx_, certs.certfile.c_str(), SSL_FILETYPE_PEM);
 
@@ -82,13 +76,9 @@ public:
             SSL_CTX_set_verify(ctx_, SSL_VERIFY_PEER, nullptr);
 
         ssl_ = SSL_new(ctx_);
-        if(!ssl_)
-            return;
-
+        if(!ssl_) return;
         SSL_set_fd(ssl_, super::io_socket());
-        if(SSL_connect(ssl_) <= 0)
-            return;
-
+        if(SSL_connect(ssl_) <= 0) return;
         bio_ = SSL_get_wbio(ssl_);
         peer_cert = SSL_get_peer_certificate(ssl_);
         if(peer_cert && !certs.capath.empty()) {
@@ -149,26 +139,19 @@ public:
     }
 
     auto underflow() -> int override {
-        if(!bio_)
-            return super::underflow();
-
+        if(!bio_) return super::underflow();
         if(super::gptr() == super::egptr()) {
             auto len = SSL_read(ssl_, super::gbuf, super::getsize);
-            if(len <= 0)
-                return EOF;
+            if(len <= 0) return EOF;
             super::setg(super::gbuf, super::gbuf, super::gbuf + len);
         }
         return super::get_type(*super::gptr());
     }
 
     auto sync() -> int override {
-        if(!bio_)
-            return super::sync();
-
+        if(!bio_) return super::sync();
         auto len = super::pptr() - super::pbase();
-        if(len && !SSL_write(ssl_, super::pbase(), len))
-            return 0;
-
+        if(len && !SSL_write(ssl_, super::pbase(), len)) return 0;
         return BIO_flush(bio_);
     }
 

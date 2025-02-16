@@ -18,19 +18,21 @@ constexpr std::string_view hex_digits("0123456789abcdef");
 
 inline auto count(const std::string_view& text, char code) {
     std::size_t count = 0;
-    for(const char ch : text)
+    for(const char ch : text) {
         // cppcheck-suppress useStlAlgorithm
-        if(ch == code) ++count;
+        if(ch == code) 
+            ++count;
+    }
     return count;
 }
 
 inline auto pow(long base, long exp) {
     long result = 1;
-    for (;;) {
-        if (exp & 1)
+    for(;;) {
+        if(exp & 1)
             result *= base;
         exp >>= 1;
-        if (!exp)
+        if(!exp)
             break;
         base *= base;
     }
@@ -40,13 +42,10 @@ inline auto pow(long base, long exp) {
 inline auto hex(std::string_view& text, unsigned digits = 8) -> uint64_t {
     uint64_t val = 0;
 
-    if(digits > 8)
-        return val;
-
+    if(digits > 8) return val;
     while(digits-- && !text.empty()) {
         auto pos = hex_digits.find(char(tolower(text.front())));
-        if(pos > 15)
-            return val;
+        if(pos > 15) return val;
         val <<= 4;
         val |= pos;
         text.remove_prefix(1);
@@ -59,9 +58,7 @@ inline auto text(std::string_view& text, bool quoted = false) -> std::string {
     char quote = 0;
 
     if(!quoted && !text.empty() && (text.front() == '\'' || text.front() == '\"' || text.front() == '`')) {
-        if(text.size() < 2) // if only 1 char, no closing quote...
-            return {};
-
+        if(text.size() < 2) return {};  // if only 1 char, no closing quote...
         quote = text.front();
         text.remove_prefix(1);
     }
@@ -79,8 +76,7 @@ inline auto text(std::string_view& text, bool quoted = false) -> std::string {
         }
 
         if((quoted || quote == '\"') && (text.front() == '\\')) {
-            if(text.size() < 2)
-                return {};
+            if(text.size() < 2) return {};
             switch(text[1]) {
             case 'n':
                 result += '\n';
@@ -141,7 +137,7 @@ inline auto decimal(std::string_view& text, uint64_t max = 2147483647) -> double
     double fraction = 0.0;
     double divisor = 1.0;
 
-    if (!text.empty() && text.front() == '.') {
+    if(!text.empty() && text.front() == '.') {
         text.remove_prefix(1);
         while(!text.empty() && isdigit(text.front())) {
             divisor /= 10;
@@ -154,16 +150,16 @@ inline auto decimal(std::string_view& text, uint64_t max = 2147483647) -> double
 
 inline auto real(std::string_view& text, uint64_t max = 2147483647) -> double {
     double number = decimal(text, max);
-    if (!text.empty() && (text.front() == 'e' || text.front() == 'E')) {
+    if(!text.empty() && (text.front() == 'e' || text.front() == 'E')) {
         text.remove_prefix(1);
         bool negative = false;
-        if (!text.empty() && (text.front() == '+' || text.front() == '-')) {
+        if(!text.empty() && (text.front() == '+' || text.front() == '-')) {
             negative = (text.front() == '-');
             text.remove_prefix(1);
         }
 
         auto exponent = int(value(text));
-        if (negative)
+        if(negative)
             number *= std::pow(10, -exponent);
         else
             number *= std::pow(10, exponent);
@@ -205,8 +201,7 @@ inline auto spaces(std::string_view& text, std::size_t max = 0, const std::strin
 namespace tycho {
 inline auto get_string(std::string_view text, bool quoted = false) {
     auto result = scan::text(text, quoted);
-    if(!text.empty())
-        throw std::invalid_argument("Incomplete string");
+    if(!text.empty()) throw std::invalid_argument("Incomplete string");
     return result;
 }
 
@@ -217,8 +212,7 @@ inline auto get_quoted(std::string_view text, char quote = '\"') {
     else
         result = scan::text(text, true);
 
-    if(!text.empty())
-        throw std::invalid_argument("Incomplete string");
+    if(!text.empty()) throw std::invalid_argument("Incomplete string");
     return result;
 }
 
@@ -229,9 +223,7 @@ inline auto get_lower(std::string_view text, char quote = '\"') {
     else
         result = scan::text(text, true);
 
-    if(!text.empty())
-        throw std::invalid_argument("Incomplete string");
-
+    if(!text.empty()) throw std::invalid_argument("Incomplete string");
     for(auto& ch : result)
         // cppcheck-suppress useStlAlgorithm
         ch = char(tolower(ch));
@@ -254,11 +246,8 @@ inline auto get_decimal(std::string_view text) {
     }
 
     auto value = scan::decimal(text);
-    if(!text.empty())
-        throw std::invalid_argument("Value invalid");
-
-    if(neg)
-        return -value;
+    if(!text.empty()) throw std::invalid_argument("Value invalid");
+    if(neg) return -value;
     return value;
 }
 
@@ -279,11 +268,8 @@ inline auto get_real(std::string_view text) {
     }
 
     auto value = scan::real(text);
-    if(!text.empty())
-        throw std::invalid_argument("Value invalid");
-
-    if(neg)
-        return -value;
+    if(!text.empty()) throw std::invalid_argument("Value invalid");
+    if(neg) return -value;
     return value;
 }
 
@@ -303,44 +289,31 @@ inline auto get_value(std::string_view text, int32_t min = 1, int32_t max = 6553
         text.remove_prefix(1);
     }
 
-    if(text.empty() || !isdigit(text.front()))
-        throw std::invalid_argument("Value missing or invalid");
+    if(text.empty() || !isdigit(text.front())) throw std::invalid_argument("Value missing or invalid");
 
     auto value = int32_t(scan::value(text, max));
-    if(!text.empty() && isdigit(text.front()))
-        throw std::overflow_error("Value too big");
-
-    if(!text.empty())
-        throw std::invalid_argument("value invalid");
-
+    if(!text.empty() && isdigit(text.front())) throw std::overflow_error("Value too big");
+    if(!text.empty()) throw std::invalid_argument("value invalid");
     if(neg) {
         auto nv = -value;
-        if(nv < min)
-            throw std::out_of_range("value too small");
+        if(nv < min) throw std::out_of_range("value too small");
         return nv;
     }
 
     auto rv = value;
-    if(min >= 0 && rv < min)
-            throw std::out_of_range("value too small");
+    if(min >= 0 && rv < min) throw std::out_of_range("value too small");
     return rv;
 }
 
 inline auto get_duration(std::string_view text, bool ms = false) -> unsigned {
-    if(text.empty() || !isdigit(text.front()))
-        throw std::invalid_argument("Duration missing or invalid");
-
+    if(text.empty() || !isdigit(text.front())) throw std::invalid_argument("Duration missing or invalid");
     auto value = unsigned(scan::value(text));
     unsigned scale = 1;
     if(ms)
         scale = 1000UL;
 
-    if(!text.empty() && isdigit(text.front()))
-        throw std::overflow_error("Duration too big");
-
-    if(text.empty())
-        return value;
-
+    if(!text.empty() && isdigit(text.front())) throw std::overflow_error("Duration too big");
+    if(text.empty()) return value;
     if(text.size() == 2 && text == "ms" && ms) {
         text.remove_prefix(2);
         return value;
@@ -378,22 +351,14 @@ inline auto get_duration(std::string_view text, bool ms = false) -> unsigned {
 inline auto get_bool(std::string_view& text) {
     using namespace scan;
 
-    if(match(text, "true", true) && text.empty())
-        return true;
-    if(match(text, "false", true) && text.empty())
-        return false;
-    if(match(text, "yes", true) && text.empty())
-        return true;
-    if(match(text, "no", true) && text.empty())
-        return false;
-    if(match(text, "t", true) && text.empty())
-        return true;
-    if(match(text, "f", true) && text.empty())
-        return false;
-    if(match(text, "on", true) && text.empty())
-        return true;
-    if(match(text, "off", true) && text.empty())
-        return false;
+    if(match(text, "true", true) && text.empty()) return true;
+    if(match(text, "false", true) && text.empty()) return false;
+    if(match(text, "yes", true) && text.empty()) return true;
+    if(match(text, "no", true) && text.empty()) return false;
+    if(match(text, "t", true) && text.empty()) return true;
+    if(match(text, "f", true) && text.empty()) return false;
+    if(match(text, "on", true) && text.empty()) return true;
+    if(match(text, "off", true) && text.empty()) return false;
     throw std::out_of_range("Bool not valid");
 }
 
@@ -411,8 +376,7 @@ inline auto get_hex(std::string_view text) {
         "Invalid unsigned type" );
 
     auto value = T(scan::hex(text, sizeof(T) * 2));
-    if(!text.empty())
-        throw std::overflow_error("Value too big or invalid");
+    if(!text.empty()) throw std::overflow_error("Value too big or invalid");
     return value;
 }
 
@@ -437,19 +401,11 @@ inline auto get_unsigned(std::string_view text, T min = 0, T max = std::numeric_
         std::is_same_v<T, uint8_t>,
         "Invalid unsigned type" );
 
-    if(text.empty() || !isdigit(text.front()))
-        throw std::invalid_argument("Value missing or invalid");
-
+    if(text.empty() || !isdigit(text.front())) throw std::invalid_argument("Value missing or invalid");
     auto value = T(scan::value(text, max));
-    if(!text.empty() && isdigit(text.front()))
-        throw std::overflow_error("Value too big");
-
-    if(!text.empty())
-        throw std::invalid_argument("value invalid");
-
-    if(value < min)
-            throw std::out_of_range("value too small");
-
+    if(!text.empty() && isdigit(text.front())) throw std::overflow_error("Value too big");
+    if(!text.empty()) throw std::invalid_argument("value invalid");
+    if(value < min) throw std::out_of_range("value too small");
     return value;
 }
 

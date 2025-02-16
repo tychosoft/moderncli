@@ -350,8 +350,7 @@ public:
 
     auto to_string() const noexcept -> std::string {
         char *tmp = BN_bn2dec(num_);
-        if(!tmp)
-            return {};
+        if(!tmp) return {};
         std::string out = tmp;
         OPENSSL_free(tmp);
         return out;
@@ -359,9 +358,7 @@ public:
 
     auto put(uint8_t *out, std::size_t max) const noexcept {
         auto used = size();
-        if(max < used)
-            return std::size_t(0);
-
+        if(max < used) return std::size_t(0);
         BN_bn2bin(num_, out);
         std::size_t pos = used;
         while(pos < max)
@@ -420,14 +417,12 @@ private:
 using bitnum = bignum_t;
 
 inline auto btoi(const bignum_t& bn) noexcept -> int {
-    if(bn.is_negative())
-        return static_cast<int>(-BN_get_word(bn.num_));
+    if(bn.is_negative()) return static_cast<int>(-BN_get_word(bn.num_));
     return static_cast<int>(BN_get_word(bn.num_));
 }
 
 inline auto btol(const bignum_t& bn) noexcept -> long {
-    if(bn.is_negative())
-        return static_cast<long>(-BN_get_word(bn.num_));
+    if(bn.is_negative()) return static_cast<long>(-BN_get_word(bn.num_));
     return static_cast<long>(BN_get_word(bn.num_));
 }
 

@@ -21,14 +21,14 @@ public:
     auto operator=(const select_when&) -> auto& = delete;
 
     select_when(std::initializer_list<std::pair<variant_type,action_type>> list) {
-        for (const auto& item : list) {
+        for(const auto& item : list) {
             cases_[item.first] = item.second;
         }
     }
 
     auto operator()(const variant_type& value) const {
         auto it = cases_.find(value);
-        if (it != cases_.end()) {
+        if(it != cases_.end()) {
             it->second();
             return true;
         }
@@ -47,15 +47,14 @@ public:
     auto operator=(const select_type&) -> auto& = delete;
 
     select_type(std::initializer_list<std::pair<variant_type,T>> list) {
-        for (const auto& item : list) {
+        for(const auto& item : list) {
             cases_[item.first] = item.second;
         }
     }
 
     auto operator()(const variant_type& value, const T& or_value = T{}) const {
         auto it = cases_.find(value);
-        if (it != cases_.end())
-            return it->second;
+        if(it != cases_.end()) return it->second;
         return or_value;
     }
 

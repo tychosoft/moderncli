@@ -54,8 +54,7 @@ public:
     }
 
     auto value_or(T& alt) -> T& {
-        if(has_value())
-            return value();
+        if(has_value()) return value();
         return alt;
     }
 

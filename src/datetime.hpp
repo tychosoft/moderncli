@@ -16,12 +16,9 @@
 namespace tycho::scan {
 inline auto year(std::string_view& text) {
     unsigned value{0};
-    if(text.size() < 4)
-        return ~0U;
-
+    if(text.size() < 4) return ~0U;
     for(auto pos = 0; pos < 4; ++pos) {
-        if(!isdigit(text[pos]))
-            return ~0U;
+        if(!isdigit(text[pos])) return ~0U;
         value *= 10;
         value += text[pos] - '0';
     }
@@ -30,21 +27,17 @@ inline auto year(std::string_view& text) {
 }
 
 inline auto month(std::string_view& text) {
-    if(text.size() < 2 || !isdigit(text[0]) || !isdigit(text[1]))
-        return ~0U;
+    if(text.size() < 2 || !isdigit(text[0]) || !isdigit(text[1])) return ~0U;
     const unsigned value = ((text[0] - '0') * 10) + (text[1] - '0');
-    if(value < 1 || value > 12)
-        return ~0U;
+    if(value < 1 || value > 12) return ~0U;
     text.remove_prefix(2);
     return value;
 }
 
 inline auto day(std::string_view& text) {
-    if(text.size() < 2 || !isdigit(text[0]) || !isdigit(text[1]))
-        return ~0U;
+    if(text.size() < 2 || !isdigit(text[0]) || !isdigit(text[1])) return ~0U;
     const unsigned value = ((text[0] - '0') * 10) + (text[1] - '0');
-    if(value < 1 || value > 31)
-        return ~0U;
+    if(value < 1 || value > 31) return ~0U;
     text.remove_prefix(2);
     return value;
 }
@@ -156,26 +149,21 @@ inline auto iso_time(const std::time_t& current) {
 inline auto iso_date(std::string_view text, std::time_t or_else = std::time_t(0), std::time_t current_time = std::time_t(0), std::time_t timezone = std::time_t(0)) {
     unsigned year{0}, month{0}, day{0};
     year = scan::year(text);
-    if(text.empty() || text.front() != '-' || year == ~0U)
-        return or_else;
-
+    if(text.empty() || text.front() != '-' || year == ~0U) return or_else;
     text.remove_prefix(1);
     month = scan::month(text);
-    if(text.empty() || text.front() != '-' || month == ~0U)
-        return or_else;
 
+    if(text.empty() || text.front() != '-' || month == ~0U) return or_else;
     text.remove_prefix(1);
     day = scan::day(text);
-    if(!text.empty() || day == ~0U)
-        return or_else;
 
+    if(!text.empty() || day == ~0U) return or_else;
     struct tm date = {0};
     date.tm_year = int(year - 1900U);
     date.tm_mon = int(month - 1U);
     date.tm_mday = int(day);
     auto gmt = mktime(&date);
-    if(gmt == -1)
-        return or_else;
+    if(gmt == -1) return or_else;
     return gmt + current_time + timezone;
 }
 
@@ -183,21 +171,17 @@ inline auto iso_time(std::string_view text, std::time_t or_else = MAX_TIME) -> s
     unsigned hour{0}, min{0}, sec{0};
 
     hour = scan::hours(text);
-    if(text.empty() || text.front() != ':' || hour > 23)
-        return or_else;
+    if(text.empty() || text.front() != ':' || hour > 23) return or_else;
     text.remove_prefix(1);
-
     min = scan::minsec(text);
-    if(text.empty() && min > 59)
-        return or_else;
 
+    if(text.empty() && min > 59) return or_else;
     if(!text.empty() && text.front() == ':') {
         text.remove_prefix(1);
         sec = scan::minsec(text);
     }
 
-    if(!text.empty() || min > 59 || sec > 59)
-        return or_else;
+    if(!text.empty() || min > 59 || sec > 59) return or_else;
     return (static_cast<time_t>(hour) * 3600U) + (static_cast<long long>(min) * 60U) + sec;
 }
 } // end namespace

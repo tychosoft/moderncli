@@ -47,10 +47,7 @@ public:
 
     shared_mem(size_type size, const T& init) :
     array_(std::make_shared<T>(size)), size_(size) {
-        auto pos = size_type(0);
-        auto ptr = data();
-        while(pos < size)
-            ptr[pos++] = init;
+        std::fill(data(), data() + size, init);
     }
 
     template<typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
@@ -103,14 +100,12 @@ public:
     }
 
     auto operator[](size_type index) -> T& {
-        if(index >= size_)
-            throw std::out_of_range("Index is out of range");
+        if(index >= size_) throw std::out_of_range("Index is out of range");
         return array_.get()[index];
     }
 
     auto operator[](size_type index) const -> const T& {
-        if(index >= size_)
-            throw std::out_of_range("Index is out of range");
+        if(index >= size_) throw std::out_of_range("Index is out of range");
         return array_[index];
     }
 
@@ -123,14 +118,12 @@ public:
     }
 
     auto operator()() {
-        if(!size_)
-            throw std::out_of_range("Cannot return empty object");
+        if(!size_) throw std::out_of_range("Cannot return empty object");
         return *array_;
     }
 
     auto operator()() const {
-        if(!size_)
-            throw std::out_of_range("Cannot return empty object");
+        if(!size_) throw std::out_of_range("Cannot return empty object");
         return *array_;
     }
 
@@ -147,32 +140,27 @@ public:
     }
 
     auto get_or(size_type index, T* or_else = nullptr) -> T* {
-        if(index >= size_)
-            return or_else;
+        if(index >= size_) return or_else;
         return *array_ + index;
     }
 
     auto get_or(size_type index, const T* or_else = nullptr) const -> T* {
-        if(index >= size_)
-            return or_else;
+        if(index >= size_) return or_else;
         return *array_ + index;
     }
 
     auto get(size_type index) const -> std::optional<T> {
-        if(index >= size_)
-            return {};
+        if(index >= size_) return {};
         return at(index);
     }
 
     auto data() -> T* {
-        if(!size_)
-            throw std::out_of_range("Cannot return empty object");
+        if(!size_) throw std::out_of_range("Cannot return empty object");
         return array_.get();
     }
 
     auto data() const -> const T* {
-        if(!size_)
-            throw std::out_of_range("Cannot return empty object");
+        if(!size_) throw std::out_of_range("Cannot return empty object");
         return array_.get();
     }
 
@@ -193,14 +181,12 @@ public:
     }
 
     auto at(size_type index) -> T& {
-        if(index >= size_)
-            throw std::out_of_range("Index is out of range");
+        if(index >= size_) throw std::out_of_range("Index is out of range");
         return array_.get()[index];
     }
 
     auto at(size_type index) const -> const T& {
-        if(index >= size_)
-            throw std::out_of_range("Index is out of range");
+        if(index >= size_) throw std::out_of_range("Index is out of range");
         return array_.get()[index];
     }
 
@@ -250,8 +236,7 @@ public:
     }
 
     auto subarray(size_type pos, size_t count = 0) const {
-        if(pos + count > size_)
-            throw std::out_of_range("Invalid subarray range");
+        if(pos + count > size_) throw std::out_of_range("Invalid subarray range");
         return shared_mem(data() + pos, count ? count : size_ - pos);
     }
 
@@ -267,8 +252,7 @@ public:
                 ++bsize;
         }
         auto mem = shared_mem(uint32_t(bsize / sizeof(T)));
-        if(tycho::from_hex(from, mem.get(), bsize) < from.size() / 2)
-            return shared_mem();
+        if(tycho::from_hex(from, mem.get(), bsize) < from.size() / 2) return shared_mem();
         return mem;
     }
 
@@ -278,8 +262,7 @@ public:
         while(sizeof(T) > 1 && alloc % sizeof(T))
             ++alloc;
         auto mem = shared_mem(uint32_t(alloc / sizeof(T)));
-        if(tycho::from_b64(from, mem.get(), bsize) < bsize)
-            return shared_mem();
+        if(tycho::from_b64(from, mem.get(), bsize) < bsize) return shared_mem();
         return mem;
     }
 
@@ -464,14 +447,12 @@ protected:
     std::size_t count{0};
 
     auto underflow() -> int override {
-        if(!count || !pos)
-            return EOF;
+        if(!count || !pos) return EOF;
         return *pos;
     }
 
     auto uflow() -> int override {
-        if(!count || !pos)
-            return EOF;
+        if(!count || !pos) return EOF;
         --count;
         return *(pos++);
     }
@@ -509,9 +490,7 @@ protected:
     bool zero{false};
 
     auto overflow(int ch) -> int override {
-        if(ch == EOF || count >= limit || !base)
-            return EOF;
-
+        if(ch == EOF || count >= limit || !base) return EOF;
         base[count++] = uint8_t(ch);
         if(zero)
             base[count] = 0;
@@ -541,9 +520,7 @@ public:
     }
 
     auto operator=(mempager&& move) noexcept -> auto& {
-        if(&move == this)
-            return *this;
-
+        if(&move == this) return *this;
         size_ = move.size_;
         align_ = move.align_;
         count_ = move.count_;
@@ -562,15 +539,12 @@ public:
         while(size % sizeof(void *))
             ++size;
 
-        if(size > (size_ - sizeof(page_ptr)))
-            return nullptr;
-
+        if(size > (size_ - sizeof(page_ptr))) return nullptr;
         if(!current_ || size > size_ - current_->used) {
             page_ptr page{nullptr};
             page_alloc(&page, size_, align_);
-            if(!page)
-                return nullptr;
 
+            if(!page) return nullptr;
             page->aligned = nullptr;    // To make dumb checkers happy
             page->used = sizeof(page_t);
             page->next = current_;
@@ -693,8 +667,7 @@ using mempager_t = mempager;
 
 template<typename T>
 inline void mem_alloc(T **mem, std::size_t size, std::size_t align = 0) {
-    if(!mem)
-        throw std::runtime_error("memory handle is null");
+    if(!mem) throw std::runtime_error("memory handle is null");
     if(*mem) {
         ::free(*mem);   // NOLINT
         *mem = nullptr;
@@ -715,9 +688,7 @@ inline void mem_alloc(T **mem, std::size_t size, std::size_t align = 0) {
 
 template<typename T>
 inline void mem_free(T **mem) {
-    if(!mem)
-        throw std::runtime_error("memory handle is null");
-
+    if(!mem) throw std::runtime_error("memory handle is null");
     if(*mem) {
         ::free(*mem);   // NOLINT
         *mem = nullptr;
@@ -725,9 +696,7 @@ inline void mem_free(T **mem) {
 }
 
 inline auto mem_index(const uint8_t *mem, std::size_t size) -> unsigned {
-    if(!mem)
-        throw std::runtime_error("memory index is null");
-
+    if(!mem) throw std::runtime_error("memory index is null");
     unsigned val = 0;
     while(size--)
         val = (val << 1) ^ (*(mem++) & 0x1f);
@@ -736,30 +705,23 @@ inline auto mem_index(const uint8_t *mem, std::size_t size) -> unsigned {
 }
 
 inline auto mem_size(const char *cp, std::size_t max = 128) -> std::size_t {
-    if(!cp)
-        throw std::runtime_error("memory size for null");
-
+    if(!cp) throw std::runtime_error("memory size for null");
     std::size_t count = 0;
     while(cp && *cp && count++ <= max)
         ++cp;
 
-    if(count > max)
-        throw std::runtime_error("memory size too large");
-
+    if(count > max) throw std::runtime_error("memory size too large");
     return count;
 }
 
 inline auto mem_append(char *dest, std::size_t max, const char *value) -> std::size_t {
-    if(!dest || !value || !max)
-        throw std::runtime_error("memory append invalid");
-
+    if(!dest || !value || !max) throw std::runtime_error("memory append invalid");
     while(max && *dest) {
         ++dest;
         --max;
     }
-    if(!max)
-        throw std::runtime_error("memory append size invalid");
 
+    if(!max) throw std::runtime_error("memory append size invalid");
     --max; // null byte at end...
 
     std::size_t pos = 0;
@@ -772,14 +734,10 @@ inline auto mem_append(char *dest, std::size_t max, const char *value) -> std::s
 }
 
 inline auto mem_view(char *target, std::size_t size, std::string_view s) -> bool {
-    if(!target)
-        throw std::runtime_error("memory view target invalid");
-
+    if(!target) throw std::runtime_error("memory view target invalid");
     auto count = s.size();
     auto from = s.data();
-
-    if(count >= size)
-        return false;
+    if(count >= size) return false;
 
     while(count--)
         *(target++) = *(from++);
@@ -788,13 +746,10 @@ inline auto mem_view(char *target, std::size_t size, std::string_view s) -> bool
 }
 
 inline auto mem_copy(char *target, std::size_t size, const char *from) -> bool {
-    if(!from || !target)
-        throw std::runtime_error("memory view target invalid");
+    if(!from || !target) throw std::runtime_error("memory view target invalid");
+    auto count = mem_size(from, size);
 
-    auto count = strnlen(from, size);
-    if(count == size)
-        return false;
-
+    if(count >= size) return false;
     while(count--)
         *(target++) = *(from++);
     *target = 0;
@@ -802,18 +757,14 @@ inline auto mem_copy(char *target, std::size_t size, const char *from) -> bool {
 }
 
 inline auto mem_value(char *target, std::size_t size, unsigned value) -> bool {
-    if(!target)
-        throw std::runtime_error("memory view target invalid");
-
+    if(!target) throw std::runtime_error("memory view target invalid");
     auto max = 1U;
     auto zero = false;
 
     while(--size)
         max *= 10;
 
-    if(value >= max)
-        return false;
-
+    if(value >= max) return false;
     while(max) {
         auto dig = 0U;
         max /= 10;
@@ -826,8 +777,7 @@ inline auto mem_value(char *target, std::size_t size, unsigned value) -> bool {
             *(target++) = char('0' + dig);
             zero = true;
         }
-        if(max == 1)
-            break;
+        if(max == 1) break;
     }
     *target = 0;
     return true;
@@ -843,7 +793,7 @@ inline auto key_index(const char *cp, std::size_t max) {
 
 template<typename T, std::size_t S>
 constexpr auto make_pool(T(&arr)[S]) {
-        return mempool<T>(arr);
+    return mempool<T>(arr);
 }
 
 template<typename Container>

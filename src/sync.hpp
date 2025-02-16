@@ -89,14 +89,12 @@ public:
     ~sync_ptr() = default;
 
     auto operator->() {
-        if (!owns_lock())
-            throw std::runtime_error("unique lock error");
+        if(!owns_lock()) throw std::runtime_error("unique lock error");
         return ptr_;
     }
 
     auto operator*() -> U& {
-        if (!owns_lock())
-            throw std::runtime_error("unique lock error");
+        if(!owns_lock()) throw std::runtime_error("unique lock error");
         return *ptr_;
     }
 
@@ -146,14 +144,12 @@ public:
     ~reader_ptr() = default;
 
     auto operator->() const -> const U* {
-        if (!owns_lock())
-            throw std::runtime_error("read lock error");
+        if(!owns_lock()) throw std::runtime_error("read lock error");
         return ptr_;
     }
 
     auto operator*() const -> const U& {
-        if (!owns_lock())
-            throw std::runtime_error("read lock error");
+        if(!owns_lock()) throw std::runtime_error("read lock error");
         return *ptr_;
     }
 
@@ -174,14 +170,12 @@ public:
     ~writer_ptr() = default;
 
     auto operator->() {
-        if (!owns_lock())
-            throw std::runtime_error("write lock error");
+        if(!owns_lock()) throw std::runtime_error("write lock error");
         return ptr_;
     }
 
     auto operator*() -> U& {
-        if (!owns_lock())
-            throw std::runtime_error("write lock error");
+        if(!owns_lock()) throw std::runtime_error("write lock error");
         return *ptr_;
     }
 
@@ -335,11 +329,9 @@ public:
 
     void wait() noexcept {
         std::unique_lock lock(lock_);
-        if(!count_)
-            return;
-
+        if(!count_) return;
         auto sequence = sequence_;
-        if (--count_ == 0) {
+        if(--count_ == 0) {
             sequence_++;
             count_ = limit_;
             cond_.notify_all();
@@ -351,11 +343,9 @@ public:
 
     auto wait_for(const sync_millisecs& timeout) noexcept {
         std::unique_lock lock(lock_);
-        if(!count_)
-            return false;
-
+        if(!count_) return false;
         auto sequence = sequence_;
-        if (--count_ == 0) {
+        if(--count_ == 0) {
             sequence_++;
             count_ = limit_;
             cond_.notify_all();
@@ -366,11 +356,9 @@ public:
 
     auto wait_until(const sync_timepoint& time_point) noexcept {
         std::unique_lock lock(lock_);
-        if(!count_)
-            return false;
-
+        if(!count_) return false;
         auto sequence = sequence_;
-        if (--count_ == 0) {
+        if(--count_ == 0) {
             sequence_++;
             count_ = limit_;
             cond_.notify_all();
@@ -480,9 +468,7 @@ public:
 
     auto done() noexcept {
         const std::lock_guard lock(lock_);
-        if(!count_)
-            return true;
-
+        if(!count_) return true;
         if(--count_ == 0) {
             cond_.notify_all();
             return true;

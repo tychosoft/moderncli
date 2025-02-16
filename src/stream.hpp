@@ -100,9 +100,7 @@ public:
 
     auto sync() -> int override {
         auto len = pptr() - pbase();
-        if(!len)
-            return 0;
-
+        if(!len) return 0;
         if(send_socket(pbase(), len)) {
             setp(pbuf, pbuf + bufsize);
             return 0;
@@ -148,20 +146,14 @@ public:
         pfd.revents = 0;
         pfd.events = POLLIN;
 
-        if(pfd.fd == -1)
-            return false;
-
-        if(gptr() < egptr())
-            return true;
-
+        if(pfd.fd == -1) return false;
+        if(gptr() < egptr()) return true;
         auto status = wait_socket(&pfd, timeout);
         if(status < 0) {    // low level error...
             io_err(status);
             return false;
         }
-        if(!status)         // timeout...
-            return false;
-
+        if(!status) return false;   // timeout...
         // return if low level is pending...
         return (pfd.revents & POLLIN);
     }
@@ -216,8 +208,7 @@ protected:
     auto underflow() -> int override {
         if(gptr() == egptr()) {
             auto len = recv_socket(gbuf, getsize);
-            if(!len)
-                return EOF;
+            if(!len) return EOF;
             setg(gbuf, gbuf, gbuf + len);
         }
         return get_type(*gptr());
@@ -225,14 +216,11 @@ protected:
 
     auto overflow(int c) -> int override {
         if(c == EOF) {
-            if(sync() == 0)
-                return not_eof(c);
+            if(sync() == 0) return not_eof(c);
             return EOF;
         }
 
-        if(pptr() == epptr() && sync() != 0)
-            return EOF;
-
+        if(pptr() == epptr() && sync() != 0) return EOF;
         *pptr() = put_type(c);
         pbump(1);
         return c;

@@ -39,18 +39,13 @@ inline auto getline_w32(char **lp, std::size_t *size, FILE *fp) -> ssize_t {
     std::size_t pos{0};
     int c{EOF};
 
-    if(lp == nullptr || fp == nullptr || size == nullptr)
-        return -1;
-
+    if(lp == nullptr || fp == nullptr || size == nullptr) return -1;
     c = getc(fp);   // FlawFinder: ignore
-    if(c == EOF)
-        return -1;
+    if(c == EOF) return -1;
 
     if(*lp == nullptr) {
         *lp = static_cast<char *>(std::malloc(128)); // NOLINT
-        if(*lp == nullptr) {
-            return -1;
-        }
+        if(*lp == nullptr) return -1;
         *size = 128;
     }
 
@@ -62,15 +57,13 @@ inline auto getline_w32(char **lp, std::size_t *size, FILE *fp) -> ssize_t {
                 new_size = 128;
             }
             auto new_ptr = static_cast<char *>(realloc(*lp, new_size)); // NOLINT
-            if(new_ptr == nullptr)
-                return -1;
+            if(new_ptr == nullptr) return -1;
             *size = new_size;
             *lp = new_ptr;
         }
 
         (reinterpret_cast<unsigned char *>(*lp))[pos ++] = c;
-        if(c == '\n')
-            break;
+        if(c == '\n') break;
         c = getc(fp);   // FlawFinder: ignore
     }
     (*lp)[pos] = '\0';
@@ -127,8 +120,7 @@ inline auto write(int fd, const void *buf, std::size_t len) {
 
 inline auto native_handle(int fd) {
     auto handle = _get_osfhandle(fd);
-    if(handle == -1)
-        return static_cast<void *>(nullptr);
+    if(handle == -1) return static_cast<void *>(nullptr);
     return reinterpret_cast<void *>(handle);
 }
 
@@ -290,8 +282,7 @@ inline auto scan_stream(std::istream& input, Func proc) {
     std::string line;
     std::size_t count{0};
     while(std::getline(input, line)) {
-        if (!proc(line))
-            break;
+        if (!proc(line)) break;
         ++count;
     }
     return count;
@@ -303,8 +294,7 @@ inline auto scan_file(const fsys::path& path, Func proc) {
     std::string line;
     std::size_t count{0};
     while(std::getline(input, line)) {
-        if (!proc(line))
-            break;
+        if (!proc(line)) break;
         ++count;
     }
     return count;
@@ -319,8 +309,7 @@ inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
         buf = static_cast<char *>(std::malloc(size));    // NOLINT
     while(!feof(file)) {
         auto len = getline(&buf, &size, file);
-        if(len < 0 || !proc({buf, std::size_t(len)}))
-            break;
+        if(len < 0 || !proc({buf, std::size_t(len)})) break;
         ++count;
     }
     if(buf)
@@ -332,8 +321,7 @@ template <typename Func>
 inline auto scan_command(const std::string& cmd, Func proc, std::size_t size = 0) {
     auto file = popen(cmd.c_str(), "r");    // FlawFinder: ignore
 
-    if(!file)
-        return std::size_t(0);
+    if(!file) return std::size_t(0);
 
     auto count = scan_file(file, proc, size);
     pclose(file);
@@ -348,8 +336,7 @@ inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
         buf = static_cast<char *>(std::malloc(size));    // NOLINT
     while(!feof(file)) {
         auto len = getline_w32(&buf, &size, file);
-        if(len < 0 || !proc({buf, std::size_t(len)}))
-            break;
+        if(len < 0 || !proc({buf, std::size_t(len)})) break;
         ++count;
     }
     if(buf)
@@ -361,9 +348,7 @@ template <typename Func>
 inline auto scan_command(const std::string& cmd, Func proc, std::size_t size = 0) {
     auto file = _popen(cmd.c_str(), "r");    // FlawFinder: ignore
 
-    if(!file)
-        return std::size_t(0);
-
+    if(!file) return std::size_t(0);
     auto count = scan_file(file, proc, size);
     _pclose(file);
     return count;

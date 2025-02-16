@@ -34,44 +34,37 @@ public:
     explicit array(const std::array<T,N>& from) : std::array<T, N>(from) {}
 
     auto operator[](size_type index) -> T& {
-        if(index < Offset || index >= N + Offset)
-            throw std::out_of_range("Index out of range");
+        if(index < Offset || index >= N + Offset) throw std::out_of_range("Index out of range");
         return std::array<T,N>::operator[](index - Offset);
     }
 
     auto operator[](size_type index) const -> const T& {
-        if(index < Offset || index >= N + Offset)
-            throw std::out_of_range("Index out of range");
+        if(index < Offset || index >= N + Offset) throw std::out_of_range("Index out of range");
         return std::array<T,N>::operator[](index - Offset);
     }
 
     auto at(size_type index) -> T& {
-        if(index < Offset || index >= N + Offset)
-            throw std::out_of_range("Index out of range");
+        if(index < Offset || index >= N + Offset) throw std::out_of_range("Index out of range");
         return std::array<T, N>::at(index - Offset);
     }
 
     auto at(size_type index) const -> const T& {
-        if(index < Offset || index >= N + Offset)
-            throw std::out_of_range("Index out of range");
+        if(index < Offset || index >= N + Offset) throw std::out_of_range("Index out of range");
         return std::array<T, N>::at(index - Offset);
     }
 
     auto get(size_type index) noexcept -> std::optional<T> {
-        if(index < Offset || index >= N + Offset)
-            return std::nullopt;
+        if(index < Offset || index >= N + Offset) return std::nullopt;
         return std::array<T, N>::at(index - Offset);
     }
 
     auto get_or(size_type index, const T* or_else = nullptr) const noexcept -> const T* {
-        if(index < Offset || index >= N + Offset)
-            return or_else;
+        if(index < Offset || index >= N + Offset) return or_else;
         return this->data() + (index - Offset);
     }
 
     auto get_or(size_type index, T* or_else = nullptr) noexcept -> T* {
-        if(index < Offset || index >= N + Offset)
-            return or_else;
+        if(index < Offset || index >= N + Offset) return or_else;
         return this->data() + (index - Offset);
     }
 
@@ -145,20 +138,17 @@ public:
     }
 
     auto get_or(size_type index, const T* or_else = nullptr) const -> const T* {
-        if(index < this->size())
-            return this->data() + index;
+        if(index < this->size()) return this->data() + index;
         return or_else;
     }
 
     auto get_or(size_type index, T* or_else = nullptr) -> T* {
-        if(index < this->size())
-            return this->data() + index;
+        if(index < this->size()) return this->data() + index;
         return or_else;
     }
 
     auto get(size_type index) const -> std::optional<T> {
-        if(index < this->size())
-            return this->at(index);
+        if(index < this->size()) return this->at(index);
         return std::nullopt;
     }
 
@@ -171,8 +161,7 @@ public:
     }
 
     auto subslice(size_type pos, size_type count = 0) const {
-        if(pos + count > this->size())
-            throw std::out_of_range("Invalid subslice range");
+        if(pos + count > this->size()) throw std::out_of_range("Invalid subslice range");
         if(!count)
             count = this->size() - pos;
         return slice(this->begin() + pos, this->begin() + pos + count);
@@ -180,7 +169,7 @@ public:
 
     template <typename Func>
     void each(Func func) {
-        for (auto& element : *this)
+        for(auto& element : *this)
             func(element);
     }
 
@@ -212,8 +201,7 @@ public:
     }
 
     void remove(size_type pos, size_type count = 0) const {
-        if(pos + count > this->size())
-            throw std::out_of_range("Invalid slice range");
+        if(pos + count > this->size()) throw std::out_of_range("Invalid slice range");
         if(!count)
             count = this->size() - pos;
         if(!count)
@@ -256,32 +244,27 @@ public:
     }
 
     constexpr auto operator[](size_type index) const -> T& {
-        if(index < Offset || index >= Offset + size_)
-            throw std::out_of_range("Span index past end");
+        if(index < Offset || index >= Offset + size_) throw std::out_of_range("Span index past end");
         return ptr_[index - Offset];
     }
 
     constexpr auto at(size_type index) const -> T& {
-        if(index < Offset || index >= Offset + size_)
-            throw std::out_of_range("Span index past end");
+        if(index < Offset || index >= Offset + size_) throw std::out_of_range("Span index past end");
         return ptr_[index - Offset];
     }
 
     constexpr auto get(size_type index) const noexcept -> std::optional<T>  {
-        if(index < Offset || index >= Offset + size_)
-            return std::nullopt;
+        if(index < Offset || index >= Offset + size_) return std::nullopt;
         return ptr_[index - Offset];
     }
 
     constexpr auto get_or(size_type index, const T* or_else = nullptr) const noexcept -> const T* {
-        if(index < Offset || index >= Offset + size_)
-            return or_else;
+        if(index < Offset || index >= Offset + size_) return or_else;
         return ptr_ + (index - Offset);
     }
 
     constexpr auto get_or(size_type index, T* or_else = nullptr) noexcept -> T* {
-        if(index < Offset || index >= Offset + size_)
-            return or_else;
+        if(index < Offset || index >= Offset + size_) return or_else;
         return ptr_ + (index - Offset);
     }
 
@@ -326,8 +309,7 @@ public:
     }
 
     auto subspan(size_type pos, size_type count = 0) const {
-        if(pos < Offset || (pos + count - Offset) > size_)
-            throw std::out_of_range("Invalid subspan range");
+        if(pos < Offset || (pos + count - Offset) > size_) throw std::out_of_range("Invalid subspan range");
         return span(ptr_ + (pos - Offset), count ? count : size_ - pos - Offset);
     }
 

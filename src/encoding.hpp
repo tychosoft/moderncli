@@ -27,9 +27,9 @@ inline auto to_b64(const uint8_t *data, std::size_t size) {
 
     std::string out;
 
-    for (std::size_t i = 0; i < size; i += 3) {
+    for(std::size_t i = 0; i < size; i += 3) {
         uint32_t c = 0;
-        for (std::size_t j = 0; j < 3; ++j) {
+        for(std::size_t j = 0; j < 3; ++j) {
             c <<= 8;
             if(i + j < size)
                 c |= uint32_t(data[i + j]);
@@ -42,37 +42,25 @@ inline auto to_b64(const uint8_t *data, std::size_t size) {
             out += base64_chars[c & 0x3F];
     }
 
-    if (size % 3 == 1)
+    if(size % 3 == 1)
         out += "==";
-    else if (size % 3 == 2)
+    else if(size % 3 == 2)
         out += '=';
     return out;
 }
 
 constexpr auto base64_index(char c) {
-    if (c >= 'A' && c <= 'Z')
-        return c - 'A';
-
-    if (c >= 'a' && c <= 'z')
-        return c - 'a' + 26;
-
-    if (c >= '0' && c <= '9')
-        return c - '0' + 52;
-
-    if (c == '+')
-        return 62;
-
-    if (c == '/')
-        return 63;
-
+    if(c >= 'A' && c <= 'Z') return c - 'A';
+    if(c >= 'a' && c <= 'z') return c - 'a' + 26;
+    if(c >= '0' && c <= '9') return c - '0' + 52;
+    if (c == '+') return 62;
+    if (c == '/') return 63;
     return -1;
 }
 
 inline auto size_b64(std::string_view from) {
     auto size = from.size();
-    if(!size)
-        return std::size_t(0);
-
+    if(!size) return std::size_t(0);
     --size;
     while(size && from[size] == '=')
         --size;
@@ -93,20 +81,16 @@ inline auto size_b64(std::string_view from) {
 inline auto from_b64(std::string_view from, uint8_t *to, std::size_t maxsize) {
     auto out = size_b64(from);
 
-    if(out > maxsize)
-        return std::size_t(0);
-
+    if(out > maxsize) return std::size_t(0);
     uint32_t val = 0;
     std::size_t bits = 0, count = 0;
-
-    for (const auto &ch : from) {
-        if(count >= out)
-            break;
+    for(const auto &ch : from) {
+        if(count >= out) break;
         auto index = base64_index(ch);
-        if (index >= 0) {
+        if(index >= 0) {
             val = (val << 6) | uint32_t(index);
             bits += 6;
-            if (bits >= 8) {
+            if(bits >= 8) {
                 to[count++] = (val >> (bits - 8));
                 bits -= 8;
             }
@@ -148,8 +132,7 @@ inline auto from_hex(std::string_view from, uint8_t *to, std::size_t size) {
         buf[2] = 0;
         char *end = nullptr;
         auto value = strtoul(buf, &end, 16);
-        if(*end != 0)
-            return pos / 2;
+        if(*end != 0) return pos / 2;
         *(to++) = uint8_t(value);
     }
     return maxsize / 2;

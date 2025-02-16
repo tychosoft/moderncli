@@ -52,8 +52,7 @@ public:
     }
 
     auto operator=(const digest_t& from) noexcept -> auto& {
-        if(this == &from)
-            return *this;
+        if(this == &from) return *this;
         if(ctx_) {
             EVP_MD_CTX_destroy(ctx_);
             ctx_ = nullptr;
@@ -108,8 +107,7 @@ public:
     }
 
     auto finish() noexcept {
-        if(!ctx_ || size_)
-            return false;
+        if(!ctx_ || size_) return false;
         return EVP_DigestFinal_ex(ctx_, data_, &size_) == 1;
     }
 
@@ -136,9 +134,7 @@ inline auto hmac(const std::string_view& key, const uint8_t *msg, std::size_t si
 inline auto hmac(const std::string_view& key, const uint8_t *msg, std::size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
     unsigned olen{0};
     auto ctx = HMAC_CTX_new();
-    if(!ctx)
-        return std::size_t(0);
-
+    if(!ctx) return std::size_t(0);
     if(!HMAC_Init_ex(ctx, key.data(), int(key.size()), md, nullptr)) {
         HMAC_CTX_free(ctx);
         return std::size_t(0);
@@ -158,9 +154,7 @@ inline auto hmac(const std::string_view& key, const std::string_view& msg, uint8
 inline auto digest(const uint8_t *msg, std::size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
     unsigned olen{0};
     auto ctx = EVP_MD_CTX_create();
-    if(!ctx)
-        return std::size_t(0);
-
+    if(!ctx) return std::size_t(0);
     if(!EVP_DigestInit_ex(ctx, md, nullptr)) {
         EVP_MD_CTX_destroy(ctx);
         return std::size_t(0);
@@ -178,8 +172,7 @@ inline auto digest(const std::string_view& msg, uint8_t *out, const EVP_MD *md =
 
 inline auto digest_size(const EVP_MD *md = EVP_sha256()) {
     auto sz = EVP_MD_get_size(md);
-    if(sz < 1)
-        return std::size_t(0);
+    if(sz < 1) return std::size_t(0);
     return std::size_t(sz);
 }
 

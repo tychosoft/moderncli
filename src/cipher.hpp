@@ -81,9 +81,7 @@ public:
     }
 
     auto operator=(const keyphrase_t& other) noexcept -> auto& {
-        if(&other == this)
-            return *this;
-
+        if(&other == this) return *this;
         size_ = other.size_;
         cipher_ = other.cipher_;
         if(size_) {
@@ -150,8 +148,7 @@ private:
 inline auto get_tag_size(const EVP_CIPHER *algo) -> std::size_t {
     if(algo) {
         auto nid = EVP_CIPHER_nid(algo);
-        if(nid == NID_aes_128_gcm || nid == NID_aes_192_gcm || nid == NID_aes_256_gcm)
-            return 16;
+        if(nid == NID_aes_128_gcm || nid == NID_aes_192_gcm || nid == NID_aes_256_gcm) return 16;
     }
     return 0;
 }
@@ -171,9 +168,7 @@ public:
 
     explicit decrypt_t(const keyphrase_t& key) noexcept :
     ctx_(EVP_CIPHER_CTX_new()), algo_(key.cipher()) {
-        if(!ctx_)
-            return;
-
+        if(!ctx_) return;
         tag_ = get_tag_size(algo_);
         if(tag_) {
             EVP_DecryptInit_ex(ctx_, algo_, nullptr, nullptr, nullptr);
@@ -195,9 +190,7 @@ public:
     }
 
     auto operator=(decrypt_t&& other) noexcept -> decrypt_t& {
-        if(this == &other)
-            return *this;
-
+        if(this == &other) return *this;
         if(ctx_)
             EVP_CIPHER_CTX_free(ctx_);
         ctx_ = nullptr;
@@ -211,9 +204,7 @@ public:
     }
 
     auto operator=(const keyphrase_t& key) -> decrypt_t& {
-        if(key.cipher() != algo_)
-            throw std::runtime_error("cipher type mismatch");
-
+        if(key.cipher() != algo_) throw std::runtime_error("cipher type mismatch");
         if(ctx_)
             EVP_CIPHER_CTX_free(ctx_);
 
@@ -223,9 +214,7 @@ public:
         }
 
         ctx_ = EVP_CIPHER_CTX_new();
-        if(!ctx_)
-            return *this;
-
+        if(!ctx_) return *this;
         tag_ = get_tag_size(algo_);
         if(tag_) {
             EVP_DecryptInit_ex(ctx_, algo_, nullptr, nullptr, nullptr);
@@ -268,21 +257,15 @@ public:
     auto update(const uint8_t *in, uint8_t *out, std::size_t size) noexcept {
         auto used = 0;
 
-        if(!ctx_)
-            return std::size_t(0);
-
-        if(!EVP_DecryptUpdate(ctx_, out, &used, in, int(size)))
-            return std::size_t(0);
-
+        if(!ctx_) return std::size_t(0);
+        if(!EVP_DecryptUpdate(ctx_, out, &used, in, int(size))) return std::size_t(0);
         return std::size_t(used);
     }
 
     auto finish(uint8_t *out, const uint8_t *tag) noexcept {
         auto used = 0;
 
-        if(!ctx_)
-            return std::size_t(0);
-
+        if(!ctx_) return std::size_t(0);
         if(tag_ && tag)
             EVP_CIPHER_CTX_ctrl(ctx_, EVP_CTRL_GCM_SET_TAG, int(tag_), const_cast<uint8_t *>(tag));
 
@@ -315,9 +298,7 @@ public:
 
     explicit encrypt_t(const keyphrase_t& key) noexcept :
     ctx_(EVP_CIPHER_CTX_new()), algo_(key.cipher()) {
-        if(!ctx_)
-            return;
-
+        if(!ctx_) return;
         if(keysize() != key.size()) {
             EVP_CIPHER_CTX_free(ctx_);
             ctx_ = nullptr;
@@ -343,9 +324,7 @@ public:
     }
 
     auto operator=(encrypt_t&& other) noexcept -> encrypt_t& {
-        if(this == &other)
-            return *this;
-
+        if(this == &other) return *this;
         if(ctx_)
             EVP_CIPHER_CTX_free(ctx_);
         ctx_ = nullptr;
@@ -359,9 +338,7 @@ public:
     }
 
     auto operator=(const keyphrase_t& key) -> encrypt_t& {
-        if(key.cipher() != algo_)
-            throw std::runtime_error("cipher type mismatch");
-
+        if(key.cipher() != algo_) throw std::runtime_error("cipher type mismatch");
         if(ctx_)
             EVP_CIPHER_CTX_free(ctx_);
 
@@ -371,9 +348,7 @@ public:
         }
 
         ctx_ = EVP_CIPHER_CTX_new();
-        if(!ctx_)
-            return *this;
-
+        if(!ctx_) return *this;
         tag_ = get_tag_size(algo_);
         if(tag_) {
             EVP_EncryptInit_ex(ctx_, algo_, nullptr, nullptr, nullptr);
@@ -416,21 +391,15 @@ public:
     auto update(const uint8_t *in, uint8_t *out, std::size_t size) noexcept {
         auto used = 0;
 
-        if(!ctx_)
-            return std::size_t(0);
-
-        if(!EVP_EncryptUpdate(ctx_, out, &used, in, int(size)))
-            return std::size_t(0);
-
+        if(!ctx_) return std::size_t(0);
+        if(!EVP_EncryptUpdate(ctx_, out, &used, in, int(size))) return std::size_t(0);
         return std::size_t(used);
     }
 
     auto finish(uint8_t *out, uint8_t *tag = nullptr) noexcept {
         auto used = 0;
 
-        if(!ctx_)
-            return std::size_t(0);
-
+        if(!ctx_) return std::size_t(0);
         if(!EVP_EncryptFinal_ex(ctx_, out, &used))
             used = 0;
 

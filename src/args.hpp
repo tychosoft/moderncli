@@ -48,17 +48,14 @@ private:
         while(cp && *cp && count++ <= max)
             ++cp;
 
-        if(count > max)
-            throw bad_arg("string size too large", cp);
-
+        if(count > max) throw bad_arg("string size too large", cp);
         return count;
     }
 
     static auto str_value(const char *cp) {
         char *ep = nullptr;
         auto value = strtol(cp, &ep, 0);
-        if(ep && *ep)
-            throw bad_arg("value format wrong", cp);
+        if(ep && *ep) throw bad_arg("value format wrong", cp);
         return value;
     }
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
@@ -211,8 +208,7 @@ public:
         argv0_ = *(list++);
         while(*list) {
             auto arg = std::string_view(*(list++));
-            if(arg == "--" || arg == "-")
-                break;
+            if(arg == "--" || arg == "-") break;
             if(arg[0] != '-') {
                 --list;
                 break;
@@ -246,12 +242,9 @@ public:
                     break;
                 }
 
-                if(op->value_.index > 0 || op->value_.flag)
-                    throw bad_arg("already used", keyword);
-
+                if(op->value_.index > 0 || op->value_.flag) throw bad_arg("already used", keyword);
                 if(!op->usage_) {
-                    if(key_split != std::string_view::npos)
-                        throw bad_arg("invalid value", keyword);
+                    if(key_split != std::string_view::npos) throw bad_arg("invalid value", keyword);
 
                     op->value_ = true;
                     break;
@@ -262,30 +255,22 @@ public:
                     break;
                 }
 
-                if(!*list)
-                    throw bad_arg("missing value", keyword);
-
+                if(!*list) throw bad_arg("missing value", keyword);
                 op->value_ = *(list++);
                 break;
             }
-            if(static_cast<bool>(op))
-                continue;
 
-            if(!has_short)
-                throw bad_arg("unknown argument", keyword);
-
+            if(static_cast<bool>(op)) continue;
+            if(!has_short) throw bad_arg("unknown argument", keyword);
             auto pos = 0U;
             while(pos < arg.size()) {
                 op = option::first_;
                 while(op) {
-                    if(op->code_ == arg[pos])
-                        break;
+                    if(op->code_ == arg[pos]) break;
                     op = op->next_;
                 }
 
-                if(!op)
-                    throw bad_arg("unknown option", arg[pos]);
-
+                if(!op) throw bad_arg("unknown option", arg[pos]);
                 if(op->counter_) {
                     if(op->value_.index < 1)
                         op->value_ = 1U;
@@ -295,15 +280,11 @@ public:
                     continue;
                 }
 
-                if(op->value_.index > 0 || op->value_.flag)
-                    throw bad_arg("already used", arg[pos]);
-
+                if(op->value_.index > 0 || op->value_.flag) throw bad_arg("already used", arg[pos]);
                 if(!op->usage_)
                     op->value_.flag = true;
                 else {
-                    if(!*list)
-                        throw bad_arg("missing value", arg[pos]);
-
+                    if(!*list) throw bad_arg("missing value", arg[pos]);
                     op->value_ = *(list++);
                 }
                 ++pos;

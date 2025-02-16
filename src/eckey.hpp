@@ -39,9 +39,7 @@ public:
     }
 
     explicit eckey_t(const BIGNUM *bignum, const std::string& curve = "secp521r1") noexcept : key_(EVP_EC_gen(curve.c_str())) {
-        if(!key_)
-            return;
-
+        if(!key_) return;
         auto bytes = BN_num_bytes(bignum);
         auto temp = std::make_unique<uint8_t[]>(bytes);
         auto ptr = &temp[0];
@@ -59,9 +57,7 @@ public:
     }
 
     explicit eckey_t(const key_t key, const std::string& curve = "secp521r1") noexcept : key_(EVP_EC_gen(curve.c_str())) {
-        if(!key_)
-            return;
-
+        if(!key_) return;
         OSSL_PARAM params[] = {
             OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_PRIV_KEY, const_cast<uint8_t *>(key.first), key.second),
             OSSL_PARAM_construct_end()
@@ -101,10 +97,8 @@ public:
     }
 
     auto operator=(const eckey_t& other) noexcept -> auto& {
-        if(&other == this)
-            return *this;
-        if(key_ == other.key_)
-            return *this;
+        if(&other == this) return *this;
+        if(key_ == other.key_) return *this;
         if(key_)
             EVP_PKEY_free(key_);
         key_ = other.key_;
@@ -123,25 +117,21 @@ public:
 
     auto bn() const noexcept {
         BIGNUM *key_bn{nullptr};
-        if (EVP_PKEY_get_bn_param(key_, OSSL_PKEY_PARAM_PRIV_KEY, &key_bn) == 1)
-            return key_bn;
+        if(EVP_PKEY_get_bn_param(key_, OSSL_PKEY_PARAM_PRIV_KEY, &key_bn) == 1) return key_bn;
         return static_cast<BIGNUM *>(nullptr);
     }
 
     auto pub_bn() const noexcept {
         BIGNUM *key_bn{nullptr};
-        if (EVP_PKEY_get_bn_param(key_, OSSL_PKEY_PARAM_PUB_KEY, &key_bn) == 1)
-            return key_bn;
+        if(EVP_PKEY_get_bn_param(key_, OSSL_PKEY_PARAM_PUB_KEY, &key_bn) == 1) return key_bn;
         return static_cast<BIGNUM *>(nullptr);
     }
 
     auto pub() const noexcept {
         std::string pem;
-        if(!key_)
-            return pem;
+        if(!key_) return pem;
         auto bp = BIO_new(BIO_s_mem());
-        if(!bp)
-            return pem;
+        if(!bp) return pem;
         if(PEM_write_bio_PUBKEY(bp, key_) == 1) {
             BUF_MEM *buf{};
             BIO_get_mem_ptr(bp, &buf);
@@ -152,9 +142,7 @@ public:
     }
 
     auto save(const std::string& name) const noexcept -> bool {
-        if(!key_)
-            return false;
-
+        if(!key_) return false;
         auto result = false;
         std::remove(name.c_str());
 
@@ -167,17 +155,14 @@ public:
     }
 
     auto derived() const noexcept {
-        if(!aes_size)
-            return key_t{nullptr, 0};
+        if(!aes_size) return key_t{nullptr, 0};
         return key_t{aes_key, aes_size};
     }
 
     auto derive(EVP_PKEY *peer, std::string_view info, std::size_t keysize = 0, key_t salt = key_t{nullptr, 0}, const EVP_MD *md = EVP_sha256()) noexcept {
-        if(!peer || !md || keysize > sizeof(aes_key))
-            return key_t{nullptr, 0};
+        if(!peer || !md || keysize > sizeof(aes_key)) return key_t{nullptr, 0};
         auto ctx = EVP_PKEY_CTX_new(key_, nullptr);
-        if(!ctx)
-            return key_t{nullptr, 0};
+        if(!ctx) return key_t{nullptr, 0};
         aes_size = 0;
         std::size_t size = 0;
         if(!keysize)
@@ -192,8 +177,7 @@ public:
         EVP_PKEY_CTX_free(ctx);
 
         ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr);
-        if(!ctx)
-            return key_t{nullptr, 0};
+        if(!ctx) return key_t{nullptr, 0};
         EVP_PKEY_derive_init(ctx);
         EVP_PKEY_CTX_hkdf_mode(ctx, EVP_PKEY_HKDEF_MODE_EXTRACT_AND_EXPAND);
         EVP_PKEY_CTX_set_hkdf_md(ctx, md);
@@ -202,8 +186,7 @@ public:
         EVP_PKEY_CTX_add1_hkdf_info(ctx, reinterpret_cast<const uint8_t*>(info.data()), int(info.size()));
         EVP_PKEY_derive(ctx, aes_key, &keysize);
         EVP_PKEY_CTX_free(ctx);
-        if(keysize < 8)
-            return key_t{nullptr, 0};
+        if(keysize < 8) return key_t{nullptr, 0};
         aes_size = keysize;
         return key_t{aes_key, keysize};
     }
