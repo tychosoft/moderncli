@@ -274,6 +274,65 @@ private:
 };
 
 template<typename T>
+class memreuse {
+public:
+    using value_type = T;
+
+    memreuse(const memreuse&) = delete;
+    auto operator=(const memreuse&) -> auto& = delete;
+
+    memreuse() = default;
+
+    explicit memreuse(memreuse&& other) noexcept :
+    free_(std::move(other.free_)) {
+        other.free_.clear();
+    }
+
+    ~memreuse() {
+        clear();
+    }
+
+    auto operator=(memreuse&& other) noexcept -> auto& {
+        free_ = std::move(other.free_);
+        other.free_.clear();
+        return *this;
+    }
+
+    auto operator*() -> T& {
+        return *get();
+    }
+
+    void clear() {
+        for(auto& mem : free_) {
+            delete mem;
+        }
+        free_.clear();
+    }
+
+    auto get() -> T* {
+        if(!free_.empty()) {
+            auto ptr = free_.front();
+            free_.pop_front();
+            return new(ptr) T();
+        }
+        return new T();
+    }
+
+    void release(T* ptr) {
+        free_.push_back(ptr);
+    }
+
+    void release(T& obj) {
+        free_.push_back(&obj);
+    }
+
+private:
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
+    std::list<T*> free_;
+};
+
+template<typename T>
 class mempool {
 public:
     using size_type = std::size_t;
@@ -290,20 +349,24 @@ public:
     mempool(void *ptr, size_type size) noexcept :
     ptr_(reinterpret_cast<T*>(ptr)), size_(size) {}
 
-    explicit mempool(mempool&& other) noexcept : ptr_(other.ptr_), size_(other.size_), used_(other.used_), free_(std::move(other.free_)), dynamic_(other.dynamic_) {
+    explicit mempool(mempool&& other) noexcept :
+    ptr_(other.ptr_), size_(other.size_), used_(other.used_), free_(std::move(other.free_)), dynamic_(other.dynamic_) {
         other.dynamic_ = false;
         other.ptr_ = nullptr;
         other.size_ = 0;
         other.used_ = 0;
     }
 
-    explicit mempool(size_type size) : ptr_(new T[size]), size_(size), dynamic_(true) {}
+    explicit mempool(size_type size) :
+    ptr_(new T[size]), size_(size), dynamic_(true) {}
 
     template<size_type S>
-    explicit mempool(T(&arr)[S]) noexcept : mempool(arr, S) {}
+    explicit mempool(T(&arr)[S]) noexcept :
+    mempool(arr, S) {}
 
     template<typename Container, typename = std::enable_if_t<std::is_same_v<T, typename Container::value_type>>>
-    explicit mempool(Container& container) : mempool(container.data(), container.size()) {}
+    explicit mempool(Container& container) :
+    mempool(container.data(), container.size()) {}
 
     ~mempool() {
         if(dynamic_ && ptr_)
