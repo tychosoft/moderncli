@@ -32,6 +32,8 @@ using ssize_t = SSIZE_T;
 #include <windows.h>
 #include <aclapi.h>
 #include <io.h>
+#else
+#include <sys/mman.h>
 #endif
 
 #if defined(__OpenBSD__)
@@ -123,6 +125,57 @@ inline auto write(int fd, const void *buf, std::size_t len) {
     return _write(fd, buf, len);
 }
 
+inline auto read_at(int fd, void *buf, std::size_t len, off_t pos) { // FlawFinder: ignore
+    auto handle = (HANDLE)_get_osfhandle(fd);
+    if(handle == INVALID_HANDLE_VALUE) return (DWORD)-1;
+    OVERLAPPED overlapped{0};
+    overlapped.Offset = static_cast<DWORD>(pos);
+    overlapped.OffsetHigh = 0;
+    DWORD bytesRead{0};
+    if(ReadFile(handle, buf, static_cast<DWORD>(len), &bytesRead, &overlapped)) return bytesRead;
+    return (DWORD)-1;
+}
+
+inline auto write_at(int fd, const void *buf, std::size_t len, off_t pos) {
+    auto handle = (HANDLE)_get_osfhandle(fd);
+    if(handle == INVALID_HANDLE_VALUE) return (DWORD)-1;
+    OVERLAPPED overlapped{0};
+    overlapped.Offset = static_cast<DWORD>(pos);
+    overlapped.OffsetHigh = 0;
+    DWORD bytesWritten{0};
+    if(WriteFile(handle, buf, static_cast<DWORD>(len), &bytesWritten, &overlapped)) return bytesWritten;
+    return (DWORD)-1;
+}
+
+template <typename T>
+inline auto read_at(int fd, T& data, off_t pos) noexcept {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    return fsys::read_at(fd, &data, sizeof(data), pos);
+}
+
+template <typename T>
+inline auto write_at(int fd, const T& data, off_t pos) noexcept {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    return fsys::write_at(fd, &data, sizeof(data), pos);
+}
+
+inline auto load(int fd, std::size_t size, bool rw = false) -> void* {
+    auto handle = (HANDLE)_get_osfhandle(fd);
+    if(handle == INVALID_HANDLE_VALUE) return nullptr;
+
+    auto map = CreateFileMapping(handle, nullptr, rw ? PAGE_READWRITE : PAGE_READONLY, 0, size, nullptr);
+    if(map == nullptr) return nullptr;
+
+    auto addr = MapViewOfFile(map, rw ? FILE_MAP_READ | FILE_MAP_WRITE : FILE_MAP_READ, 0, 0, size);
+    CloseHandle(map);
+    return addr;
+}
+
+inline void unload(void *addr, [[maybe_unused]]std::size_t size) {
+    if(addr == nullptr) return;
+    UnmapViewOfFile(addr);
+}
+
 inline auto sync(int fd) {
     auto handle = (HANDLE)_get_osfhandle(fd);
     if(handle == INVALID_HANDLE_VALUE) return -1;
@@ -175,6 +228,18 @@ inline auto write(int fd, const T& data) noexcept {
     return ::write(fd, &data, sizeof(data));
 }
 
+template <typename T>
+inline auto read_at(int fd, T& data, off_t pos) noexcept {    // FlawFinder: ignore
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    return ::pread(fd, &data, sizeof(data), pos); // FlawFinder: ignore
+}
+
+template <typename T>
+inline auto write_at(int fd, const T& data, off_t pos) noexcept {
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+    return ::pwrite(fd, &data, sizeof(data), pos);
+}
+
 inline auto seek(int fd, off_t pos) noexcept {
     return ::lseek(fd, pos, SEEK_SET);
 }
@@ -199,8 +264,28 @@ inline auto read(int fd, void *buf, std::size_t len) { // FlawFinder: ignore
     return ::read(fd, buf, len);    // FlawFinder: ignore
 }
 
+inline auto read_at(int fd, void *buf, std::size_t len, off_t pos) { // FlawFinder: ignore
+    return ::pread(fd, buf, len, pos);
+}
+
+inline auto load(int fd, std::size_t size, bool rw = false) -> void * {
+    void *addr = ::mmap(nullptr, size, rw ? PROT_READ | PROT_WRITE : PROT_READ, MAP_SHARED, fd, 0);
+    if(addr == MAP_FAILED) return nullptr;
+    return addr;
+}
+
+inline auto unload(void *addr, std::size_t size) {
+    if(addr == MAP_FAILED || addr == nullptr)
+        return;
+    munmap(addr, size);
+}
+
 inline auto write(int fd, const void *buf, std::size_t len) {
     return ::write(fd, buf, len);
+}
+
+inline auto write_at(int fd, const void *buf, std::size_t len, off_t pos) {
+    return ::pwrite(fd, buf, len, pos);
 }
 
 inline auto sync(int fd) {
@@ -311,6 +396,18 @@ public:
         return fd_ == -1 ? -EBADF : fsys::write(fd_, buf, len);
     }
 
+    auto read_at(void *buf, std::size_t len, off_t pos) const noexcept { // FlawFinder: ignore
+        return fd_ == -1 ? -EBADF : fsys::read_at(fd_, buf, len, pos);  // FlawFinder: ignore
+    }
+
+    auto write_at(const void *buf, std::size_t len, off_t pos) const noexcept {
+        return fd_ == -1 ? -EBADF : fsys::write_at(fd_, buf, len, pos);
+    }
+
+    auto load(std::size_t size, bool rw = false) const noexcept {
+        return fd_ == -1 ? nullptr : fsys::load(fd_, size, rw);
+    }
+
     template <typename T>
     auto read(T& data) const noexcept {       // FlawFinder: ignore
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
@@ -321,6 +418,18 @@ public:
     auto write(const T& data) const noexcept {
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
         return fd_ == -1 ? -EBADF : fsys::write(fd_, &data, sizeof(data));
+    }
+
+    template <typename T>
+    auto read_at(T& data, off_t pos) const noexcept {   // FlawFinder: ignore
+        static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+        return fd_ == -1 ? -EBADF : fsys::read_at(fd_, &data, sizeof(data), pos);   // FlawFinder: ignore
+    }
+
+    template <typename T>
+    auto write_at(const T& data, off_t pos) const noexcept {
+        static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+        return fd_ == -1 ? -EBADF : fsys::write_at(fd_, &data, sizeof(data), pos);
     }
 
 private:
@@ -454,7 +563,7 @@ public:
 
     template <typename Context>
     constexpr auto format(const tycho::fsys::path& path, Context& ctx) const {
-        return format_to(ctx.out(), "{}", std::string{path.u8string()});
+        return format_to(ctx.out(), "{}", std::string{path.string()});
     }
 };
 #elif defined(TYCHO_PRINT_HPP)
@@ -466,13 +575,13 @@ struct std::formatter<tycho::fsys::path> {
 
     template <typename FormatContext>
     auto format(const tycho::fsys::path& path, FormatContext& ctx) const {
-        return std::format_to(ctx.out(), "{}", path.u8string());
+        return std::format_to(ctx.out(), "{}", path.string());
     }
 };
 #endif
 
 inline auto operator<<(std::ostream& out, const tycho::fsys::path& path) -> std::ostream& {
-    out << path.u8string();
+    out << path.string();
     return out;
 }
 #endif
