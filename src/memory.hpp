@@ -277,15 +277,20 @@ template<typename T>
 class memreuse {
 public:
     using value_type = T;
+    using alloc_func = void*(*)(std::size_t);
 
     memreuse(const memreuse&) = delete;
     auto operator=(const memreuse&) -> auto& = delete;
 
     memreuse() = default;
 
+    explicit memreuse(alloc_func alloc) :
+    alloc_(alloc) {}
+
     explicit memreuse(memreuse&& other) noexcept :
-    free_(std::move(other.free_)) {
+    free_(std::move(other.free_)), alloc_(std::move(other.alloc_)) {
         other.free_.clear();
+        other.alloc_ = nullptr;
     }
 
     ~memreuse() {
@@ -294,12 +299,14 @@ public:
 
     auto operator=(memreuse&& other) noexcept -> auto& {
         free_ = std::move(other.free_);
+        alloc_ = std::move(other.alloc_);
         other.free_.clear();
+        other.alloc_ = nullptr;
         return *this;
     }
 
     auto operator*() -> T& {
-        return *get();
+        return *create();
     }
 
     void clear() {
@@ -309,13 +316,20 @@ public:
         free_.clear();
     }
 
-    auto get() -> T* {
+    template<typename... Args>
+    auto create(Args&&... args) -> T* {
         if(!free_.empty()) {
             auto ptr = free_.front();
             free_.pop_front();
-            return new(ptr) T();
+            return new(ptr) T(std::forward<Args>(args)...);
         }
-        return new T();
+        if(alloc_ != nullptr) {
+            auto ptr = alloc_(sizeof(T));
+            if(ptr)
+                return new(ptr) T(std::forward<Args>(args)...);
+            return nullptr;
+        }
+        return new T(std::forward<Args>(args)...);
     }
 
     void release(T* ptr) {
@@ -327,9 +341,8 @@ public:
     }
 
 private:
-    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-
     std::list<T*> free_;
+    alloc_func alloc_{nullptr};
 };
 
 template<typename T>
