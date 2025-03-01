@@ -17,7 +17,7 @@ constexpr auto is(const T& object) {
 
 template<typename T>
 constexpr auto is_null(const T& ptr) {
-    if constexpr (std::is_pointer_v<T>) 
+    if constexpr (std::is_pointer_v<T>)
         return ptr == nullptr;
     else
         return ptr.operator bool();
@@ -42,7 +42,7 @@ constexpr auto deref_ptr(T *ptr) -> T& {
 
 template<typename T>
 constexpr auto const_copy(const T& obj) {
-    if constexpr (std::is_pointer_v<T>) 
+    if constexpr (std::is_pointer_v<T>)
         return *obj;
     else
         return obj;
@@ -161,6 +161,32 @@ inline auto try_proc(Func proc) {
 template<typename E=std::runtime_error>
 inline void runtime_assert(bool check, const char *error = "runtime assert") {
     if(!check) throw E(error);
+}
+
+constexpr auto align_2(std::size_t size) {
+    size--;
+    size |= size >> 1;
+    size |= size >> 2;
+    size |= size >> 4;
+    size |= size >> 8;
+    size |= size >> 16;
+    size++;
+    return size;
+}
+
+constexpr auto align_n(std::size_t size, std::size_t n) {
+    return (size + n - 1) / n * n;
+}
+
+template<typename T>
+constexpr auto sizeof_2(const T& tmp [[maybe_unused]]) {
+    return align_2(sizeof(T));
+}
+
+template<typename T>
+constexpr auto sizeof_n(const T& tmp [[maybe_unused]], std::size_t n) {
+    std::size_t size = sizeof(T);
+    return (size + n - 1) / n * n;
 }
 
 // some commonly forwarded classes...

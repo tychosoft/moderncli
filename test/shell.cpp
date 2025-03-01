@@ -58,5 +58,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
     speed = 1200;
     assert(in_list(speed, 9600, {300, 1200, 2400, 9600}) == 1200);
+
+    const short v1{}, v2[3]{};
+    assert(sizeof_2(v1) == sizeof(short));
+    assert(sizeof_2(v2) == sizeof(short) * 4);
+    assert(sizeof_n(v2, 4) == 8);
 }
 
