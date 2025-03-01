@@ -82,15 +82,15 @@ namespace tycho::fsys {
 using namespace std::filesystem;
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-enum mode {rd = _O_RDONLY, wr = _O_WRONLY, app = _O_APPEND, rw = _O_RDWR, make = _O_CREAT, empty = _O_TRUNC};
+enum class mode : int {rw = _O_RDWR, rd = _O_RDONLY, wr = _O_WRONLY, append = _O_APPEND | _O_CREAT | _O_WRONLY, always = _O_CREAT | _O_RDWR, rewrite = _O_CREAT | _O_RDWR | _O_TRUNC, exists = _O_RDWR};
 
-template <typename T>
+template<typename T>
 inline auto read(int fd, T& data) noexcept {    // FlawFinder: ignore
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     return _read(fd, &data, sizeof(data));
 }
 
-template <typename T>
+template<typename T>
 inline auto write(int fd, const T& data) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     return _write(fd, &data, sizeof(data));
@@ -110,7 +110,7 @@ inline auto append(int fd) noexcept {
 
 inline auto open(const fsys::path& path, mode flags = mode::rw) noexcept {  // FlawFinder: ignore
     const auto filename = path.string();
-    return _open(filename.c_str(), flags | _O_BINARY, 0664);
+    return _open(filename.c_str(), int(flags) | _O_BINARY, 0664);
 }
 
 inline auto close(int fd) noexcept {
@@ -147,19 +147,19 @@ inline auto write_at(int fd, const void *buf, std::size_t len, off_t pos) {
     return (DWORD)-1;
 }
 
-template <typename T>
+template<typename T>
 inline auto read_at(int fd, T& data, off_t pos) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     return fsys::read_at(fd, &data, sizeof(data), pos);
 }
 
-template <typename T>
+template<typename T>
 inline auto write_at(int fd, const T& data, off_t pos) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     return fsys::write_at(fd, &data, sizeof(data), pos);
 }
 
-inline auto load(int fd, std::size_t size, bool rw = false) -> void* {
+inline auto map(int fd, std::size_t size, bool rw = false) -> void* {
     auto handle = (HANDLE)_get_osfhandle(fd);
     if(handle == INVALID_HANDLE_VALUE) return nullptr;
 
@@ -171,7 +171,7 @@ inline auto load(int fd, std::size_t size, bool rw = false) -> void* {
     return addr;
 }
 
-inline void unload(void *addr, [[maybe_unused]]std::size_t size) {
+inline void unmap(void *addr, [[maybe_unused]]std::size_t size) {
     if(addr == nullptr) return;
     UnmapViewOfFile(addr);
 }
@@ -184,7 +184,7 @@ inline auto sync(int fd) {
     return -1;
 }
 
-inline auto exclusive_open(const fsys::path& path, [[maybe_unused]] bool all = false) {
+inline auto open_exclusive(const fsys::path& path, [[maybe_unused]] bool all = false) {
     auto filename = path.string();
     auto handle = CreateFile(filename.c_str(), GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
     if(handle == INVALID_HANDLE_VALUE) return -1;
@@ -194,7 +194,7 @@ inline auto exclusive_open(const fsys::path& path, [[maybe_unused]] bool all = f
     return fd;
 }
 
-inline auto shared_access(const fsys::path& path) {
+inline auto open_shared(const fsys::path& path) {
     auto filename = path.string();
     auto handle = CreateFile(filename.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if(handle == INVALID_HANDLE_VALUE) return -1;
@@ -214,27 +214,27 @@ inline auto native_handle(std::FILE *fp) {
     return native_handle(_fileno(fp));
 }
 #else
-enum mode {rd = O_RDONLY, wr = O_WRONLY, app = O_APPEND, rw = O_RDWR, make = O_CREAT, empty = O_TRUNC};
+enum class mode : int {rw = O_RDWR, rd = O_RDONLY, wr = O_WRONLY, append = O_APPEND | O_CREAT | O_WRONLY, always = O_CREAT | O_RDWR, rewrite = O_CREAT | O_RDWR | O_TRUNC, exists = O_RDWR};
 
-template <typename T>
+template<typename T>
 inline auto read(int fd, T& data) noexcept {    // FlawFinder: ignore
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     return ::read(fd, &data, sizeof(data)); // FlawFinder: ignore
 }
 
-template <typename T>
+template<typename T>
 inline auto write(int fd, const T& data) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     return ::write(fd, &data, sizeof(data));
 }
 
-template <typename T>
+template<typename T>
 inline auto read_at(int fd, T& data, off_t pos) noexcept {    // FlawFinder: ignore
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     return ::pread(fd, &data, sizeof(data), pos); // FlawFinder: ignore
 }
 
-template <typename T>
+template<typename T>
 inline auto write_at(int fd, const T& data, off_t pos) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     return ::pwrite(fd, &data, sizeof(data), pos);
@@ -253,7 +253,7 @@ inline auto append(int fd) noexcept {
 }
 
 inline auto open(const fsys::path& path, mode flags = mode::rw) noexcept {   // FlawFinder: ignore
-    return ::open(path.string().c_str(), flags, 0664); // FlawFinder: ignore
+    return ::open(path.string().c_str(), int(flags), 0664); // FlawFinder: ignore
 }
 
 inline auto close(int fd) noexcept {
@@ -268,13 +268,13 @@ inline auto read_at(int fd, void *buf, std::size_t len, off_t pos) { // FlawFind
     return ::pread(fd, buf, len, pos);
 }
 
-inline auto load(int fd, std::size_t size, bool rw = false) -> void * {
+inline auto map(int fd, std::size_t size, bool rw = false) -> void * {
     void *addr = ::mmap(nullptr, size, rw ? PROT_READ | PROT_WRITE : PROT_READ, MAP_SHARED, fd, 0);
     if(addr == MAP_FAILED) return nullptr;
     return addr;
 }
 
-inline auto unload(void *addr, std::size_t size) {
+inline auto unmap(void *addr, std::size_t size) {
     if(addr == MAP_FAILED || addr == nullptr)
         return;
     munmap(addr, size);
@@ -296,7 +296,7 @@ inline auto native_handle(int fd) {
     return fd;
 }
 
-inline auto exclusive_open(const fsys::path& path, bool all = false) {
+inline auto open_exclusive(const fsys::path& path, bool all = false) {
     const auto file = path.string();
     auto fd = ::open(file.c_str(), O_RDWR | O_CREAT | O_EXCL, all ? 0644 : 0640); // FlawFinder: ignore
     if(fd == -1) return -1;
@@ -312,7 +312,7 @@ inline auto exclusive_open(const fsys::path& path, bool all = false) {
     return fd;
 }
 
-inline auto shared_access(const fsys::path& path) {
+inline auto open_shared(const fsys::path& path) {
     const auto filename = path.string();
     return ::open(filename.c_str(), O_RDONLY);  // FlawFinder: ignore
 }
@@ -404,29 +404,39 @@ public:
         return fd_ == -1 ? -EBADF : fsys::write_at(fd_, buf, len, pos);
     }
 
-    auto load(std::size_t size, bool rw = false) const noexcept {
-        return fd_ == -1 ? nullptr : fsys::load(fd_, size, rw);
+    auto map(std::size_t size, bool rw = false) const noexcept {
+        return fd_ == -1 ? nullptr : fsys::map(fd_, size, rw);
     }
 
-    template <typename T>
+    auto sync() const noexcept {
+        if(fd_ == -1) return;
+        fsys::sync(fd_);
+    }
+
+    template<typename T>
+    auto map(int fd) const noexcept -> T* {
+        return fd_ == -1 ? nullptr : fsys::map(fd, sizeof(T));
+    }
+
+    template<typename T>
     auto read(T& data) const noexcept {       // FlawFinder: ignore
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
         return fd_ == -1 ? -EBADF : fsys::read(fd_, &data, sizeof(data));   // FlawFinder: ignore
     }
 
-    template <typename T>
+    template<typename T>
     auto write(const T& data) const noexcept {
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
         return fd_ == -1 ? -EBADF : fsys::write(fd_, &data, sizeof(data));
     }
 
-    template <typename T>
+    template<typename T>
     auto read_at(T& data, off_t pos) const noexcept {   // FlawFinder: ignore
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
         return fd_ == -1 ? -EBADF : fsys::read_at(fd_, &data, sizeof(data), pos);   // FlawFinder: ignore
     }
 
-    template <typename T>
+    template<typename T>
     auto write_at(const T& data, off_t pos) const noexcept {
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
         return fd_ == -1 ? -EBADF : fsys::write_at(fd_, &data, sizeof(data), pos);
@@ -441,10 +451,32 @@ private:
         fd_ = -1;
     }
 };
+
+template<typename T>
+inline auto map(int fd) noexcept -> T* {
+    return fsys::map(fd, sizeof(T));
+}
+
+template<typename T>
+inline auto unmap(T* obj) noexcept {
+    fsys::unmap(obj, sizeof(T));
+}
+
+inline auto make_exclusive(const fsys::path& path, bool all = false) noexcept {
+    return fd_t(open_exclusive(path, all));
+}
+
+inline auto make_shared(const fsys::path& path) noexcept {
+    return fd_t(open_shared(path));
+}
+
+inline auto make_access(const fsys::path& path, mode access = mode::exists) noexcept {
+    return fd_t(fsys::open(path, access));  // FlawFinder: ignore
+}
 } // end fsys namespace
 
 namespace tycho {
-template <typename Func>
+template<typename Func>
 inline auto scan_stream(std::istream& input, Func proc) {
     std::string line;
     std::size_t count{0};
@@ -455,7 +487,7 @@ inline auto scan_stream(std::istream& input, Func proc) {
     return count;
 }
 
-template <typename Func>
+template<typename Func>
 inline auto scan_file(const fsys::path& path, Func proc) {
     std::fstream input(path);
     std::string line;
@@ -468,7 +500,7 @@ inline auto scan_file(const fsys::path& path, Func proc) {
 }
 
 #if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__) && !defined(WIN32)
-template <typename Func>
+template<typename Func>
 inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
     char *buf{nullptr};
     std::size_t count{0};
@@ -484,7 +516,7 @@ inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
     return count;
 }
 
-template <typename Func>
+template<typename Func>
 inline auto scan_command(const std::string& cmd, Func proc, std::size_t size = 0) {
     auto file = popen(cmd.c_str(), "r");    // FlawFinder: ignore
 
@@ -495,7 +527,7 @@ inline auto scan_command(const std::string& cmd, Func proc, std::size_t size = 0
     return count;
 }
 #else
-template <typename Func>
+template<typename Func>
 inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
     char *buf{nullptr};
     std::size_t count{0};
@@ -511,7 +543,7 @@ inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
     return count;
 }
 
-template <typename Func>
+template<typename Func>
 inline auto scan_command(const std::string& cmd, Func proc, std::size_t size = 0) {
     auto file = _popen(cmd.c_str(), "r");    // FlawFinder: ignore
 
@@ -536,13 +568,13 @@ inline auto make_output(const fsys::path& path, std::ios::openmode mode = std::i
     return file;
 }
 
-template <typename Func>
+template<typename Func>
 inline auto scan_directory(const fsys::path& path, Func proc) {
     auto dir = fsys::directory_iterator(path);
     return std::count_if(begin(dir), end(dir), proc);
 }
 
-template <typename Func>
+template<typename Func>
 inline auto scan_recursive(const fsys::path& path, Func proc) {
     auto dir = fsys::recursive_directory_iterator(path, fsys::directory_options::skip_permission_denied);
     return std::count_if(begin(dir), end(dir), proc);
@@ -554,26 +586,26 @@ inline auto to_string(const fsys::path& path) {
 } // end namespace
 
 #if defined(TYCHO_PRINT_HPP_) && (__cplusplus < 202002L)
-template <>
+template<>
 class fmt::formatter<tycho::fsys::path> {
 public:
     static constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
 
-    template <typename Context>
+    template<typename Context>
     constexpr auto format(const tycho::fsys::path& path, Context& ctx) const {
         return format_to(ctx.out(), "{}", std::string{path.string()});
     }
 };
 #elif defined(TYCHO_PRINT_HPP)
-template <>
+template<>
 struct std::formatter<tycho::fsys::path> {
     constexpr auto parse(std::format_parse_context& ctx) {
         return ctx.begin();
     }
 
-    template <typename FormatContext>
+    template<typename FormatContext>
     auto format(const tycho::fsys::path& path, FormatContext& ctx) const {
         return std::format_to(ctx.out(), "{}", path.string());
     }
