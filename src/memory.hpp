@@ -333,10 +333,12 @@ public:
     }
 
     void release(T* ptr) {
+        ptr->~T();
         free_.push_back(ptr);
     }
 
     void release(T& obj) {
+        obj.~T();
         free_.push_back(&obj);
     }
 
@@ -414,10 +416,12 @@ public:
     }
 
     void release(T* ptr) {
+        ptr->~T();
         free_.push_back(ptr);
     }
 
     void release(T& obj) {
+        obj.~T();
         free_.push_back(&obj);
     }
 

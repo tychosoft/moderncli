@@ -12,6 +12,8 @@
 #include <string>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <cerrno>
 
 #include <sys/types.h>
 #include <fcntl.h>
@@ -184,6 +186,13 @@ inline auto sync(int fd) {
     return -1;
 }
 
+inline auto resize(int fd, off_t size) {
+    auto handle = (HANDLE)_get_osfhandle(fd);
+    if(handle == INVALID_HANDLE_VALUE) return -1;
+    if(SetFilePointer(handle, static_cast<DWORD>(size), nullptr, FILE_BEGIN) == EINVAL) return -1;
+    return 0;
+}
+
 inline auto open_exclusive(const fsys::path& path, [[maybe_unused]] bool all = false) {
     auto filename = path.string();
     auto handle = CreateFile(filename.c_str(), GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -292,6 +301,10 @@ inline auto sync(int fd) {
     return ::fsync(fd);
 }
 
+inline auto resize(int fd, off_t size) {
+    return ::ftruncate(fd, size);
+}
+
 inline auto native_handle(int fd) {
     return fd;
 }
@@ -322,33 +335,35 @@ inline auto native_handle(std::FILE *fp) {
 }
 #endif
 
-class fd_t final {
+class posix_file {
 public:
-    fd_t() noexcept = default;
-    fd_t(const fd_t&) = delete;
-    auto operator=(const fd_t&) noexcept -> auto& = delete;
+    using size_type = off_t;
 
-    explicit fd_t(int fd) noexcept : fd_(fd) {}
+    posix_file() noexcept = default;
+    posix_file(const posix_file&) = delete;
+    auto operator=(const posix_file&) noexcept -> auto& = delete;
 
-    explicit fd_t(const fsys::path& path, mode flags = mode::rw) noexcept :
+    explicit posix_file(int fd) noexcept : fd_(fd) {}
+
+    explicit posix_file(const fsys::path& path, mode flags = mode::rw) noexcept :
     fd_(fsys::open(path, flags)) {} // FlawFinder: ignore
 
-    fd_t(fd_t&& other) noexcept : fd_(other.fd_) {
+    posix_file(posix_file&& other) noexcept : fd_(other.fd_) {
         other.fd_ = -1;
     }
 
-    ~fd_t() {
+    virtual ~posix_file() {
         if(fd_ != -1)
             fsys::close(fd_);
     }
 
-    auto operator=(fd_t&& other) noexcept -> auto& {
+    auto operator=(posix_file&& other) noexcept -> auto& {
         release();
         fd_ = other.fd_;
         return *this;
     }
 
-    auto operator=(int fd) noexcept -> fd_t& {
+    auto operator=(int fd) noexcept -> posix_file& {
         release();
         fd_ = fd;
         return *this;
@@ -370,38 +385,62 @@ public:
         return fd_ == -1;
     }
 
+    auto is_open() const noexcept {
+        return fd_ != -1;
+    }
+
     // FlawFinder: ignore
     void open(const fsys::path& path, mode flags = mode::rw) noexcept {
         release();
         fd_ = fsys::open(path, flags);  // FlawFinder: ignore
     }
 
-    auto seek(off_t pos) const noexcept {
-        return fd_ == -1 ? -EBADF : fsys::seek(fd_, pos);
+    auto seek(off_t pos) const noexcept -> off_t {
+        return fd_ == -1 ? -1 : fsys::seek(fd_, pos);
     }
 
-    auto tell() const noexcept {
-        return fd_ == -1 ? -EBADF : fsys::tell(fd_);
+    auto tell() const noexcept -> off_t {
+        return fd_ == -1 ? -1 : fsys::tell(fd_);
     }
 
-    auto append() const noexcept {
-        return fd_ == -1 ? -EBADF : fsys::append(fd_);
+    auto size() const noexcept -> off_t {
+        if(fd_ == -1) return -1;
+        auto pos = tell();
+        if(pos < 0) return pos;
+        if(fsys::append(fd_) < 0) return -1;
+        return seek(pos);
+    }
+
+    auto resize(off_t size) const noexcept -> off_t {
+        return fd_ == -1 ? -1 : fsys::resize(fd_, size);
+    }
+
+    auto rewrite() const noexcept -> off_t {
+        return resize(0);
+    }
+
+    auto rewind() const noexcept -> off_t {
+        return seek(0);
+    }
+
+    auto append() const noexcept -> off_t {
+        return fd_ == -1 ? -1 : fsys::append(fd_);
     }
 
     auto read(void *buf, std::size_t len) const noexcept { // FlawFinder: ignore
-        return fd_ == -1 ? -EBADF : fsys::read(fd_, buf, len);  // FlawFinder: ignore
+        return fd_ == -1 ? -1 : fsys::read(fd_, buf, len);  // FlawFinder: ignore
     }
 
     auto write(const void *buf, std::size_t len) const noexcept {
-        return fd_ == -1 ? -EBADF : fsys::write(fd_, buf, len);
+        return fd_ == -1 ? -1 : fsys::write(fd_, buf, len);
     }
 
     auto read_at(void *buf, std::size_t len, off_t pos) const noexcept { // FlawFinder: ignore
-        return fd_ == -1 ? -EBADF : fsys::read_at(fd_, buf, len, pos);  // FlawFinder: ignore
+        return fd_ == -1 ? -1 : fsys::read_at(fd_, buf, len, pos);  // FlawFinder: ignore
     }
 
     auto write_at(const void *buf, std::size_t len, off_t pos) const noexcept {
-        return fd_ == -1 ? -EBADF : fsys::write_at(fd_, buf, len, pos);
+        return fd_ == -1 ? -1 : fsys::write_at(fd_, buf, len, pos);
     }
 
     auto map(std::size_t size, bool rw = false) const noexcept {
@@ -421,36 +460,200 @@ public:
     template<typename T>
     auto read(T& data) const noexcept {       // FlawFinder: ignore
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-        return fd_ == -1 ? -EBADF : fsys::read(fd_, &data, sizeof(data));   // FlawFinder: ignore
+        return fd_ == -1 ? -1 : fsys::read(fd_, &data, sizeof(data));   // FlawFinder: ignore
     }
 
     template<typename T>
     auto write(const T& data) const noexcept {
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-        return fd_ == -1 ? -EBADF : fsys::write(fd_, &data, sizeof(data));
+        return fd_ == -1 ? -1 : fsys::write(fd_, &data, sizeof(data));
     }
 
     template<typename T>
     auto read_at(T& data, off_t pos) const noexcept {   // FlawFinder: ignore
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-        return fd_ == -1 ? -EBADF : fsys::read_at(fd_, &data, sizeof(data), pos);   // FlawFinder: ignore
+        return fd_ == -1 ? -1 : fsys::read_at(fd_, &data, sizeof(data), pos);   // FlawFinder: ignore
     }
 
     template<typename T>
     auto write_at(const T& data, off_t pos) const noexcept {
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-        return fd_ == -1 ? -EBADF : fsys::write_at(fd_, &data, sizeof(data), pos);
+        return fd_ == -1 ? -1 : fsys::write_at(fd_, &data, sizeof(data), pos);
     }
 
-private:
-    int fd_{-1};
-
+protected:
     void release() noexcept {
         if(fd_ != -1)
             fsys::close(fd_);
         fd_ = -1;
     }
+
+    void assign(int fd) noexcept {
+        if(fd_ != -1)
+            fsys::close(fd_);
+        fd_ = fd;
+    }
+
+private:
+    int fd_{-1};
 };
+
+template<typename T, std::size_t S = sizeof(T)>
+class pager_file : private posix_file {
+public:
+    static constexpr std::size_t page_size = S;
+    using size_type = off_t;
+    using page_type = T;
+
+    pager_file() noexcept : posix_file() {}
+    pager_file(const pager_file&) = delete;
+    auto operator=(const pager_file&) -> auto& = delete;
+
+    pager_file(pager_file&& other) noexcept :
+    posix_file(), offset_(other.offset_), header_(other.header_), access_(other.access_), max_(other.max_), err_(other.err_) {
+        posix_file::assign(other.fd_);
+        other.offset_ = 0;
+        other.header_ = nullptr;
+        other.max_ = 0;
+        other.err_ = 0;
+    }
+
+    ~pager_file() override {
+        sync();
+        if(header_) {
+            delete[] header_;
+            header_ = nullptr;
+        }
+    }
+
+    operator bool() const noexcept {
+        return posix_file::is_open();
+    }
+
+    auto operator!() const noexcept {
+        return !posix_file::is_open();
+    }
+
+    auto operator=(pager_file&& other) noexcept -> auto& {
+        posix_file::assign(other.fd_);
+        offset_ = other.offset_;
+        header_ = other.header_;
+        access_ = other.access_;
+        max_ = other.max_;
+        err_ = other.err_;
+        other.offset_ = 0;
+        other.header_ = nullptr;
+        other.max_ = 0;
+        other.err_ = 0;
+    }
+
+    auto get(off_t page, T& ref) const noexcept {
+        if(access_ == mode::wr) return false;
+        if(max_ && page >= max_) return false;
+        if(read_at(ref, offset_ + page * page_size) == sizeof(T)) return true;
+        err_ = errno;
+        return false;
+    }
+
+    auto put(off_t page, const T& ref) const noexcept {
+        if(access_ == mode::rd) return false;
+        if(max_ && page >= max_) return false;
+        if(write_at(ref, offset_ + page * page_size) == sizeof(T)) return true;
+        err_ = errno;
+        return false;
+    }
+
+    auto err() const noexcept {
+        auto code = err_;
+        if(code != EBADF)
+            err_ = 0;
+        return code;
+    }
+
+    template<typename H>
+    auto header() -> H& {
+        static_assert(std::is_trivial_v<H>, "Header must be Trivial type");
+
+        if(!header_) throw std::runtime_error("No header loaded");
+        if(sizeof(H) > offset_) throw std::runtime_error("Header too large");
+        return *(reinterpret_cast<H*>(header_));
+    }
+
+    auto is_open() const noexcept {
+        return posix_file::is_open();
+    }
+
+    void sync() const noexcept {
+        if(!posix_file::is_open() || access_ == mode::rd) return;
+        if(header_) {
+            if(write_at(header_, offset_, 0) != offset_)
+                err_ = errno;
+        }
+        posix_file::sync();
+    }
+
+    auto size() const noexcept {
+        if(!posix_file::is_open()) return 0;
+        auto fs = posix_file::size() - offset_;
+        return (fs % page_size) ? (fs / page_size) + 1 : fs / page_size;
+    }
+
+    auto resize(off_t size) noexcept {
+        if(access_ == mode::rd) return false;
+        if(posix_file::resize(size * page_size + offset_) < 0) {
+            err_ = errno;
+            return false;
+        }
+        max_ = size;
+        return true;
+    }
+
+    auto rewrite() noexcept {
+        return resize(0);
+    }
+
+    auto rewind() noexcept {
+        max_ = 0;
+    }
+
+    static auto shared(const fsys::path& path, off_t offset = 0) noexcept {
+        return pager_file(open_shared(path), offset, mode::rd);
+    }
+
+    static auto exclusive(const fsys::path& path, bool all = false, off_t offset = 0) noexcept {
+        return pager_file(open_exclusive(path, all), offset);
+    }
+
+    static auto append(const fsys::path& path, off_t offset = 0) noexcept {
+        return pager_file(fsys::open(path, mode::append), offset, mode::wr);  // FlawFinder: ignore
+    }
+
+    static auto create(const fsys::path& path, off_t offset = 0) noexcept {
+        return pager_file(fsys::open(path, mode::always), offset);  // FlawFinder: ignore
+    }
+
+protected:
+    explicit pager_file(int fd, off_t offset, mode access = mode::rw) noexcept :
+    posix_file(), offset_(offset), access_(access), err_(fd < 0 ? EBADF : 0) {
+        posix_file::assign(fd);
+        if(!offset_ || !posix_file::is_open() || access_ == mode::wr) return;
+        header_ = new(std::nothrow) uint8_t[offset_];
+        memset(header_, 0, offset_);
+        read_at(header_, offset_, 0);
+    }
+
+private:
+    static_assert(sizeof(T) <= S, "pager alignment broken");
+    static_assert(std::is_trivial_v<T>, "T must be Trivial type");
+
+    off_t offset_{0};
+    uint8_t *header_{nullptr};
+    mode access_{mode::rw};
+    off_t max_{0};
+    mutable int err_{0};
+};
+
+using fd_t = posix_file;
 
 template<typename T>
 inline auto map(int fd) noexcept -> T* {
@@ -463,15 +666,15 @@ inline auto unmap(T* obj) noexcept {
 }
 
 inline auto make_exclusive(const fsys::path& path, bool all = false) noexcept {
-    return fd_t(open_exclusive(path, all));
+    return posix_file(open_exclusive(path, all));
 }
 
 inline auto make_shared(const fsys::path& path) noexcept {
-    return fd_t(open_shared(path));
+    return posix_file(open_shared(path));
 }
 
 inline auto make_access(const fsys::path& path, mode access = mode::exists) noexcept {
-    return fd_t(fsys::open(path, access));  // FlawFinder: ignore
+    return posix_file(fsys::open(path, access));  // FlawFinder: ignore
 }
 } // end fsys namespace
 
