@@ -83,11 +83,13 @@ public:
         port(value);
     }
 
-    explicit address_t(const struct addrinfo *addr) noexcept {
+    // cppcheck-suppress noExplicitConstructor
+    address_t(const struct addrinfo *addr) noexcept {
         set(addr);
     }
 
-    explicit address_t(const struct sockaddr *addr) noexcept {
+    // cppcheck-suppress noExplicitConstructor
+    address_t(const struct sockaddr *addr) noexcept {
         set(addr);
     }
 
@@ -838,11 +840,13 @@ public:
         from.so_ = -1;
     }
 
-    explicit Socket(SOCKET from) noexcept : so_(make_socket(from)) {
+    // cppcheck-suppress noExplicitConstructor
+    Socket(SOCKET from) noexcept : so_(make_socket(from)) {
         set_error(so_);
     }
 
-    explicit Socket(const Socket::service& list) noexcept {
+    // cppcheck-suppress noExplicitConstructor
+    Socket(const Socket::service& list) noexcept {
         bind(list);
     }
 

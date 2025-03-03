@@ -31,7 +31,8 @@ public:
     using const_reverse_iterator = typename std::array<T,N>::const_reverse_iterator;
 
     using std::array<T,N>::array;
-    explicit array(const std::array<T,N>& from) : std::array<T, N>(from) {}
+    // cppcheck-suppress noExplicitConstructor
+    array(const std::array<T,N>& from) : std::array<T, N>(from) {}
 
     auto operator[](size_type index) -> T& {
         if(index < Offset || index >= N + Offset) throw std::out_of_range("Index out of range");
@@ -97,11 +98,14 @@ public:
     using const_reverse_iterator = typename std::vector<T,Alloc>::const_reverse_iterator;
 
     using std::vector<T,Alloc>::vector;
-    explicit slice(const std::vector<T,Alloc>& vec) : std::vector<T,Alloc>(vec) {}
-    explicit slice(std::vector<T,Alloc>&& vec) : std::vector<T,Alloc>(std::move(vec)) {}
+    // cppcheck-suppress noExplicitConstructor
+    slice(const std::vector<T,Alloc>& vec) : std::vector<T,Alloc>(vec) {}
+
+    // cppcheck-suppress noExplicitConstructor
+    slice(std::vector<T,Alloc>&& vec) : std::vector<T,Alloc>(std::move(vec)) {}
 
     template <typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
-    explicit slice(crypto::key_t& key) :
+    slice(crypto::key_t& key) : // cppcheck-suppress noExplicitConstructor
     std::vector<T>(key.second) {
         memcpy(this->data(), key.first, key.second); // FlawFinder: ignore
     }
@@ -230,10 +234,10 @@ public:
     ptr_(reinterpret_cast<T *>(ptr)), size_(size) {}
 
     template<size_type S>
-    explicit constexpr span(T(&arr)[S]) noexcept : span(arr, S) {}
+    constexpr span(T(&arr)[S]) noexcept : span(arr, S) {} // cppcheck-suppress noExplicitConstructor
 
     template <typename Container, typename = std::enable_if_t<std::is_same_v<T, typename Container::value_type>>>
-    explicit span(Container& container) : span(container.data(), container.size()) {}
+    span(Container& container) : span(container.data(), container.size()) {} // cppcheck-suppress noExplicitConstructor
 
     operator bool() {
         return !empty();

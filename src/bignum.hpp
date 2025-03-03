@@ -18,7 +18,8 @@ public:
     bignum_t() noexcept :
     ctx_(BN_CTX_new()), num_(BN_new()) {}
 
-    explicit bignum_t(BIGNUM *bn) noexcept :
+    // cppcheck-suppress noExplicitConstructor
+    bignum_t(BIGNUM *bn) noexcept :
     ctx_(BN_CTX_new()), num_(bn) {}
 
     explicit bignum_t(long value) noexcept :
@@ -39,10 +40,12 @@ public:
     bignum_t(const bignum_t& copy) noexcept :
     ctx_(BN_CTX_new()), num_(BN_dup(copy.num_)) {}
 
-    explicit bignum_t(const key_t& key) noexcept :
+    // cppcheck-suppress noExplicitConstructor
+    bignum_t(const key_t& key) noexcept :
     ctx_(BN_CTX_new()), num_(BN_bin2bn(key.first, int(key.second), nullptr)) {}
 
-    explicit bignum_t(const std::string& text) noexcept :
+    // cppcheck-suppress noExplicitConstructor
+    bignum_t(const std::string& text) noexcept :
     ctx_(BN_CTX_new()) {
         BN_dec2bn(&num_, text.c_str());
         if(!num_)

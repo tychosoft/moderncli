@@ -70,9 +70,10 @@ inline auto invalid_handle() noexcept -> handle_t {
 class ref_t final {
 public:
     ref_t() noexcept = default;
-    explicit ref_t(handle_t handle) noexcept : handle_(handle) {}
 
-    explicit ref_t(const ref_t& other) noexcept {
+    // cppcheck-suppress noExplicitConstructor
+    ref_t(handle_t handle) noexcept : handle_(handle) {}
+    ref_t(const ref_t& other) noexcept {
         auto pid = GetCurrentProcess();
         DuplicateHandle(pid, other.handle_, pid, &handle_, 0, FALSE, DUPLICATE_SAME_ACCESS);
     }
@@ -437,8 +438,10 @@ constexpr auto invalid_handle() -> handle_t {
 class ref_t final {
 public:
     ref_t() noexcept = default;
-    explicit ref_t(handle_t handle) noexcept : handle_(handle) {}
-    explicit ref_t(const ref_t& other) noexcept : handle_(dup(other.handle_)) {}
+
+    // cppcheck-suppress noExplicitConstructor
+    ref_t(handle_t handle) noexcept : handle_(handle) {}
+    ref_t(const ref_t& other) noexcept : handle_(dup(other.handle_)) {}
 
     ref_t(ref_t&& other) noexcept : handle_(other.handle_) {
         other.handle_ = invalid_handle();
@@ -512,7 +515,7 @@ public:
     map_t(const map_t&) = delete;
     auto operator=(const map_t&) -> auto& = delete;
 
-    map_t(handle_t fd, std::size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept : 
+    map_t(handle_t fd, std::size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept :
     addr_(::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset)), size_(size) {}
 
     map_t(map_t&& other) noexcept :

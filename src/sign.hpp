@@ -23,7 +23,8 @@ public:
         }
     }
 
-    explicit pubkey_t(X509 *cert) noexcept {
+    // cppcheck-suppress noExplicitConstructor
+    pubkey_t(X509 *cert) noexcept {
         if(cert)
             key_ = X509_get_pubkey(cert);
         X509_free(cert);

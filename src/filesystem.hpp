@@ -343,9 +343,11 @@ public:
     posix_file(const posix_file&) = delete;
     auto operator=(const posix_file&) noexcept -> auto& = delete;
 
-    explicit posix_file(int fd) noexcept : fd_(fd) {}
+    // cppcheck-suppress noExplicitConstructor
+    posix_file(int fd) noexcept : fd_(fd) {}
 
-    explicit posix_file(const fsys::path& path, mode flags = mode::rw) noexcept :
+    // cppcheck-suppress noExplicitConstructor
+    posix_file(const fsys::path& path, mode flags = mode::rw) noexcept :
     fd_(fsys::open(path, flags)) {} // FlawFinder: ignore
 
     posix_file(posix_file&& other) noexcept : fd_(other.fd_) {

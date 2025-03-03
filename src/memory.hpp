@@ -51,7 +51,7 @@ public:
     }
 
     template<typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
-    explicit shared_mem(const crypto::key_t& key) :
+    shared_mem(const crypto::key_t& key) : // cppcheck-suppress noExplicitConstructor
     array_(key.second ? std::make_shared<T>(uint32_t(key.second / sizeof(T))) : nullptr), size_(key.second / sizeof(T)) {
         if(size_)
             memcpy(array_.get(), key.first, key.second); // FlawFinder: ignore
@@ -287,7 +287,7 @@ public:
     explicit memreuse(alloc_func alloc) :
     alloc_(alloc) {}
 
-    explicit memreuse(memreuse&& other) noexcept :
+    memreuse(memreuse&& other) noexcept :
     free_(std::move(other.free_)), alloc_(std::move(other.alloc_)) {
         other.free_.clear();
         other.alloc_ = nullptr;
@@ -364,7 +364,7 @@ public:
     mempool(void *ptr, size_type size) noexcept :
     ptr_(reinterpret_cast<T*>(ptr)), size_(size) {}
 
-    explicit mempool(mempool&& other) noexcept :
+    mempool(mempool&& other) noexcept :
     ptr_(other.ptr_), size_(other.size_), used_(other.used_), free_(std::move(other.free_)), dynamic_(other.dynamic_) {
         other.dynamic_ = false;
         other.ptr_ = nullptr;
@@ -376,11 +376,11 @@ public:
     ptr_(new T[size]), size_(size), dynamic_(true) {}
 
     template<size_type S>
-    explicit mempool(T(&arr)[S]) noexcept :
+    mempool(T(&arr)[S]) noexcept : // cppcheck-suppress noExplicitConstructor
     mempool(arr, S) {}
 
     template<typename Container, typename = std::enable_if_t<std::is_same_v<T, typename Container::value_type>>>
-    explicit mempool(Container& container) :
+    mempool(Container& container) : // cppcheck-suppress noExplicitConstructor
     mempool(container.data(), container.size()) {}
 
     ~mempool() {

@@ -73,7 +73,8 @@ public:
         rand(data_);
     }
 
-    explicit random_t(const key_t key) {
+    // cppcheck-suppress noExplicitConstructor
+    random_t(const key_t key) {
         zero(data_);
         if(key.first && key.second && key.second <= (S / 8))
             memcpy(data_, key.first, key.second);   // FlawFinder: ignore

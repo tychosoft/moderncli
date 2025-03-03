@@ -12,7 +12,8 @@
 namespace tycho::crypto {
 class digest_t final {
 public:
-    explicit digest_t(const EVP_MD *md = EVP_sha256()) noexcept : ctx_(EVP_MD_CTX_create()) {
+    // cppcheck-suppress noExplicitConstructor
+    digest_t(const EVP_MD *md = EVP_sha256()) noexcept : ctx_(EVP_MD_CTX_create()) {
         if(ctx_ && EVP_DigestInit_ex(ctx_, md, nullptr) != 1) {
             EVP_MD_CTX_destroy(ctx_);
             ctx_ = nullptr;

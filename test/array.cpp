@@ -14,7 +14,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         const std::vector<int> vec2(5, 100);
         const std::vector<int> temp = {1, 2, 3, 4, 5};
         const tycho::slice<int> vec3(temp.begin(), temp.end());
-        const tycho::slice<int> vec4(temp);
+        const tycho::slice<int> vec4 = temp;
         const tycho::slice<int> vec5 = vec4;
         auto even = vec3.filter_if([](int x) {
             return x % 2 == 0;

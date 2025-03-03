@@ -23,7 +23,8 @@ class x509_t final {
 public:
     x509_t() = default;
 
-    explicit x509_t(X509 *cert) noexcept : cert_(cert) {}
+    // cppcheck-suppress noExplicitConstructor
+    x509_t(X509 *cert) noexcept : cert_(cert) {}
 
     x509_t(const x509_t& other) noexcept :
     cert_(other.cert_) {

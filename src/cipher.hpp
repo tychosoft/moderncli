@@ -155,7 +155,8 @@ inline auto get_tag_size(const EVP_CIPHER *algo) -> std::size_t {
 
 class decrypt_t final {
 public:
-    explicit decrypt_t(const EVP_CIPHER *algo = EVP_aes_256_cbc()) noexcept : algo_(algo) {}
+    // cppcheck-suppress noExplicitConstructor
+    decrypt_t(const EVP_CIPHER *algo = EVP_aes_256_cbc()) noexcept : algo_(algo) {}
 
     decrypt_t(decrypt_t&& other) noexcept {
         if(other.ctx_) {
@@ -166,7 +167,8 @@ public:
         }
     }
 
-    explicit decrypt_t(const keyphrase_t& key) noexcept :
+    // cppcheck-suppress noExplicitConstructor
+    decrypt_t(const keyphrase_t& key) noexcept :
     ctx_(EVP_CIPHER_CTX_new()), algo_(key.cipher()) {
         if(!ctx_) return;
         tag_ = get_tag_size(algo_);
@@ -285,7 +287,8 @@ private:
 
 class encrypt_t final {
 public:
-    explicit encrypt_t(const EVP_CIPHER *algo = EVP_aes_256_cbc()) noexcept : algo_(algo) {}
+    // cppcheck-suppress noExplicitConstructor
+    encrypt_t(const EVP_CIPHER *algo = EVP_aes_256_cbc()) noexcept : algo_(algo) {}
 
     encrypt_t(encrypt_t&& other) noexcept {
         if(other.ctx_) {
@@ -296,7 +299,8 @@ public:
         }
     }
 
-    explicit encrypt_t(const keyphrase_t& key) noexcept :
+    // cppcheck-suppress noExplicitConstructor
+    encrypt_t(const keyphrase_t& key) noexcept :
     ctx_(EVP_CIPHER_CTX_new()), algo_(key.cipher()) {
         if(!ctx_) return;
         if(keysize() != key.size()) {
