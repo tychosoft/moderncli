@@ -54,13 +54,13 @@ public:
     shared_mem(const crypto::key_t& key) : // cppcheck-suppress noExplicitConstructor
     array_(key.second ? std::make_shared<T>(uint32_t(key.second / sizeof(T))) : nullptr), size_(key.second / sizeof(T)) {
         if(size_)
-            memcpy(array_.get(), key.first, key.second); // FlawFinder: ignore
+            memcpy(array_.get(), key.first, key.second);
     }
 
     shared_mem(const T* from, size_type size) :
     array_(size ? std::make_shared<T>(size) : nullptr), size_(size) {
         if(size)
-            memcpy(array_.get(), from, sizeof(T) * size);   // FlawFinder: ignore
+            memcpy(array_.get(), from, sizeof(T) * size);
     }
 
     shared_mem(shared_mem&& other) noexcept :
@@ -508,7 +508,7 @@ public:
     std::istream(static_cast<std::streambuf *>(this)), pos(data), count(size) {}
 
     explicit imemstream(const char *cp) :
-    std::istream(static_cast<std::streambuf *>(this)), pos(reinterpret_cast<const uint8_t *>(cp)), count(::strlen(cp)) {} // FlawFinder: ignore
+    std::istream(static_cast<std::streambuf *>(this)), pos(reinterpret_cast<const uint8_t *>(cp)), count(::strlen(cp)) {}
 
     auto size() const noexcept {
         return count;
@@ -641,7 +641,7 @@ public:
         auto len = str.size();
         auto mem = static_cast<char *>(alloc(len + 1));
         if(mem) {
-            memcpy(mem, str.data(), len); // FlawFinder: ignore
+            memcpy(mem, str.data(), len);
             mem[len] = 0;
         }
         return mem;

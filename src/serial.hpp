@@ -44,7 +44,7 @@ public:
     serial_t() = default;
 
     explicit serial_t(const std::string& path) {
-        open(path); // FlawFinder: safe
+        open(path);
     }
 
     serial_t(const serial_t& from) :
@@ -74,9 +74,9 @@ public:
         return err_;
     }
 
-    void open(const std::string& fname) {   // FlawFinder: safe
+    void open(const std::string& fname) {
         close();
-        device_ = ::open(fname.c_str(), O_RDWR | O_NDELAY); // FlawFinder: safe
+        device_ = ::open(fname.c_str(), O_RDWR | O_NDELAY);
         if(device_ < 0) {
             err_ = errno;
             return;
@@ -116,7 +116,7 @@ public:
         if(device_ > -1) {
             char buf{0};
             err_ = 0;
-            auto result = ::read(device_, &buf, 1); // FlawFinder: ignore
+            auto result = ::read(device_, &buf, 1);
             if(result < 0) throw std::system_error(err_ = int(-result), std::generic_category(), "Serial i/o error");
             if(result < 1) return EOF;
             if(echo && echo_code != EOF && (eol == EOF || buf != eol))
@@ -131,7 +131,7 @@ public:
     auto get(void *data, std::size_t size, bool echo = false) const {
         if(!data || !size) return std::size_t(0U);
         err_ = 0;
-        auto count = ::read(device_, data, size);   // FlawFinder: safe
+        auto count = ::read(device_, data, size);
         if(count < 0) throw std::system_error(err_ = int(-count), std::generic_category(), "Serial i/o error");
         if(count > 0 && echo)
             put(data, count);
@@ -439,7 +439,7 @@ public:
     serial_t() = default;
 
     explicit serial_t(const std::string& path) {
-        open(path); // FlawFinder: ignore
+        open(path);
     }
 
     serial_t(const serial_t& from) :
@@ -473,7 +473,7 @@ public:
         return err_;
     }
 
-    void open(const std::string& fname) { // FlawFinder: safe
+    void open(const std::string& fname) {
         close();
         device_ = static_cast<HINSTANCE>(CreateFile(fname.c_str(),
             GENERIC_READ | GENERIC_WRITE,
@@ -586,7 +586,7 @@ public:
         else if(!size && timer > 0) {
             timed.ReadIntervalTimeout = timer * 100;
             timed.ReadTotalTimeoutConstant = 0;
-        } 
+        }
         else {
             timed.ReadIntervalTimeout = MAXDWORD;
             timed.ReadTotalTimeoutConstant = 0;

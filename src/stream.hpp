@@ -137,7 +137,7 @@ public:
     void close() {
         sync();
         stop();
-        setstate(std::ios::eofbit);     // FlawFinder: ignore
+        setstate(std::ios::eofbit);
     }
 
     auto wait(int timeout = -1) -> bool {
@@ -178,11 +178,11 @@ protected:
                 auto so = so_;
                 so_ = -1;
                 close_socket(so);
-                setstate(std::ios::eofbit);     // FlawFinder: ignore
+                setstate(std::ios::eofbit);
                 return std::size_t(0);
             }
             default:
-                setstate(std::ios::failbit);    // FlawFinder: ignore
+                setstate(std::ios::failbit);
                 throw std::system_error(errno, std::generic_category(), "Stream i/o error");
             }
         }
@@ -267,7 +267,7 @@ private:
             auto so = so_;
             so_ = -1;
             close_socket(so);
-            setstate(std::ios::eofbit);     // FlawFinder: ignore
+            setstate(std::ios::eofbit);
             return 0;
         }
         return status;
@@ -304,7 +304,7 @@ private:
             auto so = so_;
             so_ = -1;
             close_socket(so);
-            setstate(std::ios::eofbit);     // FlawFinder: ignore
+            setstate(std::ios::eofbit);
             return 0;
         }
         return status;

@@ -37,12 +37,12 @@ public:
         if(ctx_)
             size_ = from.size_;
         if(size_)
-            memcpy(data_, from.data_, size_);   // FlawFinder: size valid
+            memcpy(data_, from.data_, size_);
     }
 
     digest_t(digest_t&& from) noexcept : ctx_(from.ctx_), size_(from.size_) {
         if(size_)
-            memcpy(data_, from.data_, size_);   // FlawFinder: size valid
+            memcpy(data_, from.data_, size_);
         from.ctx_ = nullptr;
         from.size_ = 0;
     }
@@ -67,7 +67,7 @@ public:
         if(ctx_)
             size_ = from.size_;
         if(size_)
-            memcpy(data_, from.data_, size_);   // FlawFinder: size valid
+            memcpy(data_, from.data_, size_);
         return *this;
     }
 

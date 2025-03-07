@@ -27,7 +27,7 @@ public:
     eckey_t() : key_(EVP_EC_gen("secp521r1")) {}
 
     explicit eckey_t(const std::string& path) noexcept {
-        auto fp = fopen(path.c_str(), "r"); // FlawFinder: ignore
+        auto fp = fopen(path.c_str(), "r");
         if(fp != nullptr) {
             key_ = PEM_read_PrivateKey(fp, nullptr, nullptr, nullptr);
             fclose(fp);

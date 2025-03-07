@@ -211,7 +211,7 @@ public:
     }
 
 #ifdef  USE_SYSLOG
-    static void open(const char *id, int level = LOG_INFO, int facility = LOG_DAEMON, int flags = LOG_CONS | LOG_NDELAY) { // FlawFinder: ignore
+    static void open(const char *id, int level = LOG_INFO, int facility = LOG_DAEMON, int flags = LOG_CONS | LOG_NDELAY) {
         ::openlog(id, flags, facility);
         ::setlogmask(LOG_UPTO(level));
     }
@@ -220,7 +220,6 @@ public:
         ::closelog();
     }
 #else
-    // FlawFinder: ignore
     static void open(const char *id, int level, int facility, int flags) {}
     static void close() {}
 #endif
@@ -390,7 +389,7 @@ public:
     }
 
 #ifdef  USE_SYSLOG
-    static void open(const char *id, int level = LOG_INFO, int facility = LOG_DAEMON, int flags = LOG_CONS | LOG_NDELAY) { // FlawFinder: ignore
+    static void open(const char *id, int level = LOG_INFO, int facility = LOG_DAEMON, int flags = LOG_CONS | LOG_NDELAY) {
         ::openlog(id, flags, facility);
         ::setlogmask(LOG_UPTO(level));
     }
@@ -399,7 +398,6 @@ public:
         ::closelog();
     }
 #else
-    // FlawFinder: ignore
     static void open(const char *id, int level, int facility, int flags) {}
     static void close() {}
 #endif

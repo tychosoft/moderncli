@@ -55,8 +55,8 @@ public:
     keyphrase_t(const keyphrase_t& other) noexcept :
     cipher_(other.cipher_), size_(other.size_) {
         if(size_) {
-            memcpy(data_, other.data_, size_);    // FlawFinder: ignore
-            memcpy(iv_, other.iv_, size_);        // FlawFinder: ignore
+            memcpy(data_, other.data_, size_);
+            memcpy(iv_, other.iv_, size_);
         }
     }
 
@@ -85,8 +85,8 @@ public:
         size_ = other.size_;
         cipher_ = other.cipher_;
         if(size_) {
-            memcpy(data_, other.data_, size_);          // FlawFinder: ignore
-            memcpy(iv_, other.iv_, size_);              // FlawFinder: ignore
+            memcpy(data_, other.data_, size_);
+            memcpy(iv_, other.iv_, size_);
         }
         return *this;
     }

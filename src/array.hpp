@@ -107,7 +107,7 @@ public:
     template <typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
     slice(crypto::key_t& key) : // cppcheck-suppress noExplicitConstructor
     std::vector<T>(key.second) {
-        memcpy(this->data(), key.first, key.second); // FlawFinder: ignore
+        memcpy(this->data(), key.first, key.second);
     }
 
     template <typename Iterator>

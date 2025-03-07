@@ -340,7 +340,7 @@ inline auto is_tty(handle_t handle) noexcept {
 }
 
 inline auto load(const std::string& path) {
-    return LoadLibrary(path.c_str());   // FlawFinder: ignore
+    return LoadLibrary(path.c_str());
 }
 
 inline auto find(HINSTANCE dso, const std::string& sym) -> addr_t {
@@ -652,12 +652,10 @@ inline auto error() noexcept {
 }
 
 inline auto input(const std::string& cmd) {
-    // FlawFinder: ignore
     return popen(cmd.c_str(), "r");
 }
 
 inline auto output(const std::string& cmd) {
-    // FlawFinder: ignore
     return popen(cmd.c_str(), "w");
 }
 
@@ -678,7 +676,6 @@ inline auto stop(id_t pid) noexcept {
 inline auto spawn(const std::string& path, char *const *argv) {
     const id_t child = fork();
     if(!child) {
-        // FlawFinder: ignore
         execvp(path.c_str(), argv);
         ::_exit(-1);
     }
@@ -688,7 +685,6 @@ inline auto spawn(const std::string& path, char *const *argv) {
 inline auto spawn(const std::string& path, char *const *argv, char *const *env) {
     const id_t child = fork();
     if(!child) {
-        // FlawFinder: ignore
         execvpe(path.c_str(), argv, env);
         ::_exit(-1);
     }
@@ -696,19 +692,16 @@ inline auto spawn(const std::string& path, char *const *argv, char *const *env) 
 }
 
 inline auto exec(const std::string& path, char *const *argv) {
-    // FlawFinder: ignore
     return execvp(path.c_str(), argv);
 }
 
 inline auto exec(const std::string& path, char *const *argv, char *const *env) {
-    // FlawFinder: ignore
     return execvpe(path.c_str(), argv, env);
 }
 
 inline auto async(const std::string& path, char *const *argv) -> id_t {
     const id_t child = fork();
     if(!child) {
-        // FlawFinder: ignore
         execvp(path.c_str(), argv);
         ::_exit(-1);
     }
@@ -718,7 +711,6 @@ inline auto async(const std::string& path, char *const *argv) -> id_t {
 inline auto async(const std::string& path, char *const *argv, char *const *env) -> id_t {
     const id_t child = fork();
     if(!child) {
-        // FlawFinder: ignore
         execvpe(path.c_str(), argv, env);
         ::_exit(-1);
     }
@@ -732,7 +724,6 @@ inline auto detach(const std::string& path, char *const *argv) -> id_t {
         if(setpgid(0, getpid()) == -1)
             ::_exit(-1);
 
-        // FlawFinder: ignore
         auto fd = open("/dev/tty", O_RDWR);
         if(fd >= 0) {
             ::ioctl(fd, TIOCNOTTY, nullptr);
@@ -754,7 +745,6 @@ inline auto detach(const std::string& path, char *const *argv) -> id_t {
                 ::_exit(0);
         }
 #endif
-        // FlawFinder: ignore
         execvp(path.c_str(), argv);
         ::_exit(-1);
     }
@@ -768,7 +758,6 @@ inline auto detach(const std::string& path, char *const *argv, char *const *env)
         if(setpgid(0, getpid()) == -1)
             ::_exit(-1);
 
-        // FlawFinder: ignore
         auto fd = open("/dev/tty", O_RDWR);
         if(fd >= 0) {
             ::ioctl(fd, TIOCNOTTY, nullptr);
@@ -791,7 +780,6 @@ inline auto detach(const std::string& path, char *const *argv, char *const *env)
         }
 #endif
 
-        // FlawFinder: ignore
         execvpe(path.c_str(), argv, env);
         ::_exit(-1);
     }
@@ -818,18 +806,15 @@ inline auto on_exit(void(*handler)()) {
 
 inline auto env(const std::string& id, std::size_t max = 256) noexcept -> std::optional<std::string> {
     auto buf = std::make_unique<char []>(max);
-    // FlawFinder: ignore
     const char *out = getenv(id.c_str());
     if(!out) return {};
     buf[max - 1] = 0;
-    // FlawFinder: ignore
     strncpy(&buf[0], out, max);
     if(buf[max - 1] != 0) return {};
     return std::string(&buf[0]);
 }
 
 inline auto shell(const std::string& cmd) noexcept {
-    // FlawFinder: ignore
     return system(cmd.c_str());
 }
 } // end namespace

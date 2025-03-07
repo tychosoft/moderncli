@@ -10,17 +10,7 @@
 
 if(LINT_SOURCES)
     find_program(CLANG_TIDY_EXEC "clang-tidy")
-    find_program(FLAWFINDER_EXEC "flawfinder")
     find_program(CPPCHECK_EXEC "cppcheck")
-
-    if(FLAWFINDER_EXEC)
-        list(APPEND LINT_DEPENDS flaws)
-        add_custom_target(flaws
-            USES_TERMINAL
-            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            COMMAND ${FLAWFINDER_EXEC} --quiet -CDF ${LINT_SOURCES}
-        )
-    endif()
 
     if(EXISTS "${CMAKE_SOURCE_DIR}/cmake/cppcheck.arg" AND CPPCHECK_EXEC)
         list(APPEND LINT_DEPENDS cppcheck)

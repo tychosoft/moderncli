@@ -49,7 +49,7 @@ inline auto getline_w32(char **lp, std::size_t *size, FILE *fp) -> ssize_t {
     int c{EOF};
 
     if(lp == nullptr || fp == nullptr || size == nullptr) return -1;
-    c = getc(fp);   // FlawFinder: ignore
+    c = getc(fp);
     if(c == EOF) return -1;
 
     if(*lp == nullptr) {
@@ -73,7 +73,7 @@ inline auto getline_w32(char **lp, std::size_t *size, FILE *fp) -> ssize_t {
 
         (reinterpret_cast<unsigned char *>(*lp))[pos ++] = c;
         if(c == '\n') break;
-        c = getc(fp);   // FlawFinder: ignore
+        c = getc(fp);
     }
     (*lp)[pos] = '\0';
     return static_cast<ssize_t>(pos);
@@ -87,7 +87,7 @@ using namespace std::filesystem;
 enum class mode : int {rw = _O_RDWR, rd = _O_RDONLY, wr = _O_WRONLY, append = _O_APPEND | _O_CREAT | _O_WRONLY, always = _O_CREAT | _O_RDWR, rewrite = _O_CREAT | _O_RDWR | _O_TRUNC, exists = _O_RDWR};
 
 template<typename T>
-inline auto read(int fd, T& data) noexcept {    // FlawFinder: ignore
+inline auto read(int fd, T& data) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     return _read(fd, &data, sizeof(data));
 }
@@ -110,7 +110,7 @@ inline auto append(int fd) noexcept {
     return _lseek(fd, 0, SEEK_END);
 }
 
-inline auto open(const fsys::path& path, mode flags = mode::rw) noexcept {  // FlawFinder: ignore
+inline auto open(const fsys::path& path, mode flags = mode::rw) noexcept {
     const auto filename = path.string();
     return _open(filename.c_str(), int(flags) | _O_BINARY, 0664);
 }
@@ -119,7 +119,7 @@ inline auto close(int fd) noexcept {
     return _close(fd);
 }
 
-inline auto read(int fd, void *buf, std::size_t len) {   // FlawFinder: ignore
+inline auto read(int fd, void *buf, std::size_t len) {
     return _read(fd, buf, len);
 }
 
@@ -127,7 +127,7 @@ inline auto write(int fd, const void *buf, std::size_t len) {
     return _write(fd, buf, len);
 }
 
-inline auto read_at(int fd, void *buf, std::size_t len, off_t pos) { // FlawFinder: ignore
+inline auto read_at(int fd, void *buf, std::size_t len, off_t pos) {
     auto handle = (HANDLE)_get_osfhandle(fd);
     if(handle == INVALID_HANDLE_VALUE) return (DWORD)-1;
     OVERLAPPED overlapped{0};
@@ -226,9 +226,9 @@ inline auto native_handle(std::FILE *fp) {
 enum class mode : int {rw = O_RDWR, rd = O_RDONLY, wr = O_WRONLY, append = O_APPEND | O_CREAT | O_WRONLY, always = O_CREAT | O_RDWR, rewrite = O_CREAT | O_RDWR | O_TRUNC, exists = O_RDWR};
 
 template<typename T>
-inline auto read(int fd, T& data) noexcept {    // FlawFinder: ignore
+inline auto read(int fd, T& data) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-    return ::read(fd, &data, sizeof(data)); // FlawFinder: ignore
+    return ::read(fd, &data, sizeof(data));
 }
 
 template<typename T>
@@ -238,9 +238,9 @@ inline auto write(int fd, const T& data) noexcept {
 }
 
 template<typename T>
-inline auto read_at(int fd, T& data, off_t pos) noexcept {    // FlawFinder: ignore
+inline auto read_at(int fd, T& data, off_t pos) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-    return ::pread(fd, &data, sizeof(data), pos); // FlawFinder: ignore
+    return ::pread(fd, &data, sizeof(data), pos);
 }
 
 template<typename T>
@@ -261,19 +261,19 @@ inline auto append(int fd) noexcept {
     return ::lseek(fd, 0, SEEK_END);
 }
 
-inline auto open(const fsys::path& path, mode flags = mode::rw) noexcept {   // FlawFinder: ignore
-    return ::open(path.string().c_str(), int(flags), 0664); // FlawFinder: ignore
+inline auto open(const fsys::path& path, mode flags = mode::rw) noexcept {
+    return ::open(path.string().c_str(), int(flags), 0664);
 }
 
 inline auto close(int fd) noexcept {
     return ::close(fd);
 }
 
-inline auto read(int fd, void *buf, std::size_t len) { // FlawFinder: ignore
-    return ::read(fd, buf, len);    // FlawFinder: ignore
+inline auto read(int fd, void *buf, std::size_t len) {
+    return ::read(fd, buf, len);
 }
 
-inline auto read_at(int fd, void *buf, std::size_t len, off_t pos) { // FlawFinder: ignore
+inline auto read_at(int fd, void *buf, std::size_t len, off_t pos) {
     return ::pread(fd, buf, len, pos);
 }
 
@@ -311,7 +311,7 @@ inline auto native_handle(int fd) {
 
 inline auto open_exclusive(const fsys::path& path, bool all = false) {
     const auto file = path.string();
-    auto fd = ::open(file.c_str(), O_RDWR | O_CREAT | O_EXCL, all ? 0644 : 0640); // FlawFinder: ignore
+    auto fd = ::open(file.c_str(), O_RDWR | O_CREAT | O_EXCL, all ? 0644 : 0640);
     if(fd == -1) return -1;
     struct flock lock{};
     lock.l_type = F_WRLCK;
@@ -327,7 +327,7 @@ inline auto open_exclusive(const fsys::path& path, bool all = false) {
 
 inline auto open_shared(const fsys::path& path) {
     const auto filename = path.string();
-    return ::open(filename.c_str(), O_RDONLY);  // FlawFinder: ignore
+    return ::open(filename.c_str(), O_RDONLY);
 }
 
 inline auto native_handle(std::FILE *fp) {
@@ -348,7 +348,7 @@ public:
 
     // cppcheck-suppress noExplicitConstructor
     posix_file(const fsys::path& path, mode flags = mode::rw) noexcept :
-    fd_(fsys::open(path, flags)) {} // FlawFinder: ignore
+    fd_(fsys::open(path, flags)) {}
 
     posix_file(posix_file&& other) noexcept : fd_(other.fd_) {
         other.fd_ = -1;
@@ -391,10 +391,9 @@ public:
         return fd_ != -1;
     }
 
-    // FlawFinder: ignore
     void open(const fsys::path& path, mode flags = mode::rw) noexcept {
         release();
-        fd_ = fsys::open(path, flags);  // FlawFinder: ignore
+        fd_ = fsys::open(path, flags);
     }
 
     auto seek(off_t pos) const noexcept -> off_t {
@@ -429,16 +428,16 @@ public:
         return fd_ == -1 ? -1 : fsys::append(fd_);
     }
 
-    auto read(void *buf, std::size_t len) const noexcept { // FlawFinder: ignore
-        return fd_ == -1 ? -1 : fsys::read(fd_, buf, len);  // FlawFinder: ignore
+    auto read(void *buf, std::size_t len) const noexcept {
+        return fd_ == -1 ? -1 : fsys::read(fd_, buf, len);
     }
 
     auto write(const void *buf, std::size_t len) const noexcept {
         return fd_ == -1 ? -1 : fsys::write(fd_, buf, len);
     }
 
-    auto read_at(void *buf, std::size_t len, off_t pos) const noexcept { // FlawFinder: ignore
-        return fd_ == -1 ? -1 : fsys::read_at(fd_, buf, len, pos);  // FlawFinder: ignore
+    auto read_at(void *buf, std::size_t len, off_t pos) const noexcept {
+        return fd_ == -1 ? -1 : fsys::read_at(fd_, buf, len, pos);
     }
 
     auto write_at(const void *buf, std::size_t len, off_t pos) const noexcept {
@@ -460,9 +459,9 @@ public:
     }
 
     template<typename T>
-    auto read(T& data) const noexcept {       // FlawFinder: ignore
+    auto read(T& data) const noexcept {
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-        return fd_ == -1 ? -1 : fsys::read(fd_, &data, sizeof(data));   // FlawFinder: ignore
+        return fd_ == -1 ? -1 : fsys::read(fd_, &data, sizeof(data));
     }
 
     template<typename T>
@@ -472,9 +471,9 @@ public:
     }
 
     template<typename T>
-    auto read_at(T& data, off_t pos) const noexcept {   // FlawFinder: ignore
+    auto read_at(T& data, off_t pos) const noexcept {
         static_assert(std::is_trivial_v<T>, "T must be Trivial type");
-        return fd_ == -1 ? -1 : fsys::read_at(fd_, &data, sizeof(data), pos);   // FlawFinder: ignore
+        return fd_ == -1 ? -1 : fsys::read_at(fd_, &data, sizeof(data), pos);
     }
 
     template<typename T>
@@ -528,10 +527,12 @@ public:
         }
     }
 
+    //cppcheck-suppress duplInheritedMember
     operator bool() const noexcept {
         return posix_file::is_open();
     }
 
+    //cppcheck-suppress duplInheritedMember
     auto operator!() const noexcept {
         return !posix_file::is_open();
     }
@@ -581,10 +582,12 @@ public:
         return *(reinterpret_cast<H*>(header_));
     }
 
+    //cppcheck-suppress duplInheritedMember
     auto is_open() const noexcept {
         return posix_file::is_open();
     }
 
+    //cppcheck-suppress duplInheritedMember
     void sync() const noexcept {
         if(!posix_file::is_open() || access_ == mode::rd) return;
         if(header_) {
@@ -594,12 +597,14 @@ public:
         posix_file::sync();
     }
 
+    //cppcheck-suppress duplInheritedMember
     auto size() const noexcept {
         if(!posix_file::is_open()) return 0;
         auto fs = posix_file::size() - offset_;
         return (fs % page_size) ? (fs / page_size) + 1 : fs / page_size;
     }
 
+    //cppcheck-suppress duplInheritedMember
     auto resize(off_t size) noexcept {
         if(access_ == mode::rd) return false;
         if(posix_file::resize(size * page_size + offset_) < 0) {
@@ -610,10 +615,12 @@ public:
         return true;
     }
 
+    //cppcheck-suppress duplInheritedMember
     auto rewrite() noexcept {
         return resize(0);
     }
 
+    //cppcheck-suppress duplInheritedMember
     auto rewind() noexcept {
         max_ = 0;
     }
@@ -627,11 +634,11 @@ public:
     }
 
     static auto append(const fsys::path& path, off_t offset = 0) noexcept {
-        return pager_file(fsys::open(path, mode::append), offset, mode::wr);  // FlawFinder: ignore
+        return pager_file(fsys::open(path, mode::append), offset, mode::wr);
     }
 
     static auto create(const fsys::path& path, off_t offset = 0) noexcept {
-        return pager_file(fsys::open(path, mode::always), offset);  // FlawFinder: ignore
+        return pager_file(fsys::open(path, mode::always), offset);
     }
 
 protected:
@@ -676,7 +683,7 @@ inline auto make_shared(const fsys::path& path) noexcept {
 }
 
 inline auto make_access(const fsys::path& path, mode access = mode::exists) noexcept {
-    return posix_file(fsys::open(path, access));  // FlawFinder: ignore
+    return posix_file(fsys::open(path, access));
 }
 } // end fsys namespace
 
@@ -723,7 +730,7 @@ inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
 
 template<typename Func>
 inline auto scan_command(const std::string& cmd, Func proc, std::size_t size = 0) {
-    auto file = popen(cmd.c_str(), "r");    // FlawFinder: ignore
+    auto file = popen(cmd.c_str(), "r");
 
     if(!file) return std::size_t(0);
 
@@ -750,7 +757,7 @@ inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
 
 template<typename Func>
 inline auto scan_command(const std::string& cmd, Func proc, std::size_t size = 0) {
-    auto file = _popen(cmd.c_str(), "r");    // FlawFinder: ignore
+    auto file = _popen(cmd.c_str(), "r");
 
     if(!file) return std::size_t(0);
     auto count = scan_file(file, proc, size);
@@ -762,14 +769,14 @@ inline auto scan_command(const std::string& cmd, Func proc, std::size_t size = 0
 inline auto make_input(const fsys::path& path, std::ios::openmode mode = std::ios::binary) {
     std::ifstream file;
     file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    file.open(path, mode);  // FlawFinder: ignore
+    file.open(path, mode);
     return file;
 }
 
 inline auto make_output(const fsys::path& path, std::ios::openmode mode = std::ios::binary) {
     std::ofstream file;
     file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    file.open(path, mode);  // FlawFinder: ignore
+    file.open(path, mode);
     return file;
 }
 

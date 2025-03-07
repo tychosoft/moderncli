@@ -77,14 +77,14 @@ public:
     random_t(const key_t key) {
         zero(data_);
         if(key.first && key.second && key.second <= (S / 8))
-            memcpy(data_, key.first, key.second);   // FlawFinder: ignore
+            memcpy(data_, key.first, key.second);
         else
             throw std::runtime_error("key size mismatch");
     }
 
     random_t(const random_t& other) {
         static_assert(other.size() == size());
-        memcpy(data_, other.data_, sizeof(data_));  // FlawFinder: ignore
+        memcpy(data_, other.data_, sizeof(data_));
     }
 
     ~random_t() {
@@ -102,7 +102,7 @@ public:
     auto operator=(const key_t key) -> auto& {
         zero(data_);
         if(key.first && key.second && key.second  <= (S / 8))
-            memcpy(data_, key.first, key.second);       // FlawFinder: ignore
+            memcpy(data_, key.first, key.second);
         else
             throw std::runtime_error("key size mismatch");
         return *this;
@@ -111,7 +111,7 @@ public:
     auto operator=(const random_t& other) -> auto& {
         static_assert(other.size() == size());
         if(this != &other)
-            memcpy(data_, other.data_, sizeof(data_));  // FlawFinder: ignore
+            memcpy(data_, other.data_, sizeof(data_));
         return *this;
     }
 

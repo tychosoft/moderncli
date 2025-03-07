@@ -45,6 +45,11 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(std::fabs(mydec - expected) < tolerance);
 
         assert(get_hex("f0") == 240);
+        assert(get_hex<uint16_t>("fff0") == 65520);
+        assert(get_hex<uint16_t>("0xfff0") == 65520);
+        assert(get_hex<uint16_t>("$fff0") == 65520);
+        assert(get_unsigned<uint16_t>("0xfff0") == 65520);
+        assert(get_hex<uint16_t>("0xffff") == 65535);
     }
     catch(std::exception& e) {
         printf("Error: %s\n", e.what());

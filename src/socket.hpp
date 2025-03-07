@@ -265,7 +265,6 @@ public:
         addr6->sin6_port = addr4->sin_port;
         addr6->sin6_addr.s6_addr[10] = 0xff;
         addr6->sin6_addr.s6_addr[11] = 0xff;
-        // FlawFinder: ignore
         memcpy(&addr6->sin6_addr.s6_addr[12], &addr4->sin_addr, sizeof(addr4->sin_addr));
         return true;
     }
@@ -341,7 +340,6 @@ public:
     }
 
     auto put(struct sockaddr_storage& out) const noexcept {
-        // FlawFinder: ignore
         memcpy(&out, &store_, sizeof(store_));
     }
 
@@ -353,7 +351,6 @@ public:
         if(!addr)
             memset(&store_, 0, sizeof(store_));
         else
-            // FlawFinder: ignore
             memcpy(&store_, addr->ai_addr, addr->ai_addrlen);
     }
 
@@ -361,7 +358,6 @@ public:
         if(!addr || !size_(addr->sa_family))
             memset(&store_, 0, sizeof(store_));
         else
-            // FlawFinder: ignore
             memcpy(&store_, addr, size_(addr->sa_family));
     }
 
@@ -392,7 +388,6 @@ private:
 #ifdef  AF_UNIX
         case AF_UNIX: {
             const auto sun = reinterpret_cast<const struct sockaddr_un *>(&store_);
-            // FlawFinder: ignore
             return offsetof(struct sockaddr_un, sun_path) + strlen(sun->sun_path);
         }
 #endif
@@ -515,7 +510,6 @@ public:
             hint.ai_socktype = type;
             hint.ai_protocol = protocol;
 
-            // FlawFinder: ignore
             if(svc && atoi(svc) > 0)    // NOLINT
                 hint.ai_flags |= NI_NUMERICSERV;
 
@@ -538,7 +532,6 @@ public:
             memset(&data, 0, sizeof(data));
             while(addr) {
                 if(size == index) {
-                    // FlawFinder: ignore
                     memcpy(&data, addr->ai_addr, addr->ai_addrlen);
                     return data;
                 }
@@ -1249,7 +1242,6 @@ inline auto inet_size(const struct sockaddr *addr) noexcept -> socklen_t {
 #ifdef  AF_UNIX
     case AF_UNIX: {
         const auto un = reinterpret_cast<const struct sockaddr_un *>(addr);
-        // FlawFinder: ignore
         return offsetof(struct sockaddr_un, sun_path) + strlen(un->sun_path);
     }
 #endif

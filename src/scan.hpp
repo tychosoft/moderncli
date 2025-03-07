@@ -19,7 +19,7 @@ constexpr std::string_view hex_digits("0123456789abcdef");
 inline auto count(const std::string_view& text, char code) {
     std::size_t count = 0;
     for(const char ch : text) {
-        if(ch == code) 
+        if(ch == code)
             ++count;    // cppcheck-suppress useStlAlgorithm
     }
     return count;
@@ -362,7 +362,7 @@ inline auto get_bool(std::string_view& text) {
 }
 
 template<typename T = unsigned>
-inline auto get_hex(std::string_view text) {
+inline auto get_hex(std::string_view text, T min = 0, T max = std::numeric_limits<T>::max())  {
     static_assert(
         std::is_same_v<T, unsigned> ||
         std::is_same_v<T, unsigned short> ||
@@ -374,15 +374,20 @@ inline auto get_hex(std::string_view text) {
         std::is_same_v<T, uint8_t>,
         "Invalid unsigned type" );
 
+    if(!scan::match(text, "0x")) {
+        if(!text.empty() && text.front() == '$')
+            text.remove_prefix(1);
+    }
     auto value = T(scan::hex(text, sizeof(T) * 2));
     if(!text.empty()) throw std::overflow_error("Value too big or invalid");
+    if(value < min || value > max) throw std::out_of_range("value out of range");
     return value;
 }
 
 template<typename T = unsigned>
-inline auto get_hex_or(std::string_view text, const T& or_else) {
+inline auto get_hex_or(std::string_view text, const T& or_else, T min = 0, T max = std::numeric_limits<T>::max()) {
     try {
-        return get_hex<T>(text);
+        return get_hex<T>(text, min, max);
     }
     catch(const std::exception& e) {
         return or_else;
@@ -401,6 +406,8 @@ inline auto get_unsigned(std::string_view text, T min = 0, T max = std::numeric_
         "Invalid unsigned type" );
 
     if(text.empty() || !isdigit(text.front())) throw std::invalid_argument("Value missing or invalid");
+    if(scan::match(text, "0x")) return get_hex<T>(text, min, max);
+
     auto value = T(scan::value(text, max));
     if(!text.empty() && isdigit(text.front())) throw std::overflow_error("Value too big");
     if(!text.empty()) throw std::invalid_argument("value invalid");
