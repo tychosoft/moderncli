@@ -332,6 +332,18 @@ public:
         return new T(std::forward<Args>(args)...);
     }
 
+    template<typename... Args>
+    void renew(T& obj, Args&&... args) {
+        obj.~T();
+        new(&obj) T(std::forward<Args>(args)...);
+    }
+
+    template<typename... Args>
+    void renew(T* ptr, Args&&... args) {
+        ptr->~T();
+        new(ptr) T(std::forward<Args>(args)...);
+    }
+
     void release(T* ptr) {
         ptr->~T();
         free_.push_back(ptr);
