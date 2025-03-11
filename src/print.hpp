@@ -240,6 +240,17 @@ inline auto on_crit(void(*handler)()) {
 
 namespace tycho {
 template<class... Args>
+constexpr auto format(std::format_string<Args...> fmt, Args&&... args) {
+    return std::format(fmt, std::forward<Args>(args)...);
+}
+
+template<class... Args>
+constexpr auto format(std::ostream& out, std::format_string<Args...> fmt, Args&&... args) -> auto& {
+    out << std::format(fmt, std::forward<Args>(args)...);
+    return out;
+}
+
+template<class... Args>
 constexpr void print(std::format_string<Args...> fmt, Args&&... args) {
     std::cout << std::format(fmt, std::forward<Args>(args)...);
 }
