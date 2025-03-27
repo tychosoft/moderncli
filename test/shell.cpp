@@ -63,5 +63,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(sizeof_2(v1) == sizeof(short));
     assert(sizeof_2(v2) == sizeof(short) * 4);
     assert(sizeof_n(v2, 4) == 8);
+
+    logger_stream logger;
+    logger.error() << "Error testing";
 }
 

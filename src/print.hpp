@@ -27,6 +27,8 @@
 #define USE_SYSLOG
 #include <syslog.h>
 #else
+#ifndef LOG_SYSLOG
+#define LOG_SYSLOG
 constexpr auto LOG_AUTH = 0;
 constexpr auto LOG_AUTHPRIV = 0;
 constexpr auto LOG_DAEMON = 0;
@@ -40,6 +42,7 @@ constexpr auto LOG_NDELAY = 0;
 constexpr auto LOG_NOWAIT = 0;
 constexpr auto LOG_PERROR = 0;
 constexpr auto LOG_PID = 0;
+#endif
 #endif
 
 #if __cplusplus < 202002L
