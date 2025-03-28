@@ -36,6 +36,7 @@ using ssize_t = SSIZE_T;
 #include <io.h>
 #else
 #include <sys/mman.h>
+#include <termios.h>
 #endif
 
 #if defined(__OpenBSD__)
@@ -149,6 +150,14 @@ inline auto write_at(int fd, const void *buf, std::size_t len, off_t pos) {
     return (DWORD)-1;
 }
 
+inline auto tty_input() {
+    return _open("CONIN$", _O_RDONLY);
+}
+
+inline auto tty_output() {
+    return _open("CONOUT$", _O_WRONLY);
+}
+
 template<typename T>
 inline auto read_at(int fd, T& data, off_t pos) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
@@ -247,6 +256,14 @@ template<typename T>
 inline auto write_at(int fd, const T& data, off_t pos) noexcept {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     return ::pwrite(fd, &data, sizeof(data), pos);
+}
+
+inline auto tty_input() {
+    return open("/dev/tty", O_RDONLY);
+}
+
+inline auto tty_output() {
+    return open("/dev/tty", O_WRONLY);
 }
 
 inline auto seek(int fd, off_t pos) noexcept {
