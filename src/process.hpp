@@ -153,6 +153,10 @@ public:
     map_t(const map_t&) = delete;
     auto operator=(const map_t&) -> auto& = delete;
 
+    explicit map_t(const std::string& path, int mode = 0640) {
+        access(path, mode);
+    }
+
     map_t(handle_t h, std::size_t size, bool rw = true, [[maybe_unused]] bool priv = false, off_t offset = 0) noexcept : size_(size) {
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -174,26 +178,25 @@ public:
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
-        auto fm = CreateFileMapping(h, nullptr, protectAccess, dwMaxSizeHigh, dwMaxSizeLow, nullptr);
+        handle_ = CreateFileMapping(h, nullptr, protectAccess, dwMaxSizeHigh, dwMaxSizeLow, nullptr);
 
-        if(fm == nullptr) {
+        if(handle_ == nullptr) {
             addr_ = MAP_FAILED;
             return;
         }
 
-        addr_ = MapViewOfFile(fm, desiredAccess, dwFileOffsetHigh, dwFileOffsetLow, size);
-        CloseHandle(fm);
+        addr_ = MapViewOfFile(handle_, desiredAccess, dwFileOffsetHigh, dwFileOffsetLow, size);
     }
 
     map_t(map_t&& other) noexcept :
-    addr_(other.addr_), size_(other.size_) {
+    addr_(other.addr_), size_(other.size_), handle_(other.handle_) {
         other.addr_ = MAP_FAILED;
         other.size_ = 0;
+        other.handle_ = nullptr;
     }
 
     ~map_t() {
-        if(addr_ != MAP_FAILED)
-            UnmapViewOfFile(addr_);
+        release();
     }
 
     operator bool() const noexcept {
@@ -212,8 +215,10 @@ public:
     auto operator=(map_t&& other) noexcept -> auto& {
         addr_ = other.addr_;
         size_ = other.size_;
+        handle_ = other.handle_;
         other.addr_ = MAP_FAILED;
         other.size_ = 0;
+        other.handle_ = nullptr;
         return *this;
     }
 
@@ -296,22 +301,65 @@ public:
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
-        auto fm = CreateFileMapping(h, nullptr, protectAccess, dwMaxSizeHigh, dwMaxSizeLow, nullptr);
+        handle_ = CreateFileMapping(h, nullptr, protectAccess, dwMaxSizeHigh, dwMaxSizeLow, nullptr);
 
-        if(fm == nullptr) {
+        if(handle_ == nullptr) {
             addr_ = MAP_FAILED;
             return MAP_FAILED;
         }
 
-        addr_ = MapViewOfFile(fm, desiredAccess, dwFileOffsetHigh, dwFileOffsetLow, size);
-        CloseHandle(fm);
+        addr_ = MapViewOfFile(handle_, desiredAccess, dwFileOffsetHigh, dwFileOffsetLow, size);
         size_ = size;
         return addr_;
+    }
+
+    void release() noexcept {
+        if(addr_ != MAP_FAILED) {
+            UnmapViewOfFile(addr_);
+            addr_ = MAP_FAILED;
+        }
+        if(handle_) {
+            CloseHandle(handle_);
+            handle_ = nullptr;
+        }
+        size_ = 0;
+    }
+
+    auto create(const std::string& path, size_t size, [[maybe_unused]]int mode = 0640) noexcept -> void * {
+        release();
+        handle_ = CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, size, path.c_str());
+        if(handle_ == nullptr) return MAP_FAILED;
+
+        size_ = size;
+        addr_ = MapViewOfFile(handle_, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, size);
+        return addr_;
+    }
+
+    auto access(const std::string& path, [[maybe_unused]]int mode = 0640) noexcept -> void * {
+        release();
+        handle_ = OpenFileMappingA(FILE_MAP_READ, FALSE, path.c_str());
+        if(handle_ == nullptr) return MAP_FAILED;
+
+        addr_ = MapViewOfFile(handle_, FILE_MAP_READ, 0, 0, 0);
+        if(!addr_) {
+            CloseHandle(handle_);
+            handle_ = nullptr;
+            return MAP_FAILED;
+        }
+
+        MEMORY_BASIC_INFORMATION mbi;
+        if(VirtualQuery(addr_, &mbi, sizeof(mbi))) {
+            size_ = mbi.RegionSize;
+            return addr_;
+        }
+        release();
+        return MAP_FAILED;
     }
 
 private:
     void *addr_{MAP_FAILED};
     std::size_t size_{0};
+    HANDLE handle_{nullptr};
 };
 
 inline auto page_size() noexcept -> off_t {
@@ -545,18 +593,22 @@ public:
     map_t(const map_t&) = delete;
     auto operator=(const map_t&) -> auto& = delete;
 
+    explicit map_t(const std::string& path, int mode = 0640) {
+        access(path, mode);
+    }
+
     map_t(handle_t fd, std::size_t size, bool rw = true, bool priv = false, off_t offset = 0) noexcept :
     addr_(::mmap(nullptr, size, (rw) ? PROT_READ | PROT_WRITE : PROT_READ, (priv) ? MAP_PRIVATE : MAP_SHARED, fd, offset)), size_(size) {}
 
     map_t(map_t&& other) noexcept :
-    addr_(other.addr_), size_(other.size_) {
+    addr_(other.addr_), size_(other.size_), path_(std::move(other.path_)) {
         other.addr_ = MAP_FAILED;
         other.size_ = 0;
+        other.path_ = "";
     }
 
     ~map_t() {
-        if(addr_ != MAP_FAILED)
-            munmap(addr_, size_);
+        release();
     }
 
     operator bool() const noexcept {
@@ -575,8 +627,10 @@ public:
     auto operator=(map_t&& other) noexcept -> auto& {
         addr_ = other.addr_;
         size_ = other.size_;
+        path_ = other.path_;
         other.addr_ = MAP_FAILED;
         other.size_ = 0;
+        other.path_ = "";
         return *this;
     }
 
@@ -638,9 +692,51 @@ public:
         return addr_;
     }
 
+    auto create(const std::string& path, size_t size, int mode = 0640) noexcept {
+        release();
+        shm_unlink(path.c_str());
+        auto shm = shm_open(path.c_str(), O_RDWR | O_CREAT, mode);
+        if(shm < 0) return MAP_FAILED;
+        path_ = path;
+        if(::ftruncate(shm, off_t(size)) < 0) {
+            ::close(shm);
+            return MAP_FAILED;
+        }
+        auto addr = set(shm, size, true);
+        ::close(shm);
+        return addr;
+    }
+
+    auto access(const std::string& path, int mode = 0640) noexcept -> void * {
+        release();
+        auto shm = shm_open(path.c_str(), O_RDWR | O_CREAT, mode);
+        if(shm < 0) return MAP_FAILED;
+        struct stat ino{};
+        if(::fstat(shm, &ino) < 0) {
+            ::close(shm);
+            return MAP_FAILED;
+        }
+        auto addr = set(shm, ino.st_size, false);
+        ::close(shm);
+        return addr;
+    }
+
+    void release() noexcept {
+        if(addr_ != MAP_FAILED) {
+            munmap(addr_, size_);
+            addr_ = MAP_FAILED;
+        }
+        if(!path_.empty()) {
+            shm_unlink(path_.c_str());
+            path_ = "";
+        }
+        size_ = 0;
+    }
+
 private:
     void *addr_{MAP_FAILED};
     std::size_t size_{0};
+    std::string path_;
 };
 
 inline auto page_size() noexcept -> off_t {
