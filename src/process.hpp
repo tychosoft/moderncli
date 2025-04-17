@@ -24,6 +24,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock2.h>
+#include <tlhelp32.h>
 #include <process.h>
 #include <handleapi.h>
 #include <io.h>
@@ -417,6 +418,35 @@ inline auto stop(id_t pid) noexcept {
     return CloseHandle(reinterpret_cast<HANDLE>(pid)) == TRUE;
 }
 
+inline auto is_service() noexcept {
+    auto isService = false;
+    auto pid = GetCurrentProcessId();
+    auto hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if(hSnapshot == INVALID_HANDLE_VALUE) return false;
+
+    PROCESSENTRY32 pe;
+    pe.dwSize = sizeof(PROCESSENTRY32);
+    if(Process32First(hSnapshot, &pe)) {
+        do {
+            if(pe.th32ProcessID == pid) {
+                DWORD parentPid = pe.th32ParentProcessID;
+                if(Process32First(hSnapshot, &pe)) {
+                    do {
+                        if(pe.th32ProcessID == parentPid) {
+                            isService = (std::string(pe.szExeFile) == "services.exe");
+                            break;
+                        }
+                    } while(Process32Next(hSnapshot, &pe));
+                }
+                break;
+            }
+        } while(Process32Next(hSnapshot, &pe));
+    }
+
+    CloseHandle(hSnapshot);
+    return isService;
+}
+
 inline auto id() noexcept -> id_t {
     return _getpid();
 }
@@ -784,6 +814,10 @@ inline auto detach(const std::string& path, char *const *argv, char *const *env)
         ::_exit(-1);
     }
     return child;
+}
+
+inline auto is_service() noexcept {
+    return getpid() == 1 || getppid() == 1 || getuid() == 0;
 }
 
 inline auto id() noexcept -> id_t {
