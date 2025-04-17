@@ -52,6 +52,10 @@ using ssize_t = SSIZE_T;
 #define MSG_NOSIGNAL    0   // NOLINT
 #endif
 
+#ifndef MSG_DONTWAIT
+#define MSG_DONTWAIT    0   // NOLINT
+#endif
+
 #ifndef IPV6_ADD_MEMBERSHIP
 #define IPV6_ADD_MEMBERSHIP     IP_ADD_MEMBERSHIP
 #endif
