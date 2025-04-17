@@ -394,10 +394,23 @@ private:
 
 class event_sync final {
 public:
-    explicit event_sync(bool reset = true) noexcept : auto_reset_(reset) {}
+    explicit event_sync(bool reset = false) noexcept : auto_reset_(reset) {}
     event_sync(const event_sync&) = delete;
     ~event_sync() = default;
     auto operator=(const event_sync&) noexcept -> auto& = delete;
+
+    operator bool() const noexcept {
+        return is_notified();
+    }
+
+    auto operator!() const noexcept {
+        return !is_notified();
+    }
+
+    auto is_notified() const noexcept -> bool {
+        const std::lock_guard lock(lock_);
+        return signaled_;
+    }
 
     void notify() noexcept {
         const std::lock_guard lock(lock_);
@@ -437,7 +450,7 @@ public:
     }
 
 private:
-    std::mutex lock_;
+    mutable std::mutex lock_;
     std::condition_variable cond_;
     bool signaled_{false};
     bool auto_reset_{true};
