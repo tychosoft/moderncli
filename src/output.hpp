@@ -168,7 +168,7 @@ public:
         opened_ = false;
     }
 #else
-    void open(const char *id, int level, int facility, int flags) {}
+    void open(const char *id, int level = LOG_INFO, int facility = 0, int flags = 0) {}
     void close() {}
 #endif
 

@@ -223,7 +223,7 @@ public:
         ::closelog();
     }
 #else
-    static void open(const char *id, int level, int facility, int flags) {}
+    static void open(const char *id, int level = LOG_INFO, int facility = 0, int flags = 0) {}
     static void close() {}
 #endif
 
