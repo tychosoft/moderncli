@@ -1115,6 +1115,16 @@ public:
         return io_error(::recvfrom(so_, static_cast<char *>(to), int(size), flags, addr.data(), &len));
     }
 
+    // type converted send to for portable socket code
+    static auto send_to(int so, const void *from, std::size_t size, int flags = 0, const struct sockaddr *addr = nullptr, socklen_t asize = sizeof(struct sockaddr_storage)) noexcept {
+     return ::sendto(so, static_cast<const char *>(from), int(size), flags, addr, asize);
+    }
+
+    // type converted send to for portable socket code
+    static auto recv_from(int so, void *to, std::size_t size, int flags = 0, struct sockaddr *addr = nullptr, socklen_t *asize = nullptr) noexcept {
+        return ::recvfrom(so, static_cast<char *>(to), int(size), flags, addr, asize);
+    }
+
 #ifdef USE_CLOSESOCKET
     static auto poll(struct pollfd *fds, std::size_t count, int timeout) noexcept -> int {
         return WSAPoll(fds, count, timeout);
