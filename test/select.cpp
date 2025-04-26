@@ -31,6 +31,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(selector("apple"));
         assert(!selector(42));
         assert(mapped("five") == selects::Five);
+
+        assert(selector(2, [](const int& key, const int& value) {
+            return key >= value;
+        }) == true);
     }
     catch(...) {
         ::exit(-1);

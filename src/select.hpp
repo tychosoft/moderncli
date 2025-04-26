@@ -35,6 +35,19 @@ public:
         return false;
     }
 
+    template<typename T, typename Func>
+    auto operator()(const T& key, Func&& cmp) const {
+        for(const auto& item : cases_) {
+            if(std::holds_alternative<T>(item.first)) {
+                if(cmp(key, std::get<T>(item.first))) {
+                    item.second();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 private:
     std::unordered_map<variant_type,action_type> cases_;
 };
