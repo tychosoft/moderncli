@@ -4,6 +4,7 @@ CMakeFiles/
 CMakeScripts/
 CMakeSettings.json
 CMakeUserPresets.json
+vcpkg.json
 Testing/
 cmake/custom.cmake
 build/
