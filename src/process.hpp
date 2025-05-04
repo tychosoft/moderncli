@@ -466,6 +466,11 @@ inline auto stop(id_t pid) noexcept {
     return CloseHandle(reinterpret_cast<HANDLE>(pid)) == TRUE;
 }
 
+inline bool is_contained() {
+    const auto e = std::getenv("container");
+    return e && strcmp(e, "podman") == 0;
+}
+
 inline auto is_service() noexcept {
     auto isService = false;
     auto pid = GetCurrentProcessId();
@@ -910,6 +915,19 @@ inline auto detach(const std::string& path, char *const *argv, char *const *env)
         ::_exit(-1);
     }
     return child;
+}
+
+inline auto is_contained() {
+    std::ifstream file("/proc/self/cgroup");
+    if(file.is_open()) {
+        std::string line;
+        while(std::getline(file, line)) {
+            if(line.find("docker") != std::string::npos || line.find("libpod") != std::string::npos) return true;
+        }
+    }
+
+    const auto e = std::getenv("container");
+    return e && strcmp(e, "podman") == 0;
 }
 
 inline auto is_service() noexcept {
