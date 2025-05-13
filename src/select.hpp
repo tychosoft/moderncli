@@ -39,7 +39,8 @@ public:
     auto operator()(const T& key, Func&& cmp) const {
         for(const auto& item : cases_) {
             if(std::holds_alternative<T>(item.first)) {
-                if(cmp(key, std::get<T>(item.first))) {
+
+                if(std::forward<Func>(cmp)(key, std::get<T>(item.first))) {
                     item.second();
                     return true;
                 }

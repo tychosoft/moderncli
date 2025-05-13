@@ -6,6 +6,7 @@
 
 #include <system_error>
 #include <iostream>
+#include <utility>
 #include <cerrno>
 
 #include <sys/types.h>
@@ -197,9 +198,7 @@ protected:
         if(!size)
             ++size;
 
-        if(size > maxsize)
-            size = maxsize;
-
+        size = std::min(size, maxsize);
         setg(gbuf, gbuf, gbuf);
         setp(pbuf, pbuf + size);
         bufsize = getsize = size;

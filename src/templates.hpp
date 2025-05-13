@@ -48,21 +48,6 @@ constexpr auto const_copy(const T& obj) {
         return obj;
 }
 
-template<typename T>
-constexpr auto const_max(const T& x, const T& y) {
-    return (x > y) ? x : y;
-}
-
-template<typename T>
-constexpr auto const_min(const T& x, const T& y) {
-    return (x > y) ? y : x;
-}
-
-template<typename T>
-constexpr auto const_clamp(const T& value, const T& min, const T& max) {
-    return (value < min) ? min : ((value > max) ? max : value); // NOLINT
-}
-
 template <typename T>
 constexpr auto in_range(const T& value, const T& min, const T& max) {
     return (value >= min && value <= max);

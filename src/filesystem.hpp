@@ -500,6 +500,8 @@ public:
     }
 
 protected:
+    int fd_{-1};
+
     void release() noexcept {
         if(fd_ != -1)
             fsys::close(fd_);
@@ -511,9 +513,6 @@ protected:
             fsys::close(fd_);
         fd_ = fd;
     }
-
-private:
-    int fd_{-1};
 };
 
 template<typename T, std::size_t S = sizeof(T)>
@@ -570,7 +569,7 @@ public:
     auto get(off_t page, T& ref) const noexcept {
         if(access_ == mode::wr) return false;
         if(max_ && page >= max_) return false;
-        if(read_at(ref, offset_ + page * page_size) == sizeof(T)) return true;
+        if(read_at(ref, offset_ + (page * page_size)) == sizeof(T)) return true;
         err_ = errno;
         return false;
     }
@@ -578,7 +577,7 @@ public:
     auto put(off_t page, const T& ref) const noexcept {
         if(access_ == mode::rd) return false;
         if(max_ && page >= max_) return false;
-        if(write_at(ref, offset_ + page * page_size) == sizeof(T)) return true;
+        if(write_at(ref, offset_ + (page * page_size)) == sizeof(T)) return true;
         err_ = errno;
         return false;
     }
@@ -624,7 +623,7 @@ public:
     //cppcheck-suppress duplInheritedMember
     auto resize(off_t size) noexcept {
         if(access_ == mode::rd) return false;
-        if(posix_file::resize(size * page_size + offset_) < 0) {
+        if(posix_file::resize((size * page_size) + offset_) < 0) {
             err_ = errno;
             return false;
         }

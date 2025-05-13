@@ -14,6 +14,7 @@
 #include <optional>
 #include <stdexcept>
 #include <functional>
+#include <utility>
 #include <type_traits>
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
@@ -1010,8 +1011,7 @@ inline auto priority(int priority) {
     if(priority > 0) {
         policy = SCHED_FIFO;
         priority = sched_get_priority_min(policy) + priority - 1;
-        if(priority > sched_get_priority_max(policy))
-            priority = sched_get_priority_max(policy);
+        priority = std::min(priority, sched_get_priority_max(policy));
     }
 #endif
 #ifdef  SCHED_BATCH

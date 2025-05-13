@@ -38,11 +38,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(value == 1);
 
     auto *p = &value;
-    auto mv = 2;
-    assert(const_copy(value) == 1);
     assert(const_copy(p) == 1);
-    assert(const_max(value, mv) == 2);
-
     assert(in_range(value, 1, 2));
     assert(!in_range(value, 7, 10));
 

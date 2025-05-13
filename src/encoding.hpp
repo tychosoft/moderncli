@@ -122,9 +122,7 @@ inline auto to_hex(const crypto::key_t& key) {
 inline auto from_hex(std::string_view from, uint8_t *to, std::size_t size) {
     auto hex = from.data();
     auto maxsize = size * 2;
-    if(from.size() <= maxsize)
-        maxsize = from.size();
-
+    maxsize = std::min(from.size(), maxsize);
     for(auto pos = std::size_t(0); pos < maxsize; pos += 2) {
         char buf[3]{};
         buf[0] = hex[pos];

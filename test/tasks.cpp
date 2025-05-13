@@ -24,12 +24,12 @@ auto process_command(const std::string& text, int number) {
         count += number;
     });
 }
-} // end namespace
 
 auto test_async(int x) -> int {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     return x;
 }
+} // end namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     tq.startup();

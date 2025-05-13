@@ -7,6 +7,7 @@
 #if __has_include(<termios.h>)
 #include <thread>
 #include <chrono>
+#include <utility>
 #include <csignal>
 #include <climits>
 
@@ -185,9 +186,7 @@ public:
         if(size > std::size_t(max))
             size = max;
 
-        if(size > 255)
-            size = 255;
-
+        size = std::min<std::size_t>(size, 255);
         current_.c_cc[VEOL] = current_.c_cc[VEOL2] = 0;
         current_.c_cc[VMIN] = (uint8_t)size;
         current_.c_cc[VTIME] = timer;

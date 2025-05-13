@@ -288,18 +288,6 @@ public:
         return size_type(Offset + size_ - 1);
     }
 
-    constexpr auto data() const noexcept -> T* {
-        return ptr_;
-    }
-
-    constexpr auto begin() const noexcept {
-        return ptr_;
-    }
-
-    constexpr auto end() const noexcept {
-        return ptr_ + size_;
-    }
-
     constexpr auto front() const noexcept -> T& {
         return ptr_[0];
     }
@@ -310,6 +298,18 @@ public:
 
     constexpr auto empty() const noexcept {
         return size_ == 0;
+    }
+
+    auto data() const noexcept {
+        return ptr_;
+    }
+
+    auto begin() const noexcept {
+        return ptr_;
+    }
+
+    auto end() const noexcept {
+        return ptr_ + size_;
     }
 
     auto subspan(size_type pos, size_type count = 0) const {

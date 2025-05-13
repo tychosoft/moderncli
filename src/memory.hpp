@@ -713,9 +713,7 @@ public:
 #if defined(_SC_LEVEL1_DCHACHE_LINESIZE)
         line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
 #endif
-        if(line_size < 64)
-            line_size = 64;
-        return aligned_size(line_size);
+        return aligned_size(std::max<std::size_t>(std::size_t(line_size), 64));
     }
 
 protected:

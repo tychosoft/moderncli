@@ -8,9 +8,11 @@
 
 using namespace tycho::monadic;
 
+namespace {
 auto add_one(int x) {
     return maybe(x + 1);
 }
+} // end namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     try {
