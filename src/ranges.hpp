@@ -102,10 +102,35 @@ auto fold(const Container& container, T init, Func func) -> T {
     return std::accumulate(container.begin(), container.end(), init, func);
 }
 
+template<typename Container>
+auto count(const Container& container) {
+    return std::distance(container.begin(), container.end());
+}
+
+template<typename Container, typename Pred>
+auto count(const Container& container, Pred&& pred) {
+    return std::count_if(container.begin(), container.end(), std::forward<Pred>(pred));
+}
+
+template<typename Container, typename Pred>
+auto all(const Container& container, Pred&& pred) {
+    return std::all_of(container.begin(), container.end(), std::forward<Pred>(pred));
+}
+
+template<typename Container, typename Pred>
+auto any(const Container& container, Pred&& pred) {
+    return std::any_of(container.begin(), container.end(), std::forward<Pred>(pred));
+}
+
+template<typename Container, typename Pred>
+auto none(const Container& container, Pred&& pred) {
+    return std::none_of(container.begin(), container.end(), std::forward<Pred>(pred));
+}
+
 template<typename Container, typename Func>
-auto make(std::size_t size, Func func) {
+auto make(std::size_t size, Func&& func) {
     Container result{};
-    std::fill_n(std::back_inserter(result), size, func());
+    std::generate_n(std::back_inserter(result), size, std::forward<Func>(func));
     return result;
 }
 

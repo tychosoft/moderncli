@@ -709,9 +709,10 @@ public:
     }
 
     static auto aligned_cache() -> std::size_t {
-        static volatile std::size_t line_size = 0;
 #if defined(_SC_LEVEL1_DCHACHE_LINESIZE)
-        line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+        const std::size_t line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+#else
+        const std::size_t line_size = 0;
 #endif
         return aligned_size(std::max<std::size_t>(std::size_t(line_size), 64));
     }
