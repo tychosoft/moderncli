@@ -514,5 +514,19 @@ private:
     mutable std::mutex lock_;
     std::condition_variable cond_;
 };
+
+class done_group final {
+public:
+    done_group() = delete;
+    done_group(done_group&) = delete;
+    auto operator=(const done_group&) -> auto& = delete;
+    explicit done_group(wait_group& wg) : wg_(wg) {}
+    ~done_group() {
+        wg_.done();
+    }
+
+private:
+    wait_group& wg_;
+};
 } // end namespace
 #endif
