@@ -19,7 +19,7 @@ shared_sync<struct test> testing;
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     wait_group wg(1);
     try {
-        const done_group done(wg);
+        const sync_group done(wg);
         assert(wg.count() == 1);
         sync_ptr<int> count(counter);
         assert(*count == 3);

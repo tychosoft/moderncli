@@ -12,6 +12,13 @@
 #include <condition_variable>
 #include <stdexcept>
 
+#if __cplusplus >= 202002L
+#include <barrier>
+#include <functional>
+#include <ranges>
+#include <semaphore>
+#endif
+
 namespace tycho {
 using sync_timepoint = std::chrono::steady_clock::time_point;
 using sync_millisecs = std::chrono::milliseconds;
@@ -515,18 +522,52 @@ private:
     std::condition_variable cond_;
 };
 
-class done_group final {
+class sync_group final {
 public:
-    done_group() = delete;
-    done_group(done_group&) = delete;
-    auto operator=(const done_group&) -> auto& = delete;
-    explicit done_group(wait_group& wg) : wg_(wg) {}
-    ~done_group() {
+    sync_group() = delete;
+    sync_group(const sync_group&) = delete;
+    auto operator=(const sync_group&) -> auto& = delete;
+    explicit sync_group(wait_group& wg) : wg_(wg) {}
+    ~sync_group() {
         wg_.done();
     }
 
 private:
     wait_group& wg_;
 };
+
+#if __cplusplus >= 202002L
+using arrival = std::barrier<>;
+
+template<typename T>
+concept ThreadContainer =
+    std::ranges::range<T> &&
+    std::same_as<std::remove_cvref_t<std::ranges::range_value_t<T>>, std::thread>;
+
+template<typename Func = std::function<void()>>
+class sync_arrival final {
+public:
+    sync_arrival() = delete;
+    sync_arrival(const sync_arrival&) = delete;
+    auto operator=(const sync_arrival&) -> auto& = delete;
+    explicit sync_arrival(std::barrier<Func>& b) : b_(b) {}
+    ~sync_arrival() {
+        b_.arrive_and_wait();
+    }
+
+private:
+    std::barrier<Func>& b_;
+};
+
+// for std::jthread call barrier.arrive_and_wait directly or use sync_arrival
+template<ThreadContainer Container, typename Func = std::function<void()>>
+void wait_arrival(Container& threads, std::barrier<Func>& barrier) {
+    barrier.arrive_and_wait();
+    for (auto& thread : threads) {
+        if(thread.joinable())
+            thread.join();
+    }
+}
+#endif
 } // end namespace
 #endif

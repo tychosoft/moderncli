@@ -38,6 +38,8 @@ enable_testing()
 add_executable(test_shell test/shell.cpp src/print.hpp src/args.hpp src/filesystem.hpp)
 add_test(NAME test-shell COMMAND test_shell)
 target_link_libraries(test_shell PRIVATE fmt::fmt)
+set_target_properties(test_shell PROPERTIES CXX_STANDARD_REQUIRED OFF)
+target_compile_features(test_shell PRIVATE cxx_std_17)
 
 add_executable(test_keyfile test/keyfile.cpp src/keyfile.hpp test/test.conf)
 set_target_properties(test_keyfile PROPERTIES COMPILE_DEFINITIONS "TEST_DATA=\"${CMAKE_SOURCE_DIR}/test\"")
@@ -132,9 +134,10 @@ add_executable(test_select test/select.cpp src/select.hpp)
 add_test(NAME test-select COMMAND test_select)
 
 if(NOT (CMAKE_CXX_COMPILER_ID MATCHES "MSVC"))
-add_executable(test_cpp20 test/cpp20.cpp)
+add_executable(test_cpp20 test/cpp20.cpp src/print.hpp src/scan.hpp src/sync.hpp)
 add_test(NAME test-cpp20 COMMAND test_cpp20)
-set_target_properties(test_cpp20 PROPERTIES CXX_STANDARD 20)
+set_target_properties(test_cpp20 PROPERTIES CXX_STANDARD_REQUIRED OFF)
+target_compile_features(test_cpp20 PRIVATE cxx_std_20)
 endif()
 
 # Extras...
