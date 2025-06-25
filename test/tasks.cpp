@@ -60,5 +60,18 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     auto future = tycho::await(test_async, 42);
     assert(future.get() == 42);
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    task_pool pool(4);
+    std::mutex cout_mutex;
+    for (int i = 0; i < 8; ++i) {
+        pool.dispatch([i, &cout_mutex] {
+            {
+                const std::lock_guard lock(cout_mutex);
+                std::cout << "Task " << i << " is running on thread "
+                      << std::this_thread::get_id() << '\n';
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(120));
+        });
+    }
 }
 

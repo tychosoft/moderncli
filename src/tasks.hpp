@@ -20,6 +20,7 @@ namespace tycho {
 // can be nullptr...
 using action_t = void (*)();
 using error_t = void (*)(const std::exception&);
+using task_t = std::function<void()>;
 
 class future_cancelled : public std::runtime_error {
 public:
@@ -49,13 +50,12 @@ inline void detach(Func&& func, Args&&... args) {
 // We may derive a timer subsystem from a protected timer queue
 class timer_queue {
 public:
-    using task_t = std::function<void()>;
     using period_t = std::chrono::milliseconds;
     using timepoint_t = std::chrono::steady_clock::time_point;
 
-    explicit timer_queue(error_t handler = [](const std::exception& e){}) noexcept : 
+    explicit timer_queue(error_t handler = [](const std::exception& e){}) noexcept :
     errors_(std::move(handler)), thread_(std::thread(&timer_queue::run, this)) {}
-    
+
     timer_queue(const timer_queue&) = delete;
     auto operator=(const timer_queue&) -> auto& = delete;
 
@@ -181,7 +181,6 @@ class task_queue {
 public:
     using timeout_strategy = std::function<std::chrono::milliseconds()>;
     using shutdown_strategy = std::function<void()>;
-    using task_t = std::function<void()>;
 
     explicit task_queue(timeout_strategy timeout = &default_timeout, shutdown_strategy shutdown = [](){}) noexcept :
     timeout_(std::move(timeout)), shutdown_(std::move(shutdown)) {}
@@ -326,6 +325,85 @@ private:
         // run shutdown strategy in this context before joining...
         shutdown_();
     }
+};
+
+class task_pool {
+public:
+    task_pool() = default;
+    task_pool(const task_pool&) = delete;
+    auto operator=(const task_pool&) -> auto& = delete;
+
+    explicit task_pool(std::size_t thread_count) {
+        start(thread_count);
+    }
+
+    ~task_pool() {
+        drain();
+    }
+
+    auto size() const noexcept {
+        const std::lock_guard lock(queue_mutex);
+        return workers.size();
+    }
+
+    void resize(std::size_t count) {
+        drain();
+        if(count) start(count);
+    }
+
+    void start(std::size_t count) {
+        if(!count) return;
+        const std::lock_guard lock(queue_mutex);
+        if(started) return;
+        accepting = true;
+        started = true;
+        for(std::size_t i = 0; i < count; ++i) {
+            workers.emplace_back([this] {
+                while (true) {
+                    std::function<void()> task;
+                    std::unique_lock lock(queue_mutex);
+                    cv.wait(lock, [this] {
+                        return !accepting || !tasks.empty();
+                    });
+
+                    if(!accepting && tasks.empty()) return;
+                    task = std::move(tasks.front());
+                    tasks.pop();
+                    lock.unlock();
+                    task();
+                }
+            });
+        }
+    }
+
+    auto dispatch(task_t task) {
+        const std::lock_guard lock(queue_mutex);
+        if(!accepting) return false;
+        tasks.push(std::move(task));
+        cv.notify_one();
+        return true;
+    }
+
+    void drain() noexcept {
+        std::unique_lock lock(queue_mutex);
+        accepting = false;
+        cv.notify_all();
+        lock.unlock();
+        for(std::thread& t : workers)
+            if(t.joinable()) t.join();
+
+        lock.lock();
+        workers.clear();
+        started = false;
+    }
+
+private:
+    std::vector<std::thread> workers;
+    std::queue<std::function<void()>> tasks;
+    mutable std::mutex queue_mutex;
+    std::condition_variable cv;
+    bool accepting{false};
+    bool started{false};
 };
 
 inline void invoke(action_t action) {
