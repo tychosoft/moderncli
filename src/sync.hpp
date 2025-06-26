@@ -197,6 +197,10 @@ public:
     semaphore_t(const semaphore_t&) = delete;
     auto operator=(const semaphore_t&) -> auto& = delete;
 
+    ~semaphore_t() {
+        wait();
+    }
+
     operator bool() const noexcept {
         return !empty();
     }
@@ -206,25 +210,24 @@ public:
     }
 
     auto operator++() -> auto& {
-        wait();
+        acquire();
         return *this;
     }
 
     auto operator--() noexcept -> auto& {
-        post();
+        release();
         return *this;
     }
 
-    void post() noexcept {
-        const std::unique_lock lock(lock_);
-
+    void release() noexcept {
+        const std::lock_guard lock(lock_);
         if(active_) {
             --active_;
             cond_.notify_one();
         }
     }
 
-    void wait() {
+    void acquire() {
         std::unique_lock lock(lock_);
         if(++active_ > count_)
             cond_.wait(lock, [this]{return active_ <= count_;});
@@ -235,7 +238,7 @@ public:
         }
     }
 
-    auto try_wait() {
+    auto try_acquire() {
         std::unique_lock lock(lock_);
         if(++active_ > count_)
             cond_.wait(lock, [this]{return active_ <= count_;});
@@ -247,7 +250,7 @@ public:
         return true;
     }
 
-    auto wait_for(const sync_millisecs& timeout) {
+    auto try_acquire_for(const sync_millisecs& timeout) {
         std::unique_lock lock(lock_);
         ++active_;
         if(active_ <= count_ || cond_.wait_for(lock, timeout, [this]{return active_ <= count_;})) {
@@ -262,7 +265,7 @@ public:
         return false;
     }
 
-    auto wait_until(const sync_timepoint& time_point) {
+    auto try_acquire_until(const sync_timepoint& time_point) {
         std::unique_lock lock(lock_);
         ++active_;
         if(active_ <= count_ || cond_.wait_until(lock, time_point, [this]{return active_ <= count_;})) {
@@ -292,13 +295,21 @@ public:
         return active_;
     }
 
-    auto release() noexcept {
+    auto reset() noexcept {
         const std::lock_guard lock(lock_);
         count_ = ~0U;
         cond_.notify_all();
     }
 
-    auto reset(unsigned count) noexcept {
+    void wait() noexcept {
+        std::unique_lock lock(lock_);
+        count_ = ~0U;
+        if(!active_) return;
+        cond_.notify_all();
+        cond_.wait(lock, [this]{return !active_ ;});
+    }
+
+    auto resize(unsigned count) noexcept {
         const std::lock_guard lock(lock_);
         count_ = count;
         cond_.notify_all();
@@ -317,11 +328,11 @@ public:
     auto operator=(const semaphore_guard&) -> auto& = delete;
 
     explicit semaphore_guard(semaphore_t& sem) : sem_(sem) {
-        sem_.wait();
+        sem_.acquire();
     }
 
     ~semaphore_guard() {
-        sem_.post();
+        sem_.release();
     }
 
 private:
@@ -468,8 +479,11 @@ public:
     explicit wait_group(unsigned init) noexcept : count_(init) {}
     wait_group(const wait_group&) = delete;
     wait_group() = default;
-    ~wait_group() = default;
     auto operator=(const wait_group&) noexcept -> auto& = delete;
+
+    ~wait_group() {
+        wait();
+    }
 
     auto operator++() noexcept -> auto& {
         add(1);
@@ -498,16 +512,19 @@ public:
 
     void wait() noexcept {
         std::unique_lock lock(lock_);
+        if(!count_) return;
         cond_.wait(lock, [this]{return !count_ ;});
     }
 
     auto wait_for(const sync_millisecs& timeout) noexcept {
         std::unique_lock lock(lock_);
+        if(!count_) return true;
         return cond_.wait_for(lock, timeout, [this]{return !count_ ;});
     }
 
     auto wait_until(const sync_timepoint& time_point) noexcept {
         std::unique_lock lock(lock_);
+        if(!count_) return true;
         return cond_.wait_until(lock, time_point, [this]{return !count_ ;});
     }
 
@@ -557,6 +574,25 @@ public:
 
 private:
     std::barrier<Func>& b_;
+};
+
+template <std::ptrdiff_t Max>
+class sync_counting final {
+public:
+    sync_counting() = delete;
+    sync_counting(const sync_counting&) = delete;
+    auto operator=(const sync_counting&) -> auto& = delete;
+
+    explicit sync_counting(std::counting_semaphore<Max>& s) : s_(s) {
+        s_.acquire();
+    }
+
+    ~sync_counting() {
+        s_.release();
+    }
+
+private:
+    std::counting_semaphore<Max>& s_;
 };
 
 // for std::jthread call barrier.arrive_and_wait directly or use sync_arrival
