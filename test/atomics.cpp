@@ -34,6 +34,23 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         value = "two two";
     });
     assert(dict.find(2).value() == "two two"); // NOLINT
+
+    int value = 0;
+    const tycho::atomic_ref<int> ref(value);
+
+    ref.store(10);
+    assert(ref.load() == 10);
+    assert(value == 10);
+    assert(ref.fetch_add(5) == 10);
+    assert(ref.load() == 15);
+
+    ref = 20;
+    assert(ref == 20);
+    assert(value == 20);
+
+    int expected = 20;
+    assert(ref.compare_exchange_strong(expected, 99));
+    assert(ref == 99);
 }
 
 

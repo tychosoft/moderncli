@@ -13,6 +13,7 @@
 #include <vector>
 #include <ranges>
 #include <span>
+#include <atomic>
 #include <cstdlib>
 
 namespace {
