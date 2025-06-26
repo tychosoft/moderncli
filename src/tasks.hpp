@@ -47,6 +47,56 @@ inline void detach(Func&& func, Args&&... args) {
     }).detach();
 }
 
+// tycho::thread something like std::jthread functionality
+class thread_t final {
+public:
+    thread_t() = default;
+    thread_t(thread_t&& other) noexcept = default;
+    thread_t(const thread_t&) = delete;
+    auto operator=(const thread_t&) -> thread_t& = delete;
+    auto operator=(thread_t&&) -> thread_t& = default;
+
+    template<typename Callable, typename... Args,
+    typename = std::enable_if_t<!std::is_same_v<std::decay_t<Callable>, thread_t>>>
+    explicit thread_t(Callable&& f, Args&&... args) : thread_(std::forward<Callable>(f), std::forward<Args>(args)...) {}
+
+    ~thread_t() {
+        if(thread_.joinable())
+            thread_.join();
+    }
+
+    operator std::thread::id() const noexcept { return thread_.get_id(); }
+
+    auto native_handle() {return thread_.native_handle();}
+    auto get_id() const noexcept {return thread_.get_id();}
+    auto joinable() const noexcept -> bool { return thread_.joinable(); }
+
+    template<typename Callable, typename... Args,
+    typename = std::enable_if_t<!std::is_same_v<std::decay_t<Callable>, thread_t>>>
+    auto start(Callable&& f, Args&&... args) {
+        if (thread_.joinable()) return false;
+        thread_ = std::thread(std::forward<Callable>(f), std::forward<Args>(args)...);
+        return true;
+    }
+
+    void join() {
+        if(thread_.joinable())
+            thread_.join();
+    }
+
+    void swap(thread_t& other) noexcept {
+        std::swap(thread_, other.thread_);
+    }
+
+    void detach() noexcept {
+        if(thread_.joinable())
+            thread_.detach();
+    }
+
+private:
+    std::thread thread_;
+};
+
 // We may derive a timer subsystem from a protected timer queue
 class timer_queue {
 public:
@@ -54,7 +104,7 @@ public:
     using timepoint_t = std::chrono::steady_clock::time_point;
 
     explicit timer_queue(error_t handler = [](const std::exception& e){}) noexcept :
-    errors_(std::move(handler)), thread_(std::thread(&timer_queue::run, this)) {}
+    errors_(std::move(handler)), thread_(thread_t(&timer_queue::run, this)) {}
 
     timer_queue(const timer_queue&) = delete;
     auto operator=(const timer_queue&) -> auto& = delete;
@@ -78,7 +128,6 @@ public:
         const std::lock_guard lock(lock_);
         stop_ = true;
         cond_.notify_all();
-        thread_.join();
     }
 
     auto at(const timepoint_t& expires, task_t task) {
@@ -135,7 +184,7 @@ private:
     std::multimap<timepoint_t, timer_t> timers_;
     mutable std::mutex lock_;
     std::condition_variable cond_;
-    std::thread thread_;
+    thread_t thread_;
     bool stop_{false};
     uint64_t next_{0};
 
@@ -231,7 +280,7 @@ public:
         const std::unique_lock lock(mutex_);
         if(running_) return;
         running_ = true;
-        thread_ = std::thread(&task_queue::process, this);
+        thread_ = thread_t(&task_queue::process, this);
     }
 
     void shutdown() {
@@ -241,8 +290,6 @@ public:
         lock.unlock();
 
         cvar_.notify_all();
-        if(thread_.joinable())
-            thread_.join();
     }
 
     auto shutdown(shutdown_strategy handler) -> auto& {
@@ -294,7 +341,7 @@ private:
     std::deque<task_t> tasks_;
     mutable std::mutex mutex_;
     std::condition_variable cvar_;
-    std::thread thread_;
+    thread_t thread_;
     bool running_{false};
 
     static auto default_timeout() -> std::chrono::milliseconds {
@@ -389,7 +436,9 @@ public:
         accepting = false;
         cv.notify_all();
         lock.unlock();
-        for(std::thread& t : workers)
+
+        // joins are outside lock so we dont block if waiting to join
+        for(auto& t : workers)
             if(t.joinable()) t.join();
 
         lock.lock();
@@ -398,7 +447,7 @@ public:
     }
 
 private:
-    std::vector<std::thread> workers;
+    std::vector<thread_t> workers;
     std::queue<std::function<void()>> tasks;
     mutable std::mutex queue_mutex;
     std::condition_variable cv;
