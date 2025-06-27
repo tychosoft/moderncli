@@ -47,7 +47,7 @@ inline void detach(Func&& func, Args&&... args) {
     }).detach();
 }
 
-// tycho::thread something like std::jthread functionality
+#if __cplusplus < 202002L
 class thread_t final {
 public:
     thread_t() = default;
@@ -96,6 +96,9 @@ public:
 private:
     std::thread thread_;
 };
+#else
+using thread_t = std::jthread;
+#endif
 
 // We may derive a timer subsystem from a protected timer queue
 class timer_queue {
