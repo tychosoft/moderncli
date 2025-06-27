@@ -9,6 +9,7 @@
 #include <thread>
 #include <memory>
 #include <shared_mutex>
+#include <unordered_set>
 #include <condition_variable>
 #include <stdexcept>
 
@@ -25,7 +26,7 @@ using sync_millisecs = std::chrono::milliseconds;
 
 class semaphore_cancelled : public std::runtime_error {
 public:
-    semaphore_cancelled() : std::runtime_error("Future cancelled") {};
+    semaphore_cancelled() : std::runtime_error("Acquire cancelled") {};
 };
 
 inline auto system_clock(std::time_t offset = 0) {
@@ -193,7 +194,7 @@ private:
 
 class semaphore_t final {
 public:
-    explicit semaphore_t(unsigned count = 0) noexcept : count_(count) {}
+    explicit semaphore_t(unsigned count = 1) noexcept : count_(count) {}
     semaphore_t(const semaphore_t&) = delete;
     auto operator=(const semaphore_t&) -> auto& = delete;
 
@@ -220,7 +221,10 @@ public:
     }
 
     void release() noexcept {
+        auto id = std::this_thread::get_id();
         const std::lock_guard lock(lock_);
+        if(threads_.find(id) == threads_.end()) return;
+        threads_.erase(id);
         if(active_) {
             --active_;
             cond_.notify_one();
@@ -228,7 +232,9 @@ public:
     }
 
     void acquire() {
+        auto id = std::this_thread::get_id();
         std::unique_lock lock(lock_);
+        if(threads_.find(id) != threads_.end()) throw semaphore_cancelled();
         if(++active_ > count_)
             cond_.wait(lock, [this]{return active_ <= count_;});
 
@@ -236,10 +242,13 @@ public:
             --active_;
             throw semaphore_cancelled();
         }
+        threads_.insert(id);
     }
 
     auto try_acquire() {
+        auto id = std::this_thread::get_id();
         std::unique_lock lock(lock_);
+        if(threads_.find(id) != threads_.end()) return false;
         if(++active_ > count_)
             cond_.wait(lock, [this]{return active_ <= count_;});
 
@@ -247,17 +256,22 @@ public:
             --active_;
             return false;
         }
+
+        threads_.insert(id);
         return true;
     }
 
     auto try_acquire_for(const sync_millisecs& timeout) {
+        auto id = std::this_thread::get_id();
         std::unique_lock lock(lock_);
+        if(threads_.find(id) != threads_.end()) return false;
         ++active_;
         if(active_ <= count_ || cond_.wait_for(lock, timeout, [this]{return active_ <= count_;})) {
             if(count_ == ~0U) {
                 --active_;
                 throw semaphore_cancelled();
             }
+            threads_.insert(id);
             return true;
         }
 
@@ -266,13 +280,16 @@ public:
     }
 
     auto try_acquire_until(const sync_timepoint& time_point) {
+        auto id = std::this_thread::get_id();
         std::unique_lock lock(lock_);
+        if(threads_.find(id) != threads_.end()) return false;
         ++active_;
         if(active_ <= count_ || cond_.wait_until(lock, time_point, [this]{return active_ <= count_;})) {
             if(count_ == ~0U) {
                 --active_;
                 throw semaphore_cancelled();
             }
+            threads_.insert(id);
             return true;
         }
 
@@ -290,6 +307,12 @@ public:
         return count_;
     }
 
+    auto acquired() const noexcept {
+        auto id = std::this_thread::get_id();
+        const std::lock_guard lock(lock_);
+        return threads_.find(id) != threads_.end();
+    }
+
     auto active() const noexcept {
         const std::lock_guard lock(lock_);
         return active_;
@@ -302,7 +325,9 @@ public:
     }
 
     void wait() noexcept {
+        auto id = std::this_thread::get_id();
         std::unique_lock lock(lock_);
+        if(threads_.find(id) != threads_.end()) return;
         count_ = ~0U;
         if(!active_) return;
         cond_.notify_all();
@@ -318,6 +343,7 @@ public:
 private:
     mutable std::mutex lock_;
     std::condition_variable cond_;
+    std::unordered_set<std::thread::id> threads_;
     unsigned count_{0};
     unsigned active_{0};
 };
@@ -500,7 +526,7 @@ public:
         count_ += count;
     }
 
-    auto done() noexcept {
+    auto release() noexcept {
         const std::lock_guard lock(lock_);
         if(!count_) return true;
         if(--count_ == 0) {
@@ -546,7 +572,7 @@ public:
     auto operator=(const sync_group&) -> auto& = delete;
     explicit sync_group(wait_group& wg) : wg_(wg) {}
     ~sync_group() {
-        wg_.done();
+        wg_.release();
     }
 
 private:

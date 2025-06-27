@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "sync.hpp"
+#include "tasks.hpp"
 #include <cstdlib>
 
 struct test {
@@ -32,6 +33,17 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
         const reader_ptr<struct test> tester(testing);
         assert(tester->v1 == 2);
+
+        semaphore_t sem;    // binary has 1
+        thread_t thr([&sem]{
+            const semaphore_guard ses(sem);
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            assert(sem.acquired());
+            assert(sem.active() == 1);
+        });
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        assert(sem.active() == 1);
+        assert(sem.size() == 1);
     }
     catch(...) {
         ::exit(1);
