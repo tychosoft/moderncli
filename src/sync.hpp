@@ -194,9 +194,15 @@ private:
 
 class semaphore_t final {
 public:
-    explicit semaphore_t(unsigned count = 1) noexcept : count_(count) {}
     semaphore_t(const semaphore_t&) = delete;
     auto operator=(const semaphore_t&) -> auto& = delete;
+
+    explicit semaphore_t(unsigned count = 0) noexcept : count_(count) {
+        if(count == 0)
+            count_ = std::thread::hardware_concurrency();
+        if(count_ == 0)
+            count_ = 1;
+    }
 
     ~semaphore_t() {
         wait();

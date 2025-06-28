@@ -34,8 +34,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         const reader_ptr<struct test> tester(testing);
         assert(tester->v1 == 2);
 
-        semaphore_t sem;    // binary has 1
-        thread_t thr([&sem]{
+        semaphore_t sem(1);     // binary semaphore
+        const thread_t thr([&sem]{
             const semaphore_guard ses(sem);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             assert(sem.acquired());

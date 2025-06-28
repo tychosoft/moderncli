@@ -379,12 +379,15 @@ private:
 
 class task_pool {
 public:
-    task_pool() = default;
     task_pool(const task_pool&) = delete;
     auto operator=(const task_pool&) -> auto& = delete;
 
-    explicit task_pool(std::size_t thread_count) {
-        start(thread_count);
+    explicit task_pool(std::size_t count = 0) {
+        if(count == 0)
+            count = std::thread::hardware_concurrency();
+        if(count == 0)
+            count = 1;
+        start(count);
     }
 
     ~task_pool() {
