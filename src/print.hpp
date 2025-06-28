@@ -254,6 +254,7 @@ constexpr auto format(std::ostream& out, std::format_string<Args...> fmt, Args&&
 }
 
 template<class... Args>
+requires (!std::is_same_v<std::remove_cvref_t<Args>, std::ostream> && ...)
 constexpr void print(std::format_string<Args...> fmt, Args&&... args) {
     std::cout << std::format(fmt, std::forward<Args>(args)...);
 }
@@ -261,6 +262,11 @@ constexpr void print(std::format_string<Args...> fmt, Args&&... args) {
 template<class... Args>
 constexpr void print(std::ostream& out, std::format_string<Args...> fmt, Args&&... args) {
     out << std::format(fmt, std::forward<Args>(args)...);
+}
+
+template<typename... Args>
+void print(std::ostream& out, const char* fmt, Args&&... args) {
+    out << std::vformat(fmt, std::make_format_args(std::forward<Args>(args)...));
 }
 
 template<class... Args>

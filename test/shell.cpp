@@ -30,11 +30,11 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     using namespace std;
 
     const uint16_t val = 23;
-    auto out = format("X{}Y", val);
+    auto out = tycho::format("X{}Y", val);
     assert(out == "X23Y");
     fsys::remove("/tmp/xyz");
     const fsys::path path = "/here";
-    assert(format("!{}!", path.string()) == "!/here!");
+    assert(tycho::format("!{}!", path.string()) == "!/here!");
     assert(value == 1);
 
     auto *p = &value;

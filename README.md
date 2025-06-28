@@ -5,7 +5,7 @@ inline C++ header libraries, which I had duplicated or vendored in other
 packages in the past. These headers are being gathered under a common package
 of their own that can then be installed as a core dependency. Hence, one
 interpretation for this package is "Modern C++" Library Interfaces. Moderncli
-is meant to support C++ 17 or later.
+is meant to support C++ 17 thru C++23 with consistent source behavior.
 
 Moderncli headers are meant to be usable stand-alone and provide generic
 cross-platform low level wrappers around common system features and services.
@@ -24,10 +24,10 @@ later) that supports the C++ filesystem header and runtime library.
 ## Dependencies
 
 Moderncli and applications also often make use of the C++ library libfmt. This
-allows C++17 (and C++20) applications to use modern string and print formatting
-operations like from C++23 and later. If you are building applications for
-C++20 or later, or you do not use the moderncli print header for output, you do
-not need to use or link with libfmt.
+allows C++17 applications to use modern string and print formatting operations
+like from C++23 and later. If you are building applications for C++20 or later,
+or you do not also use the moderncli print header for output, you do not need
+to use or link with libfmt.
 
 Moderncli also uses openssl for crypto operations and ssl streams in any crypto
 namespace related headers. Generally, if your not using secure streams, but
