@@ -42,7 +42,7 @@ auto test_async(int x) -> int {
 } // end namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
-#if __cplusplus >= 202002L
+#if __cplusplus >= 202302L
     wait_group wg(1);
     try {
         using namespace tycho;
