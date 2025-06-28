@@ -1443,6 +1443,16 @@ inline auto get_ipaddress_or(const std::string_view& from, address_t or_else = a
     if(address.empty()) return or_else;
     return address;
 }
+
+[[deprecated("use Socket::sned_to")]]
+inline auto send_to(int so, const void *from, std::size_t size, int flags = 0, const struct sockaddr *addr = nullptr, socklen_t asize = sizeof(struct sockaddr_storage)) noexcept {
+    return ::sendto(so, static_cast<const char *>(from), int(size), flags, addr, asize);
+}
+
+[[deprecated("use Socket::recv_from")]]
+inline auto recv_from(int so, void *to, std::size_t size, int flags = 0, struct sockaddr *addr = nullptr, socklen_t *asize = nullptr) noexcept {
+    return ::recvfrom(so, static_cast<char *>(to), int(size), flags, addr, asize);
+}
 } // end namespace
 
 namespace std {
