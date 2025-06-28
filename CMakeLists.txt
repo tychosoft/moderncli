@@ -139,7 +139,7 @@ set_target_properties(test_cpp20 PROPERTIES CXX_STANDARD_REQUIRED OFF)
 target_compile_features(test_cpp20 PRIVATE cxx_std_20)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+if(NOT WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
 add_executable(test_cpp23 test/cpp23.cpp src/print.hpp src/scan.hpp src/sync.hpp)
 add_test(NAME test-cpp23 COMMAND test_cpp23)
 set_target_properties(test_cpp23 PROPERTIES CXX_STANDARD_REQUIRED OFF)
