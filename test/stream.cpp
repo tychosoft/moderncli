@@ -22,7 +22,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
             // could return false if filtering...
             // could dispatch and do tcpstream::accept in a thread...
             tcpstream tcp(so, peer);
-            println_to(tcp, "Not Send, compile test");
+            print(tcp, "Not Send, compile test\n");
             return true;
         }));
         [[maybe_unused]] tcpstream tcp(static_cast<const struct sockaddr *>(nullptr));        // NOLINT

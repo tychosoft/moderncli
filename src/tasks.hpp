@@ -71,14 +71,6 @@ public:
     auto get_id() const noexcept {return thread_.get_id();}
     auto joinable() const noexcept -> bool { return thread_.joinable(); }
 
-    template<typename Callable, typename... Args,
-    typename = std::enable_if_t<!std::is_same_v<std::decay_t<Callable>, thread_t>>>
-    auto start(Callable&& f, Args&&... args) {
-        if (thread_.joinable()) return false;
-        thread_ = std::thread(std::forward<Callable>(f), std::forward<Args>(args)...);
-        return true;
-    }
-
     void join() {
         if(thread_.joinable())
             thread_.join();

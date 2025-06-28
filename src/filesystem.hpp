@@ -809,7 +809,7 @@ inline auto scan_recursive(const fsys::path& path, Func proc) {
 }
 
 inline auto to_string(const fsys::path& path) {
-    return std::string{path.string()};
+    return path.string();
 }
 } // end namespace
 

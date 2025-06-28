@@ -157,6 +157,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
             });
         }
 
+        fsys::path path{"testing"};
+        auto text = tycho::format("test {}", to_string(path));
+        assert(text == "test testing");
+
         const sync_group arrival(wg);
         assert(wg.count() == 1);
         sync_ptr<int> count(counter);

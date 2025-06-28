@@ -65,49 +65,14 @@ constexpr void print(format_string<Args...> fmt, Args&&... args) {
 
 // Should not be used in new code for post c++17 support
 template<class... Args>
-//[[deprecated("use print_to instead")]] - need a release cycle for warning
 constexpr void print(std::ostream& out, format_string<Args...> fmt, Args&&... args) {
     out << format(fmt, std::forward<Args>(args)...);
 }
 
-template<class... Args>
-constexpr void print_to(std::ostream& out, format_string<Args...> fmt, Args&&... args) {
-    out << format(fmt, std::forward<Args>(args)...);
-}
-
-template<class... Args>
-constexpr void print_to(FILE *fp, format_string<Args...> fmt, Args&&... args) {
-    fputs(format(fmt, std::forward<Args>(args)...).c_str(), fp);
-}
-
 // Should not be used in new code for post c++17 support
 template<class... Args>
-//[[deprecated("use print_to instead")]]
 constexpr void print(FILE *fp, format_string<Args...> fmt, Args&&... args) {
     fputs(format(fmt, std::forward<Args>(args)...).c_str(), fp);
-}
-
-
-template<class... Args>
-constexpr void println(format_string<Args...> fmt, Args&&... args) {
-    std::cout << format(fmt, std::forward<Args>(args)...) << std::endl;
-}
-
-// Should not be used in new code for post c++17 support
-template<class... Args>
-//[[deprecated("use println_to instead")]]
-constexpr void println(std::ostream& out, format_string<Args...> fmt, Args&&... args) {
-    out << format(fmt, std::forward<Args>(args)...) << std::endl;
-}
-
-template<class... Args>
-constexpr void println_to(std::ostream& out, format_string<Args...> fmt, Args&&... args) {
-    out << format(fmt, std::forward<Args>(args)...) << std::endl;
-}
-
-template<class... Args>
-constexpr void println_to(FILE *fp, format_string<Args...> fmt, Args&&... args) {
-    fprintf(fp, "%s\n", format(fmt, std::forward<Args>(args)...).c_str());
 }
 
 // Should not be used in new code for post c++17 support
@@ -144,11 +109,11 @@ public:
             try {
                 auto msg = format(fmt, std::forward<Args>(args)...);
                 const std::lock_guard lock(locking_);
-                print_to(std::cerr, "debug: {}\n", msg);
+                print(std::cerr, "debug: {}\n", msg);
                 notify_(msg, "debug");
             }
             catch(const std::exception& e) {
-                print_to(std::cerr, "debug: {}\n", e.what());
+                print(std::cerr, "debug: {}\n", e.what());
                 return;
             }
         }
@@ -164,7 +129,7 @@ public:
 #endif
         notify_(msg, "info");
         if(logging_ > 1)
-            print_to(std::cerr, "info: {}\n", msg);
+            print(std::cerr, "info: {}\n", msg);
     }
 
     template<class... Args>
@@ -176,7 +141,7 @@ public:
 #endif
         notify_(msg, "notice");
         if(logging_ > 0)
-            print_to(std::cerr, "notice: {}\n", msg);
+            print(std::cerr, "notice: {}\n", msg);
     }
 
     template<class... Args>
@@ -188,7 +153,7 @@ public:
 #endif
         notify_(msg, "warning");
         if(logging_)
-            print_to(std::cerr, "warn: {}\n", msg);
+            print(std::cerr, "warn: {}\n", msg);
     }
 
     template<class... Args>
@@ -200,7 +165,7 @@ public:
 #endif
         notify_(msg, "error");
         if(logging_)
-            print_to(std::cerr, "error: {}\n", msg);
+            print(std::cerr, "error: {}\n", msg);
     }
 
     template<class... Args>
@@ -212,7 +177,7 @@ public:
 #endif
         notify_(msg, "fatal");
         if(logging_)
-            print_to(std::cerr, "fail: {}\n", msg);
+            print(std::cerr, "fail: {}\n", msg);
         std::cerr << std::ends;
         ::exit(exit_code);
     }
@@ -226,7 +191,7 @@ public:
 #endif
         notify_(msg, "fatal");
         if(logging_)
-            print_to(std::cerr, "crit: {}\n", msg);
+            print(std::cerr, "crit: {}\n", msg);
         std::cerr << std::ends;
         quick_exit(exit_code);
     }
@@ -265,46 +230,38 @@ inline auto on_crit(void(*handler)()) {
 #include <format>
 
 namespace tycho {
-template<class... Args>
-constexpr auto format(std::format_string<Args...> fmt, Args&&... args) {
-    return std::format(fmt, std::forward<Args>(args)...);
+template <class... Args>
+auto format(const char* fmt, Args&&... args) {
+    auto bound = std::make_tuple(std::decay_t<Args>(std::forward<Args>(args))...);
+    return std::apply([&](auto&&... unpacked) {
+        return std::vformat(fmt, std::make_format_args(unpacked...));
+    }, bound);
+}
+
+template <class... Args>
+void print(const char* fmt, Args&&... args) {
+    auto args_tuple = std::make_tuple(std::forward<Args>(args)...);
+    std::apply([&](auto&&... unpacked) {
+        std::cout << std::vformat(fmt, std::make_format_args(unpacked...));
+    }, args_tuple);
 }
 
 template<class... Args>
-requires (!std::is_same_v<std::remove_cvref_t<Args>, std::ostream> && ...)
-constexpr void print(std::format_string<Args...> fmt, Args&&... args) {
-    std::cout << std::format(fmt, std::forward<Args>(args)...);
+void print(std::ostream& out, const char* fmt, Args&&... args) {
+    auto bound = std::make_tuple(std::decay_t<Args>(std::forward<Args>(args))...);
+    std::apply([&](auto&&... unpacked) {
+        out << std::vformat(fmt, std::make_format_args(unpacked...));
+    }, bound);
 }
 
 template<class... Args>
-constexpr void print_to(std::ostream& out, std::format_string<Args...> fmt, Args&&... args) {
-    out << std::format(fmt, std::forward<Args>(args)...);
+void print(FILE* fp, const char* fmt, Args&&... args) {
+    auto bound = std::make_tuple(std::decay_t<Args>(std::forward<Args>(args))...);
+    std::apply([&](auto&&... unpacked) {
+        fputs(std::vformat(fmt, std::make_format_args(unpacked...)).c_str(), fp);
+    }, bound);
 }
 
-template<typename... Args>
-void print_to(std::ostream& out, const char* fmt, Args&&... args) {
-    out << std::format(fmt, std::make_format_args(std::forward<Args>(args)...));
-}
-
-template<class... Args>
-constexpr void print_to(FILE *fp, std::format_string<Args...> fmt, Args&&... args) {
-    fputs(std::format(fmt, std::forward<Args>(args)...).c_str(), fp);
-}
-
-template<class... Args>
-constexpr void println_to(std::ostream& out, std::format_string<Args...> fmt, Args&&... args) {
-    out << std::format(fmt, std::forward<Args>(args)...) << std::endl;
-}
-
-template<class... Args>
-constexpr void println(std::format_string<Args...> fmt, Args&&... args) {
-    std::cout << std::format(fmt, std::forward<Args>(args)...) << std::endl;
-}
-
-template<class... Args>
-constexpr void println_to(FILE *fp, std::format_string<Args...> fmt, Args&&... args) {
-    fprintf(fp, "%s\n", std::format(fmt, std::forward<Args>(args)...).c_str());
-}
 
 template<class... Args>
 [[noreturn]] constexpr void die(int code, std::format_string<Args...> fmt, Args&&... args) {
@@ -333,11 +290,11 @@ public:
             try {
                 auto msg = std::format(fmt, std::forward<Args>(args)...);
                 const std::lock_guard lock(locking_);
-                print_to(std::cerr, "debug: {}\n", msg);
+                std::cerr << std::format("debug: {}\n", msg);
                 notify_(msg, "debug");
             }
             catch(const std::exception& e) {
-                print_to(std::cerr, "debug: {}\n", e.what());
+                std::cerr << std::format("debug: {}\n", e.what());
                 return;
             }
         }
@@ -353,7 +310,7 @@ public:
 #endif
         notify_(msg, "info");
         if(logging_ > 1)
-            print_to(std::cerr, "info: {}\n", msg);
+            std::cerr << std::format( "info: {}\n", msg);
     }
 
     template<class... Args>
@@ -365,7 +322,7 @@ public:
 #endif
         notify_(msg, "notice");
         if(logging_ > 0)
-            print_to(std::cerr, "notice: {}\n", msg);
+            std::cerr << std::format("notice: {}\n", msg);
     }
 
     template<class... Args>
@@ -377,7 +334,7 @@ public:
 #endif
         notify_(msg, "warning");
         if(logging_)
-            print_to(std::cerr, "warn: {}\n", msg);
+            std::cerr << std::format("warn: {}\n", msg);
     }
 
     template<class... Args>
@@ -389,7 +346,7 @@ public:
 #endif
         notify_(msg, "error");
         if(logging_)
-            print_to(std::cerr, "error: {}\n", msg);
+            std::cerr << std::format("error: {}\n", msg);
     }
 
     template<class... Args>
@@ -401,7 +358,7 @@ public:
 #endif
         notify_(msg, "fatal");
         if(logging_)
-            print_to(std::cerr, "fail: {}\n", msg);
+            std::cerr << std::format("fail: {}\n", msg);
         std::cerr << std::ends;
         ::exit(exit_code);
     }
@@ -415,7 +372,7 @@ public:
 #endif
         notify_(msg, "fatal");
         if(logging_)
-            print_to(std::cerr, "crit: {}\n", msg);
+            std::cerr << std::format("crit: {}\n", msg);
         std::cerr << std::ends;
         quick_exit(exit_code);
     }
