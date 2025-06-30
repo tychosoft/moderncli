@@ -97,6 +97,10 @@ add_executable(test_digest test/digest.cpp src/digest.hpp)
 target_link_libraries(test_digest PRIVATE OpenSSL::Crypto fmt::fmt)
 add_test(NAME test-digest COMMAND test_digest)
 
+add_executable(test_hash test/hash.cpp src/hash.hpp)
+target_link_libraries(test_hash PRIVATE OpenSSL::Crypto fmt::fmt)
+add_test(NAME test-hash COMMAND test_hash)
+
 add_executable(test_random test/random.cpp src/encoding.hpp src/random.hpp)
 target_link_libraries(test_random PRIVATE OpenSSL::Crypto fmt::fmt)
 add_test(NAME test-random COMMAND test_random)

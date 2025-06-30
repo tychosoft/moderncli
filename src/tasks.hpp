@@ -120,8 +120,8 @@ public:
     }
 
     void shutdown() noexcept {
-        if(stop_) return;
         const std::lock_guard lock(lock_);
+        if(stop_) return;
         stop_ = true;
         cond_.notify_all();
     }
@@ -181,7 +181,7 @@ private:
     mutable std::mutex lock_;
     std::condition_variable cond_;
     thread_t thread_;
-    bool stop_{false};
+    volatile bool stop_{false};
     uint64_t next_{0};
 
     void run() noexcept {
@@ -257,11 +257,10 @@ public:
     }
 
     auto dispatch(task_t task, std::size_t max = 0) {
-        std::unique_lock lock(mutex_);
+        const std::lock_guard lock(mutex_);
         if(!running_) return false;
         if(max && tasks_.size() >= max) return false;
         tasks_.push_back(std::move(task));
-        lock.unlock();
         cvar_.notify_one();
         return true;
     }
@@ -338,7 +337,7 @@ private:
     mutable std::mutex mutex_;
     std::condition_variable cvar_;
     thread_t thread_;
-    bool running_{false};
+    volatile bool running_{false};
 
     static auto default_timeout() -> std::chrono::milliseconds {
         return std::chrono::minutes(1);
@@ -388,8 +387,8 @@ public:
     }
 
     auto size() const noexcept {
-        const std::lock_guard lock(queue_mutex);
-        return workers.size();
+        const std::lock_guard lock(mutex_);
+        return workers_.size();
     }
 
     void resize(std::size_t count) {
@@ -399,22 +398,23 @@ public:
 
     void start(std::size_t count) {
         if(!count) return;
-        const std::lock_guard lock(queue_mutex);
-        if(started) return;
-        accepting = true;
-        started = true;
+        const std::lock_guard lock(mutex_);
+        if(started_) return;
+        accepting_ = true;
+        started_ = true;
+        workers_.clear();
         for(std::size_t i = 0; i < count; ++i) {
-            workers.emplace_back([this] {
+            workers_.emplace_back([this] {
                 while (true) {
                     std::function<void()> task;
-                    std::unique_lock lock(queue_mutex);
-                    cv.wait(lock, [this] {
-                        return !accepting || !tasks.empty();
+                    std::unique_lock lock(mutex_);
+                    cvar_.wait(lock, [this] {
+                        return !accepting_ || !tasks_.empty();
                     });
 
-                    if(!accepting && tasks.empty()) return;
-                    task = std::move(tasks.front());
-                    tasks.pop();
+                    if(!accepting_ && tasks_.empty()) return;
+                    task = std::move(tasks_.front());
+                    tasks_.pop();
                     lock.unlock();
                     task();
                 }
@@ -423,36 +423,44 @@ public:
     }
 
     auto dispatch(task_t task) {
-        const std::lock_guard lock(queue_mutex);
-        if(!accepting) return false;
-        tasks.push(std::move(task));
-        cv.notify_one();
+        const std::lock_guard lock(mutex_);
+        if(!accepting_) return false;
+        tasks_.push(std::move(task));
+        cvar_.notify_one();
         return true;
     }
 
     void drain() noexcept {
-        std::unique_lock lock(queue_mutex);
-        accepting = false;
-        cv.notify_all();
+        std::unique_lock lock(mutex_);
+        accepting_ = false;
+        cvar_.notify_all();
         lock.unlock();
 
         // joins are outside lock so we dont block if waiting to join
-        for(auto& t : workers)
+        for(auto& t : workers_)
             if(t.joinable()) t.join();
 
         lock.lock();
-        workers.clear();
-        started = false;
+        workers_.clear();
+        started_ = false;
     }
 
 private:
-    std::vector<thread_t> workers;
-    std::queue<std::function<void()>> tasks;
-    mutable std::mutex queue_mutex;
-    std::condition_variable cv;
-    bool accepting{false};
-    bool started{false};
+    std::vector<thread_t> workers_;
+    std::queue<std::function<void()>> tasks_;
+    mutable std::mutex mutex_;
+    std::condition_variable cvar_;
+    std::atomic<bool> accepting_{false};
+    bool started_{false};
 };
+
+inline void sleep(int msec) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(msec));
+}
+
+inline void yield() {
+    std::this_thread::yield();
+}
 
 inline void invoke(action_t action) {
     if(action != nullptr)

@@ -63,6 +63,13 @@ A C++17 simplified emulation of C++23 std::expected using std::variant.
 Support for filesystem, posix file functions, and file scanning closures. This
 header presumes a c++ compiler with filesystem runtime support.
 
+## hash.hpp
+
+Thread-safe consistent hash support for cross-platform distributed computing.
+Any openssl EVP digest can be used with the default being sha256. This
+currently supports 64 bit big endian consistent hash function and a ring
+buffer for 64 bit scattered distributed keys.
+
 ## keyfile.hpp
 
 This allows for parsing config files that may be broken into \[sections\] and

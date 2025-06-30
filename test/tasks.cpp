@@ -25,6 +25,13 @@ auto process_command(const std::string& text, int number) {
     });
 }
 
+auto move_command(std::string& text, int number) {
+    return tq.dispatch([text = std::move(text), number] {
+        str = std::move(text);
+        count += number;
+    });
+}
+
 auto test_async(int x) -> int {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     return x;
@@ -33,8 +40,14 @@ auto test_async(int x) -> int {
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     tq.startup();
+    std::string old = "here";
+    assert(!old.empty());
+    move_command(old, 0);
+    assert(old.empty());
+
     assert(process_command("test", 42));
     assert(process_command("more", 10));
+
     while(!tq.empty()) {
          std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }

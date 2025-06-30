@@ -116,6 +116,28 @@ public:
         super::clear();
     }
 
+    auto operator=(secure_stream&& from) noexcept -> secure_stream& {
+        if (this != &from) {
+            socket_stream<S>::operator=(std::move(from));
+            if (ssl_) SSL_free(ssl_);
+            if (bio_) BIO_free_all(bio_);
+            if (peer_cert) X509_free(peer_cert);
+
+            ctx_ = from.ctx_;
+            ssl_ = from.ssl_;
+            bio_ = from.bio_;
+            peer_cert = from.peer_cert;
+            accepted = from.accepted;
+            verified = from.verified;
+
+            from.ctx_ = nullptr;
+            from.ssl_ = nullptr;
+            from.bio_ = nullptr;
+            from.peer_cert = nullptr;
+        }
+        return *this;
+    }
+
     auto peer() const noexcept {
         if(peer_cert)
             X509_up_ref(peer_cert);

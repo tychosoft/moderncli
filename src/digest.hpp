@@ -5,7 +5,9 @@
 #define TYCHO_DIGEST_HPP_
 
 #include <string_view>
+#include <type_traits>
 #include <cstring>
+#include <cstddef>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 
@@ -167,7 +169,11 @@ inline auto digest(const uint8_t *msg, std::size_t size, uint8_t *out, const EVP
     return std::size_t(olen);
 }
 
-inline auto digest(const std::string_view& msg, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
+template<typename T,
+typename = std::enable_if_t<(
+std::is_convertible_v<decltype(std::declval<const T&>().data()), const char*> || std::is_convertible_v<decltype(std::declval<const T&>().data()), const uint8_t*>
+) && std::is_convertible_v<decltype(std::declval<const T&>().size()), std::size_t>>>
+inline auto digest(const T& msg, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
     return digest(reinterpret_cast<const uint8_t *>(msg.data()), msg.size(), out, md);
 }
 

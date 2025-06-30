@@ -99,6 +99,21 @@ public:
     socket_stream(const socket_stream&) = delete;
     auto operator=(const socket_stream&) -> socket_stream& = delete;
 
+    auto operator=(socket_stream&& from) noexcept -> socket_stream& {
+        if(this != &from) {
+            if(so_ != -1)
+                close_socket(so_);
+
+            so_ = from.so_;
+            family_ = from.family_;
+
+            from.so_ = -1;
+            from.allocate(0);
+            allocate(S);
+        }
+        return *this;
+    }
+
     auto sync() -> int override {
         auto len = pptr() - pbase();
         if(!len) return 0;

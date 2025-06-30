@@ -176,6 +176,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     }
     assert(wg.count() == 0);
 #endif
+    return 0;
 }
 
 

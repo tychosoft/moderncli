@@ -35,8 +35,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
             assert(is(dummy));
             dummy.listen();
             assert(dummy.err() == 0);
-            tcpstream tcp(local_host);
+            tcpstream tcp_orig(local_host);
+            tcpstream tcp(std::move(tcp_orig));
             assert(tcp.is_open() == true);
+            assert(tcp_orig.is_open() == false);    // NOLINT
             print(tcp, "HERE");
             assert(tcp.out_pending() == 4);
             assert(tcp.in_avail() == 0);
