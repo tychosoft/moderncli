@@ -47,7 +47,7 @@ inline void detach(Func&& func, Args&&... args) {
     }).detach();
 }
 
-#if __cplusplus < 202002L
+#if __cplusplus < 202002L || (defined(_LIBCPP_VERSION) && (!defined(_LIBCPP_STD_VER) || _LIBCPP_STD_VER < 20 || defined(_LIBCPP_HAS_NO_EXPERIMENTAL_STOP_TOKEN)))
 class thread_t final {
 public:
     thread_t() = default;
@@ -89,6 +89,7 @@ private:
     std::thread thread_;
 };
 #else
+#define MODERNCLI_HAS_JTHREAD   1
 using thread_t = std::jthread;
 #endif
 
