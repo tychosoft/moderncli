@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <atomic>
 #include <chrono>
+#include <tuple>
 #include <map>
 
 namespace tycho {
@@ -26,19 +27,6 @@ class future_cancelled : public std::runtime_error {
 public:
     future_cancelled() : std::runtime_error("Future cancelled") {};
 };
-
-template<typename T, typename Pred>
-inline auto get_future(std::function<T>& future, Pred pred, std::chrono::milliseconds interval = std::chrono::milliseconds(100)) {
-    do {    // NOLINT
-        if(!pred()) throw future_cancelled();
-    } while(future.wait_for(interval) != std::future_status::ready);
-    return future.get();
-}
-
-template<typename Func, typename... Args>
-inline auto await(Func&& func, Args&&... args) -> std::future<typename std::invoke_result_t<Func, Args...>> {
-    return std::async(std::launch::async, std::forward<Func>(func), std::forward<Args>(args)...);
-}
 
 template<typename Func, typename... Args>
 inline void detach(Func&& func, Args&&... args) {
@@ -403,6 +391,7 @@ public:
         accepting_ = true;
         started_ = true;
         workers_.clear();
+        workers_.reserve(count);
         for(std::size_t i = 0; i < count; ++i) {
             workers_.emplace_back([this] {
                 while (true) {
@@ -453,6 +442,37 @@ private:
     std::atomic<bool> accepting_{false};
     bool started_{false};
 };
+
+template<typename T, typename Pred>
+inline auto get_future(std::function<T>& future, Pred pred, std::chrono::milliseconds interval = std::chrono::milliseconds(100)) {
+    do {    // NOLINT
+        if(!pred()) throw future_cancelled();
+    } while(future.wait_for(interval) != std::future_status::ready);
+    return future.get();
+}
+
+template<typename Func, typename... Args>
+inline auto await(Func&& func, Args&&... args) -> std::future<typename std::invoke_result_t<Func, Args...>> {
+    return std::async(std::launch::async, std::forward<Func>(func), std::forward<Args>(args)...);
+}
+
+template<typename Func, typename... Args>
+inline void parallel_threads(std::size_t count, Func&& func, Args&&... args) {
+    if(!count)
+        count = std::thread::hardware_concurrency();
+    if(!count)
+        count = 1;
+
+    std::vector<thread_t> threads;
+    threads.reserve(count);
+    auto argv = std::make_tuple(std::forward<Args>(args)...);
+
+    for (std::size_t i = 0; i < count; ++i) {
+        threads.emplace_back([f = std::forward<Func>(func), argv]() mutable {
+            std::apply(f, argv);
+        });
+    }
+}
 
 inline void sleep(int msec) {
     std::this_thread::sleep_for(std::chrono::milliseconds(msec));

@@ -144,6 +144,12 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(future.get() == 42);
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
+        std::atomic<int> total = 0;
+        parallel_threads(3, [&total]{
+            total += 2;
+        });
+        assert(total == 6);
+
         task_pool pool(4);
         std::mutex cout_mutex;
         for (int i = 0; i < 8; ++i) {
