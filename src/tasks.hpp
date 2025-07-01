@@ -106,7 +106,7 @@ public:
     }
 
     void startup() noexcept {
-        thread_ = thread_t(&timer_queue::run, this);
+        thread_ = std::thread(&timer_queue::run, this);
     }
 
     void shutdown() {
@@ -115,6 +115,8 @@ public:
         stop_ = true;
         lock.unlock();
         cond_.notify_all();
+        if(thread_.joinable())
+            thread_.join(); // sync on thread exit
     }
 
     auto at(const timepoint_t& expires, task_t task) {
@@ -189,7 +191,7 @@ private:
     std::multimap<timepoint_t, timer_t> timers_;
     mutable std::mutex lock_;
     std::condition_variable cond_;
-    thread_t thread_;
+    std::thread thread_;
     std::atomic<bool> stop_{false};
     uint64_t next_{0};
 
@@ -283,7 +285,7 @@ public:
         const std::unique_lock lock(mutex_);
         if(running_) return;
         running_ = true;
-        thread_ = thread_t(&task_queue::process, this);
+        thread_ = std::thread(&task_queue::process, this);
     }
 
     void shutdown() {
@@ -291,8 +293,9 @@ public:
         if(!running_) return;
         running_ = false;
         lock.unlock();
-
         cvar_.notify_all();
+        if(thread_.joinable())
+            thread_.join();
     }
 
     auto shutdown(shutdown_strategy handler) -> auto& {
@@ -344,7 +347,7 @@ private:
     std::deque<task_t> tasks_;
     mutable std::mutex mutex_;
     std::condition_variable cvar_;
-    thread_t thread_;
+    std::thread thread_;
     volatile bool running_{false};
 
     static auto default_timeout() -> std::chrono::milliseconds {
@@ -446,8 +449,10 @@ public:
         lock.unlock();
 
         // joins are outside lock so we dont block if waiting to join
-        for(auto& t : workers_)
-            if(t.joinable()) t.join();
+        for(auto& worker : workers_) {
+            if(worker.joinable())
+                worker.join();
+        }
 
         lock.lock();
         workers_.clear();
@@ -455,7 +460,7 @@ public:
     }
 
 private:
-    std::vector<thread_t> workers_;
+    std::vector<std::thread> workers_;
     std::queue<std::function<void()>> tasks_;
     mutable std::mutex mutex_;
     std::condition_variable cvar_;
