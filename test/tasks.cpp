@@ -81,6 +81,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
     std::atomic<int> total = 0;
     parallel_threads(3, [&total]{
+        yield(3);
         total += 2;
     });
     assert(total == 6);

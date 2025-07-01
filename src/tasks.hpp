@@ -472,9 +472,10 @@ inline void parallel_threads(std::size_t count, Func&& func, Args&&... args) {
             std::apply(f, argv);
         });
     }
+    std::this_thread::yield();
 }
 
-inline void sleep(int msec) {
+inline void yield(unsigned msec) {
     std::this_thread::sleep_for(std::chrono::milliseconds(msec));
 }
 
