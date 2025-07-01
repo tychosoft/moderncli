@@ -87,6 +87,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(total == 6);
 
     task_pool pool(4);
+    pool.start();
     std::mutex cout_mutex;
     for (int i = 0; i < 8; ++i) {
         pool.dispatch([i, &cout_mutex] {

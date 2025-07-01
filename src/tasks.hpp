@@ -88,7 +88,7 @@ public:
     using timepoint_t = std::chrono::steady_clock::time_point;
 
     explicit timer_queue(error_t handler = [](const std::exception& e){}) noexcept :
-    errors_(std::move(handler)), thread_(thread_t(&timer_queue::run, this)) {}
+    errors_(std::move(handler)) {}
 
     timer_queue(const timer_queue&) = delete;
     auto operator=(const timer_queue&) -> auto& = delete;
@@ -105,6 +105,10 @@ public:
     auto operator!() const noexcept {
         const std::lock_guard lock(lock_);
         return stop_;
+    }
+
+    void startup() noexcept {
+        thread_ = thread_t(&timer_queue::run, this);
     }
 
     void shutdown() noexcept {
@@ -359,14 +363,10 @@ private:
 
 class task_pool {
 public:
-    task_pool(const task_pool&) = delete;
+    task_pool(const task_pool&) = default;
     auto operator=(const task_pool&) -> auto& = delete;
 
     explicit task_pool(std::size_t count = 0) {
-        if(count == 0)
-            count = std::thread::hardware_concurrency();
-        if(count == 0)
-            count = 1;
         start(count);
     }
 
@@ -384,8 +384,11 @@ public:
         if(count) start(count);
     }
 
-    void start(std::size_t count) {
-        if(!count) return;
+    void start(std::size_t count = 0) {
+        if(count == 0)
+            count = std::thread::hardware_concurrency();
+        if(count == 0)
+            count = 1;
         const std::lock_guard lock(mutex_);
         if(started_) return;
         accepting_ = true;
