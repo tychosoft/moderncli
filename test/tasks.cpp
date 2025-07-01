@@ -86,6 +86,16 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     });
     assert(total == 6);
 
+    timer_queue timers;
+    auto heartbeat = 0;
+    timers.startup();
+    timers.periodic(std::chrono::milliseconds(150), [&heartbeat]{
+        ++heartbeat;
+    });
+    yield(500);
+    timers.shutdown();
+    assert(heartbeat >= 2);
+
     task_pool pool(4);
     pool.start();
     std::mutex cout_mutex;

@@ -115,6 +115,7 @@ public:
         const std::lock_guard lock(lock_);
         if(stop_) return;
         stop_ = true;
+        timers_.clear();
         cond_.notify_all();
     }
 
