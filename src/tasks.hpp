@@ -127,6 +127,24 @@ public:
         return id;
     }
 
+    auto at(time_t expires, task_t task) {
+        const auto now = std::chrono::system_clock::now();
+        const auto when = std::chrono::system_clock::from_time_t(expires);
+        const auto delay = when - now;
+        const auto target = std::chrono::steady_clock::now() +
+            std::chrono::duration_cast<std::chrono::steady_clock::duration>(delay);
+        return at(target, std::move(task)); // delegate to your existing overload
+    }
+
+    auto periodic(unsigned period, task_t task) {
+        const auto expires = std::chrono::steady_clock::now() + std::chrono::milliseconds(period);
+        const std::lock_guard lock(lock_);
+        const auto id = next_++;
+        timers_.emplace(expires, std::make_tuple(id, period, task));
+        cond_.notify_all();
+        return id;
+    }
+
     auto periodic(const period_t& period, task_t task) {
         const auto expires = std::chrono::steady_clock::now() + period;
         const std::lock_guard lock(lock_);

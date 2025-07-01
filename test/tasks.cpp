@@ -87,14 +87,22 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(total == 6);
 
     timer_queue timers;
+    auto fast = 0;
     auto heartbeat = 0;
     timers.startup();
+
     timers.periodic(std::chrono::milliseconds(150), [&heartbeat]{
         ++heartbeat;
     });
+
+    timers.periodic(50, [&fast]{
+        ++fast;
+    });
+
     yield(500);
     timers.shutdown();
-    assert(heartbeat >= 2);
+    assert(heartbeat >= 2 && fast > heartbeat && heartbeat <= 5);
+    auto saved = fast;
 
     task_pool pool(4);
     pool.start();
@@ -109,5 +117,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
             std::this_thread::sleep_for(std::chrono::milliseconds(120));
         });
     }
+
+    // definately not still running...
+    assert(saved == fast);
 }
 

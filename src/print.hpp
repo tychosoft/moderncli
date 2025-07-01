@@ -196,9 +196,13 @@ public:
         quick_exit(exit_code);
     }
 
-    void set(unsigned level, notify_t notify = [](const std::string& str, const char *type){}) {
+    void set(unsigned level, notify_t notify) {
         logging_ = level;
         notify_ = notify;
+    }
+
+    void set(unsigned level) {
+        logging_ = level;
     }
 
 #ifdef  USE_SYSLOG
