@@ -63,12 +63,26 @@ public:
         close();
     }
 
+    operator bool() const noexcept {
+        return device_ > -1;
+    }
+
     auto operator!() const noexcept {
         return device_ < 0;
     }
 
-    operator bool() const noexcept {
-        return device_ > -1;
+    auto operator=(serial_t&& from) noexcept -> auto& {
+        if(this != &from) {
+            close();
+            device_ = from.device_;
+            timed_ = from.timed_;
+            original_ = from.original_;
+            current_ = from.current_;
+            err_ = from.err_;
+            from.device_ = -1;
+            from.err_ = 0;
+        }
+        return *this;
     }
 
     auto err() const noexcept {
@@ -466,6 +480,20 @@ public:
 
     operator bool() const {
         return device_ != invalid_;
+    }
+
+    auto operator=(serial_t&& from) -> auto& {
+        if(this != &from) {
+            close();
+            device_ = from.device_;
+            timed_ = from.timed_;
+            saved_ = from.saved_;
+            active_ = from.active_;
+            err_ = from.err_;
+            from.device_ = invalid_;
+            from.err_ = 0;
+        }
+        return *this;
     }
 
     auto err() const {

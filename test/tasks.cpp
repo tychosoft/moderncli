@@ -18,6 +18,11 @@ auto count = 0;
 std::string str;
 task_queue tq;
 
+// just construction / destruction semantics test if global works
+[[maybe_unused]] task_pool dummy_pool;
+[[maybe_unused]] task_queue dummy_queue;
+[[maybe_unused]] timer_queue dummy_timer;
+
 auto process_command(const std::string& text, int number) {
     return tq.dispatch([text, number] {
         str = text;
@@ -25,7 +30,7 @@ auto process_command(const std::string& text, int number) {
     });
 }
 
-auto move_command(std::string& text, int number) {
+auto move_command(std::string&& text, int number) {
     return tq.dispatch([text = std::move(text), number] {
         str = std::move(text);
         count += number;
@@ -42,8 +47,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     tq.startup();
     std::string old = "here";
     assert(!old.empty());
-    move_command(old, 0);
-    assert(old.empty());
+    move_command(std::move(old), 0);
+    assert(old.empty());    // NOLINT
 
     assert(process_command("test", 42));
     assert(process_command("more", 10));

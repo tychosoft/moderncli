@@ -443,9 +443,11 @@ public:
         }
 
         auto operator=(service&& from) noexcept -> auto& {
-            release();
-            list_ = from.list_;
-            from.list_ = nullptr;
+            if(this != &from) {
+                release();
+                list_ = from.list_;
+                from.list_ = nullptr;
+            }
             return *this;
         }
 
@@ -863,10 +865,12 @@ public:
     }
 
     auto operator=(Socket&& from) noexcept -> auto& {
-        release();
-        so_ = from.so_;
-        err_ = from.err_;
-        from.so_ = -1;
+        if(this != &from) {
+            release();
+            so_ = from.so_;
+            err_ = from.err_;
+            from.so_ = -1;
+        }
         return *this;
     }
 
