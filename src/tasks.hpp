@@ -382,10 +382,11 @@ private:
 
 class task_pool {
 public:
-    task_pool(const task_pool&) = default;
+    task_pool() = default;
+    task_pool(const task_pool&) = delete;
     auto operator=(const task_pool&) -> auto& = delete;
 
-    explicit task_pool(std::size_t count = 0) {
+    explicit task_pool(std::size_t count) {
         start(count);
     }
 
