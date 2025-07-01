@@ -120,5 +120,6 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
     // definately not still running...
     assert(saved == fast);
+    assert(fast >= 2 * heartbeat);
 }
 

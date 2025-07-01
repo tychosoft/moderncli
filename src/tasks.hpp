@@ -98,24 +98,22 @@ public:
     }
 
     operator bool() const noexcept {
-        const std::lock_guard lock(lock_);
-        return !stop_;
+        return !stop_.load();
     }
 
     auto operator!() const noexcept {
-        const std::lock_guard lock(lock_);
-        return stop_;
+        return stop_.load();
     }
 
     void startup() noexcept {
         thread_ = thread_t(&timer_queue::run, this);
     }
 
-    void shutdown() noexcept {
-        const std::lock_guard lock(lock_);
+    void shutdown() {
+        std::unique_lock lock(lock_);
         if(stop_) return;
         stop_ = true;
-        timers_.clear();
+        lock.unlock();
         cond_.notify_all();
     }
 
@@ -192,18 +190,18 @@ private:
     mutable std::mutex lock_;
     std::condition_variable cond_;
     thread_t thread_;
-    volatile bool stop_{false};
+    std::atomic<bool> stop_{false};
     uint64_t next_{0};
 
     void run() noexcept {
         for(;;) {
             std::unique_lock lock(lock_);
-            if (stop_ && timers_.empty()) return;
-            if(timers_.empty()) {
+            if(!stop_ && timers_.empty())
                 cond_.wait(lock);
-                lock.unlock();
-                continue;
-            }
+
+            if(stop_) break;
+            if(timers_.empty()) continue;
+
             auto it = timers_.begin();
             auto expires = it->first;
             const auto now = std::chrono::steady_clock::now();
@@ -224,10 +222,9 @@ private:
                     timers_.emplace(expires, std::make_tuple(id, period, task));
                     cond_.notify_all();
                 }
+                continue;
             }
-            else
-                cond_.wait_until(lock, expires);
-            lock.unlock();
+            cond_.wait_until(lock, expires);
         }
     }
 };
