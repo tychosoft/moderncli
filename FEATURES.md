@@ -202,6 +202,13 @@ object states without requiring thread locking. Async provides calling
 functions with detached threads and await provides futures much like what
 await does for asynchronous methods in C#.
 
+I primarly use std::function<void()> in tasks.hpp because often I am placing
+different arbitrary functions onto queues that are called later from another
+thread. I also avoid argukment wrapping when I do this so I pass arguments by
+capture. I may later introduce a saperate templated version of tasks that
+only bind and queue one specific kind of function template for optimized
+performance. Parallel\_func is a placeholder for this future funcs.hpp.
+
 ## templates.hpp
 
 Some very generic, universal, miscellaneous templates and functions. This also
