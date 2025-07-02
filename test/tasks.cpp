@@ -80,7 +80,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
     std::atomic<int> total = 0;
-    parallel_threads(3, [&total]{
+    parallel_task(3, [&total]{
         yield(3);
         total += 2;
     });

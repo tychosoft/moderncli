@@ -481,8 +481,8 @@ inline auto await(Func&& func, Args&&... args) -> std::future<typename std::invo
     return std::async(std::launch::async, std::forward<Func>(func), std::forward<Args>(args)...);
 }
 
-template<typename Func, typename... Args>
-inline void parallel_threads(std::size_t count, Func&& func, Args&&... args) {
+template<typename Func>
+inline void parallel_task(std::size_t count, Func&& func) {
     if(!count)
         count = std::thread::hardware_concurrency();
     if(!count)
@@ -490,12 +490,8 @@ inline void parallel_threads(std::size_t count, Func&& func, Args&&... args) {
 
     std::vector<thread_t> threads;
     threads.reserve(count);
-    auto argv = std::make_tuple(std::forward<Args>(args)...);
-
-    for (std::size_t i = 0; i < count; ++i) {
-        threads.emplace_back([f = std::forward<Func>(func), argv]() mutable {
-            std::apply(f, argv);
-        });
+    for(std::size_t i = 0; i < count; ++i) {
+        threads.emplace_back(func);
     }
     std::this_thread::yield();
 }
