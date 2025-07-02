@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <utility>
 #include <mutex>
+#include <string>
 
 namespace tycho::crypto {
 template <typename T, const EVP_MD* (*Algo)() = EVP_sha256>

@@ -34,6 +34,7 @@ inline auto to_b64(const uint8_t *data, std::size_t size) {
             if(i + j < size)
                 c |= uint32_t(data[i + j]);
         }
+
         out += base64_chars[(c >> 18) & 0x3F];
         out += base64_chars[(c >> 12) & 0x3F];
         if(i < (size - 1))

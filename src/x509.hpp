@@ -135,7 +135,7 @@ private:
         BIO_free(bio);
 
         int year{}, day{}, hour{}, minute{}, second{};
-        sscanf(buf + 4, "%d %d:%d:%d %d", &day, &hour, &minute, &second, &year); // NOLINT
+        (void)sscanf(buf + 4, "%d %d:%d:%d %d", &day, &hour, &minute, &second, &year); // NOLINT
         auto it = std::find(std::begin(months), std::end(months), std::string(buf, 3));
         if(it == std::end(months)) return 0;
         std::tm tm = {};

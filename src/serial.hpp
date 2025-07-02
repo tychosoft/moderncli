@@ -482,7 +482,7 @@ public:
         return device_ != invalid_;
     }
 
-    auto operator=(serial_t&& from) -> auto& {
+    auto operator=(serial_t&& from) noexcept -> auto& {
         if(this != &from) {
             close();
             device_ = from.device_;

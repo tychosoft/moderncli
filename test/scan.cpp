@@ -41,7 +41,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
         auto mydec = get_decimal("-17.05");
         const double expected = -17.05;
-        const double tolerance = std::numeric_limits<double>::epsilon() * 100;
+        constexpr double tolerance = std::numeric_limits<double>::epsilon() * 100;
         assert(std::fabs(mydec - expected) < tolerance);
 
         assert(get_hex("f0") == 240);

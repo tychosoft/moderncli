@@ -9,6 +9,10 @@
 #include "socket.hpp"
 #include <cstdlib>
 
+#ifdef  _MSC_VER
+#pragma warning(disable : 26800)
+#endif
+
 namespace {
 const uint16_t port = 9789;
 address_t local_host("127.0.0.1", port);

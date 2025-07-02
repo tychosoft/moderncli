@@ -8,6 +8,7 @@
 #include <iostream>
 #include <utility>
 #include <cerrno>
+#include <algorithm>
 
 #include <sys/types.h>
 #include <fcntl.h>
@@ -210,10 +211,10 @@ protected:
     }
 
     void allocate(std::size_t size) {
-        if(!size)
+        if (!size)
             ++size;
 
-        size = std::min(size, maxsize);
+        size = (std::min)(size, maxsize); 
         setg(gbuf, gbuf, gbuf);
         setp(pbuf, pbuf + size);
         bufsize = getsize = size;
