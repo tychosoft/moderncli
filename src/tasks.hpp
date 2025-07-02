@@ -481,8 +481,7 @@ inline auto await(Func&& func, Args&&... args) -> std::future<typename std::invo
     return std::async(std::launch::async, std::forward<Func>(func), std::forward<Args>(args)...);
 }
 
-template<typename Func>
-inline void parallel_task(std::size_t count, Func&& func) {
+inline void parallel_task(std::size_t count, task_t task) {
     if(!count)
         count = std::thread::hardware_concurrency();
     if(!count)
@@ -491,7 +490,7 @@ inline void parallel_task(std::size_t count, Func&& func) {
     std::vector<thread_t> threads;
     threads.reserve(count);
     for(std::size_t i = 0; i < count; ++i) {
-        threads.emplace_back(func);
+        threads.emplace_back(task);
     }
     std::this_thread::yield();
 }
