@@ -6,6 +6,7 @@
 
 #include "encoding.hpp"
 
+#include <functional>
 #include <iostream>
 #include <string_view>
 #include <mutex>
@@ -96,7 +97,7 @@ template<class... Args>
 
 class system_logger final {
 public:
-    using notify_t = void (*)(const std::string&, const char *type);
+    using notify_t = std::function<void(const std::string&, const char *)>;
 
     system_logger() = default;
     system_logger(const system_logger&) = delete;
@@ -281,7 +282,7 @@ template<class... Args>
 
 class system_logger final {
 public:
-    using notify_t = void (*)(const std::string&, const char *type);
+    using notify_t = std::function<void(const std::string&, const char *)>;
 
     system_logger() = default;
     system_logger(const system_logger&) = delete;
