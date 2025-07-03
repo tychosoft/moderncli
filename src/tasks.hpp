@@ -13,6 +13,7 @@
 #include <functional>
 #include <stdexcept>
 #include <atomic>
+#include <memory>
 #include <chrono>
 #include <tuple>
 #include <map>
@@ -509,6 +510,32 @@ inline void parallel_task(std::size_t count, task_t task) {
         threads.emplace_back(task);
     }
     std::this_thread::yield();
+}
+
+template<typename Func, typename T = typename std::invoke_result_t<Func>>
+auto parallel_async(std::size_t count, Func func) {
+    if (!count)
+        count = std::thread::hardware_concurrency();
+
+    if (!count)
+        count = 1;
+
+    auto promise = std::make_shared<std::promise<T>>();
+    auto result = promise->get_future();
+    auto done = std::make_shared<std::atomic<bool>>(false);
+    for(std::size_t i = 0; i < count; ++i) {
+        std::thread([promise, done, func]{
+            try {
+                T val = func();
+                if(!done->exchange(true))
+                    promise->set_value(std::move(val));
+            } catch (...) {
+                if (!done->exchange(true))
+                    promise->set_exception(std::current_exception());
+            }
+        }).detach();
+    }
+    return result;
 }
 
 inline void yield(unsigned msec) {
