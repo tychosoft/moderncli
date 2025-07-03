@@ -11,11 +11,19 @@
 #include <exception>
 #include <algorithm>
 #include <utility>
+#include <shared_mutex>
 #include <mutex>
 #include <string>
 
 namespace tycho::crypto {
-template <typename T, const EVP_MD* (*Algo)() = EVP_sha256>
+inline constexpr const EVP_MD* (*SHA256)()      = EVP_sha256;
+inline constexpr const EVP_MD* (*SHA512)()      = EVP_sha512;
+inline constexpr const EVP_MD* (*SHA2_256)()    = EVP_sha256;
+inline constexpr const EVP_MD* (*SHA2_512)()    = EVP_sha512;
+inline constexpr const EVP_MD* (*SHA3_256)()    = EVP_sha3_256;
+inline constexpr const EVP_MD* (*SHA3_512)()    = EVP_sha3_512;
+
+template <typename T, const EVP_MD* (*Algo)() = SHA256>
 struct hash_t final {
     static_assert((std::is_convertible_v<decltype(std::declval<const T&>().data()), const char*> || std::is_convertible_v<decltype(std::declval<const T&>().data()), const uint8_t*>) && std::is_convertible_v<decltype(std::declval<const T&>().size()), std::size_t>,
         "T must have data() convertible to const char* or const uint8_t* and size() convertible to std::size_t"
@@ -53,10 +61,10 @@ struct hash_t final {
     }
 };
 
-template<typename Key, const EVP_MD* (*DigestAlgo)() = EVP_sha256>
+template<typename Key, const EVP_MD* (*Algo)() = SHA256>
 class hash64_ring {
 public:
-    using Hash = hash_t<std::string, DigestAlgo>;
+    using Hash = hash_t<std::string, Algo>;
 
     explicit hash64_ring(int vnodes = 100) : vnodes_(vnodes) {}
 
@@ -93,17 +101,17 @@ public:
     }
 
     auto empty() const -> bool {
-        const std::lock_guard lock(mutex_);
+        const std::shared_lock lock(mutex_);
         return ring_.empty();
     }
 
     auto size() const {
-        const std::lock_guard lock(mutex_);
+        const std::shared_lock lock(mutex_);
         return ring_.size() / vnodes_;
     }
 
     void insert(const std::string& node) {
-        const std::lock_guard lock(mutex_);
+        const std::unique_lock lock(mutex_);
         for(auto i = 0; i < vnodes_; ++i) {
             std::string vnode = node + "#" + std::to_string(i);
             ring_.emplace(hash_.to_u64(vnode), node);
@@ -111,7 +119,7 @@ public:
     }
 
     void remove(const std::string& node) {
-        const std::lock_guard lock(mutex_);
+        const std::unique_lock lock(mutex_);
         for(auto i = 0; i < vnodes_; ++i) {
             std::string vnode = node + "#" + std::to_string(i);
             ring_.erase(hash_.to_u64(vnode));
@@ -119,7 +127,7 @@ public:
     }
 
     auto get(const Key& key) const -> const std::string& {
-        const std::lock_guard lock(mutex_);
+        const std::shared_lock lock(mutex_);
         auto hash = hash_.to_u64(to_string(key));
         auto it = ring_.lower_bound(hash);
         if(it == ring_.end())
@@ -134,10 +142,14 @@ private:
         return key;
     }
 
-    mutable std::mutex mutex_;
+    mutable std::shared_mutex mutex_;
     std::map<uint64_t, std::string> ring_;
     int vnodes_;
     Hash hash_;
 };
+
+// customary conventions of porable version
+template<const EVP_MD* (*Algo)() = SHA256>
+using ring64 = hash64_ring<std::string, Algo>;
 } // end namespace
 #endif

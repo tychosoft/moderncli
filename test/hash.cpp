@@ -22,7 +22,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         // Ensure reasonable uniqueness: different inputs, different hashes
         assert(ha != hb);
 
-        crypto::hash64_ring<std::string> ring;
+        crypto::ring64<> ring;
         ring.insert("nodeA");
         ring.insert("nodeB");
         ring.insert("nodeC");
