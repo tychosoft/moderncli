@@ -9,6 +9,7 @@
 #include "array.hpp"
 #include "sync.hpp"
 #include "tasks.hpp"
+#include "funcs.hpp"
 #include "filesystem.hpp"
 #include <vector>
 #include <ranges>

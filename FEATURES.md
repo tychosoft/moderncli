@@ -63,6 +63,11 @@ A C++17 simplified emulation of C++23 std::expected using std::variant.
 Support for filesystem, posix file functions, and file scanning closures. This
 header presumes a c++ compiler with filesystem runtime support.
 
+## func.hpp
+
+Separate header for mostly async and template optimized functions. Some of
+this used to be part of tasks.hpp.
+
 ## hash.hpp
 
 Thread-safe consistent hash support for cross-platform distributed computing.

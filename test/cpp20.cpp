@@ -7,6 +7,7 @@
 #include "ranges.hpp"
 #include "memory.hpp"
 #include "array.hpp"
+#include "funcs.hpp"
 #include "sync.hpp"
 #include "tasks.hpp"
 #include "filesystem.hpp"

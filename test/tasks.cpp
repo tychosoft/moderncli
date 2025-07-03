@@ -36,11 +36,6 @@ auto move_command(std::string&& text, int number) {
         count += number;
     });
 }
-
-auto test_async(int x) -> int {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    return x;
-}
 } // end namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
@@ -74,10 +69,6 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     tq1.shutdown();
     assert(count == 53);
     assert(use == 2);
-
-    auto future = tycho::await(test_async, 42);
-    assert(future.get() == 42);
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
     std::atomic<int> total = 0;
     parallel_task(3, [&total]{
@@ -121,5 +112,6 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     // definately not still running...
     assert(saved == fast);
     assert(fast >= 2 * heartbeat);
+    return 0;
 }
 

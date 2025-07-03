@@ -57,6 +57,10 @@ add_executable(test_tasks test/tasks.cpp src/tasks.hpp)
 add_test(NAME test-tasks COMMAND test_tasks)
 target_link_libraries(test_tasks PRIVATE fmt::fmt Threads::Threads)
 
+add_executable(test_funcs test/funcs.cpp src/funcs.hpp)
+add_test(NAME test-funcs COMMAND test_funcs)
+target_link_libraries(test_funcs PRIVATE fmt::fmt Threads::Threads)
+
 add_executable(test_atomics test/atomics.cpp src/atomics.hpp)
 add_test(NAME test-atomics COMMAND test_atomics)
 target_link_libraries(test_atomics PRIVATE fmt::fmt Threads::Threads)
