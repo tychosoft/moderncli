@@ -14,6 +14,7 @@
 #include <shared_mutex>
 #include <mutex>
 #include <string>
+#include <atomic>
 
 namespace tycho::crypto {
 inline constexpr const EVP_MD* (*SHA256)()      = EVP_sha256;
@@ -106,24 +107,39 @@ public:
     }
 
     auto size() const {
-        const std::shared_lock lock(mutex_);
-        return ring_.size() / vnodes_;
+        return size_.load();
     }
 
-    void insert(const std::string& node) {
+    auto insert(const std::string& node) {
+        bool inserted = false;
         const std::unique_lock lock(mutex_);
         for(auto i = 0; i < vnodes_; ++i) {
             std::string vnode = node + "#" + std::to_string(i);
-            ring_.emplace(hash_.to_u64(vnode), node);
+            auto [_, success] = ring_.emplace(hash_.to_u64(vnode), node);
+            if(success)
+                inserted = true;
         }
+        if(inserted)
+            size_++;
+        return inserted;
     }
 
-    void remove(const std::string& node) {
+    bool remove(const std::string& node) {
+        bool removed = false;
         const std::unique_lock lock(mutex_);
-        for(auto i = 0; i < vnodes_; ++i) {
+        for(int i = 0; i < vnodes_; ++i) {
             std::string vnode = node + "#" + std::to_string(i);
-            ring_.erase(hash_.to_u64(vnode));
+            auto index = hash_.to_u64(vnode);
+            auto it = ring_.find(index);
+            if(it != ring_.end() && it->second == node) {
+                ring_.erase(it);
+                removed = true;
+            }
         }
+
+        if(removed)
+            --size_;
+        return removed;
     }
 
     auto get(const Key& key) const -> const std::string& {
@@ -146,6 +162,7 @@ private:
     std::map<uint64_t, std::string> ring_;
     int vnodes_;
     Hash hash_;
+    std::atomic<unsigned long> size_{0};
 };
 
 // customary conventions of porable version
