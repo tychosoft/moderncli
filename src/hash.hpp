@@ -110,6 +110,11 @@ public:
         return size_.load();
     }
 
+    auto usage() const {
+        const std::shared_lock lock(mutex_);
+        return ring_.size();
+    }
+
     auto insert(const std::string& node) {
         bool inserted = false;
         const std::unique_lock lock(mutex_);
@@ -124,7 +129,7 @@ public:
         return inserted;
     }
 
-    bool remove(const std::string& node) {
+    auto remove(const std::string& node) {
         bool removed = false;
         const std::unique_lock lock(mutex_);
         for(int i = 0; i < vnodes_; ++i) {

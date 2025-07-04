@@ -637,7 +637,6 @@ public:
             page_alloc(&page, size_, align_);
 
             if(!page) return nullptr;
-            page->aligned = nullptr;    // To make dumb checkers happy
             page->used = sizeof(page_t);
             page->next = current_;
             ++count_;
@@ -722,14 +721,10 @@ protected:
     unsigned count_{0};
 
 private:
-    using page_ptr = struct page_t {
+    using page_ptr = struct alignas(std::max_align_t) page_t {
         page_t *next;
-        union {
-            [[maybe_unused]] void *aligned;
-            unsigned used;
-        };
+        unsigned used;
     } *;
-
     page_ptr current_{nullptr};
 
     static void page_alloc(page_ptr *mem, std::size_t size, std::size_t align = 0) {
