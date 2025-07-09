@@ -15,7 +15,7 @@ address_t local_bind("*", port);
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     using raw_t = const struct sockaddr *;
     assert(Socket::startup());
-    const Socket::interfaces ifs;
+    Socket::interfaces ifs;
     assert(!ifs.empty());
     const Socket unset;
     address_t addr; // NOLINT
@@ -31,6 +31,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(local_bind.port() == port);
     Socket::shutdown();
 
+    ifs = std::move(Socket::interfaces());
     auto ip = get_ipaddress_or("127.0.0.1", address_t(), port);
     assert(ip == local_host);
 }
