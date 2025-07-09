@@ -646,12 +646,12 @@ public:
             return count_;
         }
 
-        auto find(const std::string_view& id, int family) const noexcept -> const sockaddr * {
+        auto find(const std::string_view& id, int family, bool mcast = false) const noexcept -> const sockaddr * {
             for(auto entry = list_; entry != nullptr; entry = entry->Next) {
-                auto unicast = entry->FirstUnicastAddress;
-                while(unicast) {
-                    if(entry->AdapterName && id == entry->AdapterName && unicast->Address.lpSockaddr && unicast->Address.lpSockaddr->sa_family == family) return unicast->Address.lpSockaddr;
-                    unicast = unicast->Next;
+                if(!entry->AdapterName || id != entry->AdapterName) continue;
+                if(mcast && (entry->Flags & IP_ADAPTER_NO_MULTICAST)) continue;
+                for(auto unicast = entry->FirstUnicastAddress; unicast; unicast = unicast->Next) {
+                    if(unicast->Address.lpSockaddr && unicast->Address.lpSockaddr->sa_family == family) return unicast->Address.lpSockaddr;
                 }
             }
             return nullptr;
@@ -748,12 +748,23 @@ public:
             return count_;
         }
 
-        auto find(const std::string_view& id, int family) const noexcept -> const sockaddr * {
+        auto find(const std::string_view& id, int family, bool mcast = false) const noexcept -> const sockaddr * {
             for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
-                if(entry->ifa_name && id == entry->ifa_name && entry->ifa_addr->sa_family == family)
-                    return entry->ifa_addr;
+                if(mcast && !(entry->ifa_flags & IFF_MULTICAST)) continue;
+                if(entry->ifa_name && id == entry->ifa_name && entry->ifa_addr->sa_family == family) return entry->ifa_addr;
             }
             return nullptr;
+        }
+
+        auto mcast(const std::string_view& id, int family) const noexcept {
+            for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
+                if(!(entry->ifa_flags & IFF_MULTICAST)) continue;
+                if(!entry->ifa_name || id != entry->ifa_name) continue;
+                if(entry->ifa_addr->sa_family != family) continue;
+                if(family == AF_INET) return ~0U;
+                return unsigned(if_nametoindex(entry->ifa_name));
+            }
+            return 0U;
         }
 
         auto mask(std::size_t index) const noexcept {

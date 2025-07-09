@@ -170,7 +170,7 @@ private:
     std::atomic<unsigned long> size_{0};
 };
 
-// customary conventions of porable version
+// customary conventions of portable version
 template<const EVP_MD* (*Algo)() = SHA256>
 using ring64 = hash64_ring<std::string, Algo>;
 } // end namespace
