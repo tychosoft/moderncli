@@ -316,7 +316,11 @@ public:
         }
     }
 
-    auto to_format() {
+    auto to_format() -> std::string {
+        if(family() == AF_UNSPEC && port() == 0) return "none";
+        if(is_any() && port() == 0) return "*";
+        if(is_any() && family() == AF_INET6) return "[*]" + std::to_string(port());
+        if(is_any()) return "*:" + std::to_string(port());
         if(port() == 0) return to_string();
         if(family() == AF_INET6) return "[" + to_string() + "]" + ":" + std::to_string(port());
         return to_string() + ":" + std::to_string(port());

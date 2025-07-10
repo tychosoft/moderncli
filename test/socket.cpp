@@ -34,5 +34,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     ifs = std::move(Socket::interfaces());
     auto ip = get_ipaddress_or("127.0.0.1", address_t(), port);
     assert(ip == local_host);
+
+    address_t bind;
+    assert(bind.to_format() == "none");
+    bind.set("127.0.0.1", 5060);
+    assert(bind.to_format() == "127.0.0.1:5060");
 }
 
