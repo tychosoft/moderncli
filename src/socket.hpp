@@ -329,7 +329,7 @@ public:
         case AF_INET6:
             if(is_any()) return {"::"};
             ipv6 = reinterpret_cast<const struct sockaddr_in6*>(&store_);
-            if(::inet_ntop(AF_INET, &(ipv6->sin6_addr), buf, sizeof(buf))) return {buf};
+            if(::inet_ntop(AF_INET6, &(ipv6->sin6_addr), buf, sizeof(buf))) return {buf};
             break;
 #ifdef  AF_UNIX
         case AF_UNIX: {
