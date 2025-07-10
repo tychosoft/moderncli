@@ -316,6 +316,12 @@ public:
         }
     }
 
+    auto to_format() {
+        if(port() == 0) return to_string();
+        if(family() == AF_INET6) return "[" + to_string() + "]" + ":" + std::to_string(port());
+        return to_string() + ":" + std::to_string(port());
+    }
+
     auto to_string() const -> std::string {
         char buf[256];
         const struct sockaddr_in *ipv4{nullptr};
