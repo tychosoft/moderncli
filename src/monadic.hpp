@@ -7,7 +7,6 @@
 #include <vector>
 #include <optional>
 #include <tuple>
-#include <functional>
 
 namespace tycho::monadic {
 template<typename T>
@@ -60,8 +59,8 @@ auto none() {
     return maybe<T>();
 }
 
-template<typename T>
-auto maybe_try(std::function<T()> func) -> maybe<T> {
+template<typename T, typename Func>
+auto maybe_try(Func func) -> maybe<T> {
     try {
         return maybe<T>(func());
     } catch(...) {
@@ -171,7 +170,7 @@ auto fold(const std::vector<maybe<T>>& maybe_vec, Func func, Acc init = Acc{}) {
     Acc result(init);
     for(const auto& maybe_val : maybe_vec) {
         if(maybe_val.has_value())
-            result = func(result, maybe_val.get_value());
+            result += func(result, maybe_val.get_value());
     }
     return result;
 }

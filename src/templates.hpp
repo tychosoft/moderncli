@@ -4,7 +4,6 @@
 #ifndef TYCHO_TEMPLATES_HPP_
 #define TYCHO_TEMPLATES_HPP_
 
-#include <type_traits>
 #include <stdexcept>
 #include <memory>
 

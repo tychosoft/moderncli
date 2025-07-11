@@ -115,8 +115,8 @@ public:
         std::copy(first, last, std::back_inserter(*this));
     }
 
-    template <typename Iterator, typename Predicate>
-    slice(Iterator first, Iterator last, Predicate pred) {
+    template <typename Iterator, typename Pred>
+    slice(Iterator first, Iterator last, Pred pred) {
         std::copy_if(first, last, std::back_inserter(*this), pred);
     }
 
