@@ -122,27 +122,6 @@ private:
     std::function<void()> action_;
 };
 
-template<typename T>
-inline auto try_func(std::function<T()> func, const T& or_value) {
-    try {
-        return func();
-    }
-    catch(...) {
-        return or_value;
-    }
-}
-
-template<typename Func>
-inline auto try_proc(Func proc) {
-    try {
-        proc();
-        return true;
-    }
-    catch(...) {
-        return false;
-    }
-}
-
 template<typename E=std::runtime_error>
 inline void runtime_assert(bool check, const char *error = "runtime assert") {
     if(!check) throw E(error);

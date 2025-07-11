@@ -22,6 +22,7 @@ public:
 
 template<typename Func, typename... Args>
 inline void detach(Func&& func, Args&&... args) {
+    static_assert(std::is_invocable_v<Func, Args...>, "Func must be invocable");
     std::thread([func = std::forward<Func>(func), tuple = std::make_tuple(std::forward<Args>(args)...)]() mutable {
         std::apply(func, std::move(tuple));
     }).detach();
@@ -29,6 +30,8 @@ inline void detach(Func&& func, Args&&... args) {
 
 template<typename T, typename Pred>
 inline auto get_future(std::function<T>& future, Pred pred, std::chrono::milliseconds interval = std::chrono::milliseconds(100)) {
+    static_assert(std::is_invocable_v<Pred>, "Pred must be invocable");
+    static_assert(std::is_same_v<std::invoke_result_t<Pred>, bool>,"Pred must return void");
     do {    // NOLINT
         if(!pred()) throw future_cancelled();
     } while(future.wait_for(interval) != std::future_status::ready);
@@ -37,11 +40,13 @@ inline auto get_future(std::function<T>& future, Pred pred, std::chrono::millise
 
 template<typename Func, typename... Args>
 inline auto await(Func&& func, Args&&... args) -> std::future<typename std::invoke_result_t<Func, Args...>> {
+    static_assert(std::is_invocable_v<Func, Args...>, "Func must be invocable");
     return std::async(std::launch::async, std::forward<Func>(func), std::forward<Args>(args)...);
 }
 
 template<typename Func, typename T = typename std::invoke_result_t<Func>>
 inline auto parallel_async(std::size_t count, Func func) {
+    static_assert(std::is_invocable_v<Func>, "Func must be invocable");
     if (!count)
         count = std::thread::hardware_concurrency();
 
@@ -64,6 +69,29 @@ inline auto parallel_async(std::size_t count, Func func) {
         }).detach();
     }
     return result;
+}
+
+template<typename Func, typename Result = std::invoke_result_t<Func>>
+inline auto try_func(Func&& func, Result or_fallback) -> Result {
+    static_assert(std::is_invocable_v<Func>, "Func must be invocable");
+    try {
+        return std::forward<Func>(func)();
+    } catch (...) {
+        return or_fallback;
+    }
+}
+
+template<typename Proc>
+inline auto try_proc(Proc proc) -> bool {
+    static_assert(std::is_invocable_v<Proc>, "Proc must be invocable");
+    static_assert(std::is_same_v<std::invoke_result_t<Proc>, void>,"Proc must return void");
+    try {
+        proc();
+        return true;
+    }
+    catch(...) {
+        return false;
+    }
 }
 } // end namespace
 #endif
