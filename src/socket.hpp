@@ -316,7 +316,7 @@ public:
         }
     }
 
-    auto to_format() -> std::string {
+    auto to_format() const -> std::string {
         if(family() == AF_UNSPEC && port() == 0) return "none";
         if(is_any() && port() == 0) return "*";
         if(is_any() && family() == AF_INET6) return "[*]" + std::to_string(port());
@@ -594,8 +594,9 @@ public:
         interfaces(const interfaces& from) = delete;
         auto operator=(const interfaces&) -> interfaces& = delete;
 
-        interfaces(interfaces&& from) : list_(from.list_) {
+        interfaces(interfaces&& from) noexcept : list_(from.list_), count_(from.count_) {
             from.list_ = nullptr;
+            from.count_ = 0;
         }
 
         interfaces() noexcept {
@@ -638,11 +639,13 @@ public:
             return count_ == 0;
         }
 
-        auto operator=(interfaces&& from) -> auto& {
+        auto operator=(interfaces&& from) noexcept -> auto& {
             if(list_)
                 free(list_);    // NOLINT
             list_ = from.list_;
+            count_ = from.count_;
             from.list_ = nullptr;
+            from.count_ = 0;
             return *this;
         }
 
@@ -774,8 +777,9 @@ public:
             }
         }
 
-        interfaces(interfaces&& from) : list_(from.list_) {
+        interfaces(interfaces&& from) noexcept : list_(from.list_), count_(from.count_) {
             from.list_ = nullptr;
+            from.count_ = 0;
         }
 
         ~interfaces() {
@@ -792,10 +796,12 @@ public:
             return count_ == 0;
         }
 
-        auto operator=(interfaces&& from) -> auto& {
+        auto operator=(interfaces&& from) noexcept -> auto& {
             if(list_)
                 freeifaddrs(list_);
+            count_ = from.count_;
             list_ = from.list_;
+            from.count_ = 0;
             from.list_ = nullptr;
             return *this;
         }
@@ -859,7 +865,7 @@ public:
                 if(!entry->ifa_name || id != entry->ifa_name) continue;
                 if(entry->ifa_addr->sa_family != family) continue;
                 if(family == AF_INET) return ~0U;
-                return unsigned(if_nametoindex(entry->ifa_name));
+                return if_nametoindex(entry->ifa_name);
             }
             return 0U;
         }

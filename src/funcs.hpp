@@ -76,8 +76,7 @@ class defer final {
 public:
     static_assert(std::is_invocable_v<Func, Args...>, "Func must be invocable");
     static_assert(std::is_same_v<std::invoke_result_t<Func>, void>,"Func must return void");
-    explicit defer(Func&& func, Args&&... args) :
-    // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    explicit defer(Func&& func, Args&&... args) : // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     func_(std::forward<Func>(func)), args_(std::forward<Args>(args)...) {}
 
     ~defer() {
