@@ -93,7 +93,8 @@ public:
     }
 
     void startup() noexcept {
-        thread_ = std::thread(&timer_queue::run, this);
+        if(!thread_.joinable())
+            thread_ = std::thread(&timer_queue::run, this);
     }
 
     void shutdown() {

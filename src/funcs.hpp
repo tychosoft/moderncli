@@ -71,6 +71,29 @@ inline auto parallel_async(std::size_t count, Func func) {
     return result;
 }
 
+template<typename Func, typename... Args>
+class defer final {
+public:
+    static_assert(std::is_invocable_v<Func, Args...>, "Func must be invocable");
+    static_assert(std::is_same_v<std::invoke_result_t<Func>, void>,"Func must return void");
+    explicit defer(Func&& func, Args&&... args) :
+    // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    func_(std::forward<Func>(func)), args_(std::forward<Args>(args)...) {}
+
+    ~defer() {
+        std::apply(func_, std::move(args_));
+    }
+
+    defer(const defer&) = delete;
+    defer(defer&&) = delete;
+    auto operator=(const defer&) -> defer& = delete;
+    auto operator=(defer&&) -> defer& = delete;
+
+private:
+    Func func_;
+    std::tuple<Args...> args_;
+};
+
 template<typename Func, typename Result = std::invoke_result_t<Func>>
 inline auto try_func(Func&& func, Result or_fallback) -> Result {
     static_assert(std::is_invocable_v<Func>, "Func must be invocable");

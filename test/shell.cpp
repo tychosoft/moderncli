@@ -4,6 +4,7 @@
 #undef  NDEBUG
 #include "compiler.hpp"     // IWYU pragma: keep
 #include "args.hpp"         // IWYU pragma: keep
+#include "funcs.hpp"
 #include "print.hpp"        // IWYU pragma: keep
 #include "filesystem.hpp"   // IWYU pragma: keep
 #include "templates.hpp"

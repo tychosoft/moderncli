@@ -5,7 +5,6 @@
 #define TYCHO_TEMPLATES_HPP_
 
 #include <type_traits>
-#include <functional>
 #include <stdexcept>
 #include <memory>
 
@@ -105,21 +104,6 @@ public:
 
 private:
     const run_t exit_{[](){}};
-};
-
-class defer final {
-public:
-    template <typename F>
-    explicit defer(F&& func) : action_(std::forward<F>(func)) {}
-    ~defer() {if(action_) action_();}
-
-    defer(const defer&) = delete;
-    defer(defer&&) = delete;
-    auto operator=(const defer&) -> auto& = delete;
-    auto operator=(defer&&) -> auto& = delete;
-
-private:
-    std::function<void()> action_;
 };
 
 template<typename E=std::runtime_error>
