@@ -559,6 +559,8 @@ public:
 
         template <typename Func>
         auto each(Func func) const {
+            static_assert(std::is_invocable_v<Func, addrinfo*>, "Func must be callable");
+            static_assert(std::is_convertible_v<std::invoke_result_t<Func, addrinfo*>, bool>, "Func must return  bool");
             auto list = list_;
             while(list) {
                 if(!func(list))
@@ -1179,6 +1181,7 @@ public:
 
     template <typename Func>
     auto accept(Func acceptor) const {
+        static_assert(std::is_invocable_r_v<bool, Func, int, const struct sockaddr*>, "Acceptor must be callable as for socket and sockaddr");
         if(so_ == -1) return false;
         address_t remote;
         auto slen = address_t::maxsize;

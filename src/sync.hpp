@@ -15,7 +15,6 @@
 
 #if __cplusplus >= 202002L
 #include <barrier>
-#include <functional>
 #include <ranges>
 #include <semaphore>
 #endif
@@ -593,45 +592,40 @@ concept ThreadContainer =
     std::ranges::range<T> &&
     std::same_as<std::remove_cvref_t<std::ranges::range_value_t<T>>, std::thread>;
 
-template<typename Func = std::function<void()>>
+template<typename Completion = void(*)()>
 class sync_arrival final {
 public:
-    sync_arrival() = delete;
-    sync_arrival(const sync_arrival&) = delete;
-    auto operator=(const sync_arrival&) -> auto& = delete;
-    explicit sync_arrival(std::barrier<Func>& b) : b_(b) {}
-    ~sync_arrival() {
-        b_.arrive_and_wait();
+    explicit sync_arrival(std::barrier<Completion>& barrier) : barrier_(barrier) {
+        static_assert(std::is_invocable_v<Completion>, "Completion must be callable with zero arguments");
     }
+    ~sync_arrival() { barrier_.arrive_and_wait(); }
 
 private:
-    std::barrier<Func>& b_;
+    std::barrier<Completion>& barrier_;
 };
 
 template <std::ptrdiff_t Max>
 class sync_counting final {
-public:
-    sync_counting() = delete;
-    sync_counting(const sync_counting&) = delete;
-    auto operator=(const sync_counting&) -> auto& = delete;
+    static_assert(Max > 0, "Max must be a positive integer");
 
-    explicit sync_counting(std::counting_semaphore<Max>& s) : s_(s) {
-        s_.acquire();
+public:
+    explicit sync_counting(std::counting_semaphore<Max>& sem) : sem_(sem) {
+        sem_.acquire();
     }
 
     ~sync_counting() {
-        s_.release();
+        sem_.release();
     }
 
 private:
-    std::counting_semaphore<Max>& s_;
+    std::counting_semaphore<Max>& sem_;
 };
 
 // for std::jthread call barrier.arrive_and_wait directly or use sync_arrival
-template<ThreadContainer Container, typename Func = std::function<void()>>
+template<ThreadContainer Container, typename Func = void(*)()>
 void wait_arrival(Container& threads, std::barrier<Func>& barrier) {
     barrier.arrive_and_wait();
-    for (auto& thread : threads) {
+    for(auto& thread : threads) {
         if(thread.joinable())
             thread.join();
     }

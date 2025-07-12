@@ -705,23 +705,29 @@ inline auto make_access(const fsys::path& path, mode access = mode::exists) noex
 
 namespace tycho {
 template<typename Func>
-inline auto scan_stream(std::istream& input, Func proc) {
+inline auto scan_stream(std::istream& input, Func func) {
+    static_assert(std::is_invocable_v<Func, std::string>, "Func must be callable");
+    static_assert(std::is_convertible_v<std::invoke_result_t<Func, std::string>, bool>, "Result must be bool");
+
     std::string line;
     std::size_t count{0};
     while(std::getline(input, line)) {
-        if (!proc(line)) break;
+        if(!func(line)) break;
         ++count;
     }
     return count;
 }
 
 template<typename Func>
-inline auto scan_file(const fsys::path& path, Func proc) {
+inline auto scan_file(const fsys::path& path, Func func) {
+    static_assert(std::is_invocable_v<Func, std::string>, "Func must be callable");
+    static_assert(std::is_convertible_v<std::invoke_result_t<Func, std::string>, bool>, "Result must be bool");
+
     std::fstream input(path);
     std::string line;
     std::size_t count{0};
     while(std::getline(input, line)) {
-        if (!proc(line)) break;
+        if(!func(line)) break;
         ++count;
     }
     return count;
@@ -729,14 +735,17 @@ inline auto scan_file(const fsys::path& path, Func proc) {
 
 #if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(__MINGW64__) && !defined(WIN32)
 template<typename Func>
-inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
+inline auto scan_file(std::FILE *file, Func func, std::size_t size = 0) {
+    static_assert(std::is_invocable_v<Func, const char*, std::size_t>, "Func must be callable");
+    static_assert(std::is_convertible_v<std::invoke_result_t<Func, const char*, std::size_t>, bool>, "Func  must return bool");
+
     char *buf{nullptr};
     std::size_t count{0};
     if(size)
         buf = static_cast<char *>(std::malloc(size));    // NOLINT
     while(!feof(file)) {
         auto len = getline(&buf, &size, file);
-        if(len < 0 || !proc({buf, std::size_t(len)})) break;
+        if(len < 0 || !func({buf, std::size_t(len)})) break;
         ++count;
     }
     if(buf)
@@ -745,25 +754,27 @@ inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
 }
 
 template<typename Func>
-inline auto scan_command(const std::string& cmd, Func proc, std::size_t size = 0) {
+inline auto scan_command(const std::string& cmd, Func func, std::size_t size = 0) {
     auto file = popen(cmd.c_str(), "r");
-
     if(!file) return std::size_t(0);
 
-    auto count = scan_file(file, proc, size);
+    auto count = scan_file(file, func, size);
     pclose(file);
     return count;
 }
 #else
 template<typename Func>
-inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
+inline auto scan_file(std::FILE *file, Func func, std::size_t size = 0) {
+    static_assert(std::is_invocable_v<Func, const char*, std::size_t>, "Func must be callable");
+    static_assert(std::is_convertible_v<std::invoke_result_t<Func, const char*, std::size_t>, bool>, "Func  must return bool");
+
     char *buf{nullptr};
     std::size_t count{0};
     if(size)
         buf = static_cast<char *>(std::malloc(size));    // NOLINT
     while(!feof(file)) {
         auto len = getline_w32(&buf, &size, file);
-        if(len < 0 || !proc({buf, std::size_t(len)})) break;
+        if(len < 0 || !func({buf, std::size_t(len)})) break;
         ++count;
     }
     if(buf)
@@ -772,11 +783,11 @@ inline auto scan_file(std::FILE *file, Func proc, std::size_t size = 0) {
 }
 
 template<typename Func>
-inline auto scan_command(const std::string& cmd, Func proc, std::size_t size = 0) {
+inline auto scan_command(const std::string& cmd, Func func, std::size_t size = 0) {
     auto file = _popen(cmd.c_str(), "r");
 
     if(!file) return std::size_t(0);
-    auto count = scan_file(file, proc, size);
+    auto count = scan_file(file, func, size);
     _pclose(file);
     return count;
 }
@@ -797,15 +808,23 @@ inline auto make_output(const fsys::path& path, std::ios::openmode mode = std::i
 }
 
 template<typename Func>
-inline auto scan_directory(const fsys::path& path, Func proc) {
+inline auto scan_directory(const fsys::path& path, Func func) {
+    using Entry = const fsys::directory_entry&;
+    static_assert(std::is_invocable_v<Func, Entry>, "Func must be callable");
+    static_assert(std::is_convertible_v<std::invoke_result_t<Func, Entry>, bool>, "Func must return bool");
+
     auto dir = fsys::directory_iterator(path);
-    return std::count_if(begin(dir), end(dir), proc);
+    return std::count_if(begin(dir), end(dir), func);
 }
 
 template<typename Func>
-inline auto scan_recursive(const fsys::path& path, Func proc) {
+inline auto scan_recursive(const fsys::path& path, Func func) {
+    using Entry = const fsys::directory_entry&;
+    static_assert(std::is_invocable_v<Func, Entry>, "Func must be callable");
+    static_assert(std::is_convertible_v<std::invoke_result_t<Func, Entry>, bool>, "Func must return bool");
+
     auto dir = fsys::recursive_directory_iterator(path, fsys::directory_options::skip_permission_denied);
-    return std::count_if(begin(dir), end(dir), proc);
+    return std::count_if(begin(dir), end(dir), func);
 }
 
 inline auto to_string(const fsys::path& path) {

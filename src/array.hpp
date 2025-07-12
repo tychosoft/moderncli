@@ -173,6 +173,9 @@ public:
 
     template <typename Func>
     void each(Func func) {
+        using Iterator = decltype(std::begin(*this));
+        using Value = typename std::iterator_traits<Iterator>::value_type;
+        static_assert(std::is_invocable_v<Func, Value>, "Func must be callable");
         for(auto& element : *this)
             func(element);
     }
