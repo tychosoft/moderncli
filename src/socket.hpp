@@ -671,7 +671,7 @@ public:
             return count_;
         }
 
-        auto find(const sockaddr* from) -> std::string {
+        auto find(const sockaddr* from) const noexcept -> std::string {
             auto family = from->sa_family;
             for(auto entry = list_; entry != nullptr; entry = entry->Next) {
                 for (auto unicast = entry->FirstUnicastAddress; unicast != nullptr; unicast = unicast->Next) {
@@ -823,7 +823,7 @@ public:
             return count_;
         }
 
-        auto find(const struct sockaddr *from) -> std::string {
+        auto find(const struct sockaddr *from) const noexcept -> std::string {
             for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
                 auto family = entry->ifa_addr->sa_family;
                 if(!entry->ifa_addr || !entry->ifa_netmask) continue;
