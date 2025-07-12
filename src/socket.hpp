@@ -596,41 +596,17 @@ public:
         interfaces(const interfaces& from) = delete;
         auto operator=(const interfaces&) -> interfaces& = delete;
 
+        interfaces() noexcept {
+            update();
+        }
+
         interfaces(interfaces&& from) noexcept : list_(from.list_), count_(from.count_) {
             from.list_ = nullptr;
             from.count_ = 0;
         }
 
-        interfaces() noexcept {
-            ULONG bufsize{8192};
-            // cppcheck-suppress useInitializationList
-            list_ = static_cast<PIP_ADAPTER_ADDRESSES>(malloc(bufsize));    // NOLINT
-            if(list_ == nullptr) return;
-
-            auto result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr, list_, &bufsize);
-            if (result == ERROR_BUFFER_OVERFLOW) {
-                free(list_); // NOLINT
-                list_ = static_cast<PIP_ADAPTER_ADDRESSES>(malloc(bufsize));    // NOLINT
-                result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr, list_, &bufsize);
-            };
-
-            if(result != NO_ERROR) {
-                free(list_);    // NOLINT
-                list_ = nullptr;
-                return;
-            }
-
-            for(auto entry = list_; entry != nullptr; entry = entry->Next) {
-                for(auto unicast = entry->FirstUnicastAddress; unicast != nullptr; unicast = unicast->Next) {
-                    ++count_;
-                }
-            }
-        }
-
         ~interfaces() {
-            if(list_)
-                free(list_);    // NOLINT
-            list_ = nullptr;
+            release();
         }
 
         operator bool() const noexcept {
@@ -663,6 +639,45 @@ public:
                 if(unicast && !index && unicast->Address.lpSockaddr) return unicast->Address.lpSockaddr;
             }
             return nullptr;
+        }
+
+        void swap(interfaces& from) noexcept {
+            std::swap(count_, from.count_);
+            std::swap(list_, from.list_);
+        }
+
+        void release() noexcept {
+            if(list_)
+                free(list_);    // NOLINT
+            list_ = nullptr;
+            count_ = 0;
+        }
+
+        void update() noexcept {
+            release();
+            ULONG bufsize{8192};
+            // cppcheck-suppress useInitializationList
+            list_ = static_cast<PIP_ADAPTER_ADDRESSES>(malloc(bufsize));    // NOLINT
+            if(list_ == nullptr) return;
+
+            auto result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr, list_, &bufsize);
+            if (result == ERROR_BUFFER_OVERFLOW) {
+                free(list_); // NOLINT
+                list_ = static_cast<PIP_ADAPTER_ADDRESSES>(malloc(bufsize));    // NOLINT
+                result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr, list_, &bufsize);
+            };
+
+            if(result != NO_ERROR) {
+                free(list_);    // NOLINT
+                list_ = nullptr;
+                return;
+            }
+
+            for(auto entry = list_; entry != nullptr; entry = entry->Next) {
+                for(auto unicast = entry->FirstUnicastAddress; unicast != nullptr; unicast = unicast->Next) {
+                    ++count_;
+                }
+            }
         }
 
         auto empty() const noexcept {
@@ -773,10 +788,7 @@ public:
         auto operator=(const interfaces&) -> interfaces& = delete;
 
         interfaces() noexcept {
-            getifaddrs(&list_);
-            for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
-                ++count_;
-            }
+            update();
         }
 
         interfaces(interfaces&& from) noexcept : list_(from.list_), count_(from.count_) {
@@ -785,9 +797,7 @@ public:
         }
 
         ~interfaces() {
-            if(list_)
-                freeifaddrs(list_);
-            list_ = nullptr;
+            release();
         }
 
         operator bool() const noexcept {
@@ -815,6 +825,25 @@ public:
                 entry = entry->ifa_next;
             if(!entry|| !entry->ifa_addr) return nullptr;
             return entry->ifa_addr;
+        }
+
+        void swap(interfaces& from) noexcept {
+            std::swap(count_, from.count_);
+            std::swap(list_, from.list_);
+        }
+
+        void release() noexcept {
+            if(list_)
+                freeifaddrs(list_);
+            list_ = nullptr;
+            count_ = 0;
+        }
+
+        void update() noexcept {
+            getifaddrs(&list_);
+            for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
+                ++count_;
+            }
         }
 
         auto empty() const noexcept {
