@@ -1248,6 +1248,11 @@ public:
         return WSAPoll(fds, count, timeout);
     }
 
+    static void close(int so) noexcept {
+        ::shutdown(so, SD_BOTH);
+        ::closesocket(so);
+    }
+
     static auto if_index(const std::string& name) noexcept -> unsigned {
         NET_LUID uid;
         if(ConvertInterfaceNameToLuidA(name.c_str(), &uid) != NO_ERROR) return 0;
@@ -1268,6 +1273,11 @@ public:
 #else
     static auto poll(struct pollfd *fds, std::size_t count, int timeout) noexcept -> int {
         return ::poll(fds, count, timeout);
+    }
+
+    static void close(int so) {
+        ::shutdown(so, SHUT_RDWR);
+        ::close(so);
     }
 
     static auto if_index(const std::string& name) noexcept -> unsigned {
