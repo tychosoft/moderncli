@@ -19,23 +19,26 @@ struct is_stl_container<T, std::void_t<typename T::iterator>> : std::true_type {
 template <typename T>
 constexpr bool is_stl_container_v = is_stl_container<T>::value;
 
-template<typename Predicate>
+template<typename Pred>
 class filter {
 public:
-    explicit filter(Predicate pred) : pred_(pred) {}
+    explicit filter(Pred pred) : pred_(pred) {}
     filter(const filter&) = delete;
     auto operator=(const filter&) -> auto& = delete;
 
     template <typename Container,
     typename = std::enable_if_t<is_stl_container_v<Container>>>
     auto operator()(const Container& container) const {
+        using Value = typename Container::value_type;
+        static_assert(std::is_invocable_v<Pred, Value>, "Pred must be callable");
+        static_assert(std::is_convertible_v<std::invoke_result_t<Pred, Value>, bool>, "Pred result must be convertible to bool");
         Container result{};
         std::copy_if(container.begin(), container.end(), std::back_inserter(result), pred_);
         return result;
     }
 
 private:
-    Predicate pred_;
+    Pred pred_;
 };
 
 template<typename Func>
@@ -48,6 +51,9 @@ public:
     template <typename Container,
     typename = std::enable_if_t<is_stl_container_v<Container>>>
     auto operator()(const Container& container) const {
+        using Value = typename Container::value_type;
+        static_assert(std::is_invocable_v<Func, Value>, "Finct must be callable");
+        static_assert(std::is_convertible_v<std::invoke_result_t<Func, Value>, Value>, "Result must be Container value");
         Container result{};
         std::transform(container.begin(), container.end(), std::back_inserter(result), func_);
         return result;
