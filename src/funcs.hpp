@@ -31,7 +31,7 @@ inline void detach(Func&& func, Args&&... args) {
 template<typename T, typename Pred>
 inline auto get_future(std::function<T>& future, Pred pred, std::chrono::milliseconds interval = std::chrono::milliseconds(100)) {
     static_assert(std::is_invocable_v<Pred>, "Pred must be invocable");
-    static_assert(std::is_same_v<std::invoke_result_t<Pred>, bool>,"Pred must return void");
+    static_assert(std::is_convertible_v<std::invoke_result_t<Pred, T>, bool>, "Pred must return bool");
     do {    // NOLINT
         if(!pred()) throw future_cancelled();
     } while(future.wait_for(interval) != std::future_status::ready);
