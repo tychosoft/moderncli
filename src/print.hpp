@@ -197,13 +197,21 @@ public:
         quick_exit(exit_code);
     }
 
-    void set(unsigned level, notify_t notify) {
+    void set(unsigned level, notify_t notify) noexcept {
         logging_ = level;
         notify_ = notify;
     }
 
-    void set(unsigned level) {
+    void set(unsigned level) noexcept {
         logging_ = level;
+    }
+
+    auto level() const noexcept {
+        return logging_;
+    }
+
+    void level(unsigned l) noexcept {
+        logging_ = l;
     }
 
 #ifdef  USE_SYSLOG
@@ -382,9 +390,21 @@ public:
         quick_exit(exit_code);
     }
 
-    void set(unsigned level, notify_t notify = [](const std::string& str, const char *type){}) {
+    void set(unsigned level, notify_t notify = [](const std::string& str, const char *type){}) noexcept {
         logging_ = level;
         notify_ = notify;
+    }
+
+    void set(unsigned level) noexcept {
+        logging_ = level;
+    }
+
+    auto level() const noexcept {
+        return logging_;
+    }
+
+    void level(unsigned l) noexcept {
+        logging_ = l;
     }
 
 #ifdef  USE_SYSLOG
