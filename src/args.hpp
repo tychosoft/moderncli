@@ -152,15 +152,41 @@ public:
             return value_.index > 1 ? std::string_view(value_.str) : std::string_view();
         }
 
+        void set(long value) {
+            if(value_.index < 1)
+                value_.flag = value > 0;
+            if(value_.index < 2) {
+                value_.num = value;
+            }
+        }
+
         void set(const char *from) {
             assert(usage_);
             value_ = from;
+        }
+
+        void set(const std::string& str) {
+            assert(usage_);
+            value_ = str.c_str();
+        }
+
+        void set_if_unset(long value) {
+            if(value_.index < 1 && !value_.flag) {
+                value_.flag = value > 0;
+                value_.num = value;
+            }
         }
 
         void set_if_unset(const char *from) {
             assert(usage_);
             if(value_.index < 1)
                 value_ = from;
+        }
+
+        void set_if_unset(const std::string& str) {
+            assert(usage_);
+            if(value_.index < 1)
+                value_ = str.c_str();
         }
 
     private:
