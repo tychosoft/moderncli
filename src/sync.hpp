@@ -94,6 +94,10 @@ public:
 
     explicit sync_ptr(unique_sync<U>& obj) :
     unique_lock(obj.lock), sync_(obj), ptr_(&obj.data) {}
+
+    explicit sync_ptr(sync_ptr&& from) noexcept :
+    std::unique_lock<std::mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {}
+
     ~sync_ptr() = default;
 
     auto operator->() {
@@ -104,6 +108,17 @@ public:
     auto operator*() -> U& {
         if(!owns_lock()) throw std::runtime_error("unique lock error");
         return *ptr_;
+    }
+
+    auto operator=(sync_ptr&& from) noexcept -> sync_ptr& {
+        if (this != &from) {
+            std::unique_lock<std::mutex>::operator=(std::move(from));
+            sync_ = from.sync_;
+            ptr_ = from.ptr_;
+            from.ptr_ = nullptr;
+            from.sync_ = nullptr;
+        }
+        return *this;
     }
 
     template<typename I>
@@ -159,6 +174,10 @@ public:
 
     explicit reader_ptr(shared_sync<U>& obj) :
     std::shared_lock<std::shared_mutex>(obj.lock), sync_(obj), ptr_(&obj.data) {}
+
+    explicit reader_ptr(reader_ptr&& from) noexcept :
+    std::shared_lock<std::shared_mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {}
+
     ~reader_ptr() = default;
 
     auto operator->() const -> const U* {
@@ -169,6 +188,17 @@ public:
     auto operator*() const -> const U& {
         if(!owns_lock()) throw std::runtime_error("read lock error");
         return *ptr_;
+    }
+
+    auto operator=(reader_ptr&& from) noexcept -> reader_ptr& {
+        if (this != &from) {
+            std::shared_lock<std::shared_mutex>::operator=(std::move(from));
+            sync_ = from.sync_;
+            ptr_ = from.ptr_;
+            from.ptr_ = nullptr;
+            from.sync_ = nullptr;
+        }
+        return *this;
     }
 
     template<typename I>
@@ -195,6 +225,10 @@ public:
 
     explicit writer_ptr(shared_sync<U>& obj) :
     std::unique_lock<std::shared_mutex>(obj.lock), sync_(obj), ptr_(&obj.data) {}
+
+    explicit writer_ptr(writer_ptr&& from) noexcept :
+    std::unique_lock<std::shared_mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {}
+
     ~writer_ptr() = default;
 
     auto operator->() {
@@ -205,6 +239,17 @@ public:
     auto operator*() -> U& {
         if(!owns_lock()) throw std::runtime_error("write lock error");
         return *ptr_;
+    }
+
+    auto operator=(writer_ptr&& from) noexcept -> writer_ptr& {
+        if (this != &from) {
+            std::unique_lock<std::shared_mutex>::operator=(std::move(from));
+            sync_ = from.sync_;
+            ptr_ = from.ptr_;
+            from.ptr_ = nullptr;
+            from.sync_ = nullptr;
+        }
+        return *this;
     }
 
     template<typename I>
