@@ -6,9 +6,9 @@
 #include "print.hpp"
 #include "ranges.hpp"
 #include "memory.hpp"
-#include "array.hpp"
 #include "sync.hpp"
 #include "tasks.hpp"
+#include "array.hpp"
 #include "funcs.hpp"
 #include "filesystem.hpp"
 #include <vector>
@@ -26,8 +26,11 @@ struct test {
 auto count = 0;
 std::string str;
 task_queue tq;
+unique_sync<std::unordered_map<std::string, std::string>> mapper;
 unique_sync<int> counter(3);
+shared_sync<std::unordered_map<std::string, std::string>> tshared;
 shared_sync<struct test> testing;
+shared_sync<tycho::array<int,10>> tarray;
 
 auto process_command(const std::string& text, int number) {
     return tq.dispatch([text, number] {
@@ -171,6 +174,30 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
         const reader_ptr<struct test> tester(testing);
         assert(tester->v1 == 2);
+
+        {
+            sync_ptr map(mapper);
+            assert(map->empty());
+            map["here"] = "there";
+            assert(map->size() == 1);
+            assert(map["here"] == "there");
+        }
+        {
+            writer_ptr map(tshared);
+            map["here"] = "there";
+        }
+        {
+            const reader_ptr map(tshared);
+            assert(map.at("here") == "there");
+        }
+        {
+            writer_ptr map(tarray);
+            map[2] = 17;
+        }
+        {
+            const reader_ptr map(tarray);
+            assert(map[2] == 17);
+        }
     }
     catch(...) {
         ::exit(-1);

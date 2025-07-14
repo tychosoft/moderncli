@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <condition_variable>
 #include <stdexcept>
+#include <utility>
 
 #if __cplusplus >= 202002L
 #include <barrier>
@@ -105,6 +106,11 @@ public:
         return *ptr_;
     }
 
+    template<typename I>
+    auto operator[](const I& index) -> decltype(std::declval<U&>()[index]) {
+        return ptr_->operator[](index);
+    }
+
 private:
     unique_sync<U> &sync_;  // NOLINT
     U* ptr_;
@@ -134,6 +140,11 @@ public:
         return *ptr_;
     }
 
+    template<typename I>
+    auto operator[](const I& index) -> decltype(std::declval<U&>()[index]) {
+        return ptr_->operator[](index);
+    }
+
 private:
     unique_sync<U> &sync_;  // NOLINT
     U* ptr_;
@@ -160,6 +171,16 @@ public:
         return *ptr_;
     }
 
+    template<typename I>
+    auto operator[](const I& index) const -> decltype(std::declval<const U&>()[index]) {
+        return ptr_->operator[](index);
+    }
+
+    template<typename I>
+    auto at(const I& index) const {
+        return ptr_->at(index);
+    }
+
 private:
     shared_sync<U> &sync_;  // NOLINT
     const U* ptr_;
@@ -184,6 +205,11 @@ public:
     auto operator*() -> U& {
         if(!owns_lock()) throw std::runtime_error("write lock error");
         return *ptr_;
+    }
+
+    template<typename I>
+    auto operator[](const I& index) -> decltype(std::declval<U&>()[index]) {
+        return ptr_->operator[](index);
     }
 
 private:
