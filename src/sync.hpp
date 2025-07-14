@@ -96,7 +96,9 @@ public:
     unique_lock(obj.lock), sync_(obj), ptr_(&obj.data) {}
 
     explicit sync_ptr(sync_ptr&& from) noexcept :
-    std::unique_lock<std::mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {}
+    std::unique_lock<std::mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {
+        from.ptr_ = nullptr;
+    }
 
     ~sync_ptr() = default;
 
@@ -116,7 +118,6 @@ public:
             sync_ = from.sync_;
             ptr_ = from.ptr_;
             from.ptr_ = nullptr;
-            from.sync_ = nullptr;
         }
         return *this;
     }
@@ -176,7 +177,9 @@ public:
     std::shared_lock<std::shared_mutex>(obj.lock), sync_(obj), ptr_(&obj.data) {}
 
     explicit reader_ptr(reader_ptr&& from) noexcept :
-    std::shared_lock<std::shared_mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {}
+    std::shared_lock<std::shared_mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {
+        from.ptr_ = nullptr;
+    }
 
     ~reader_ptr() = default;
 
@@ -196,7 +199,6 @@ public:
             sync_ = from.sync_;
             ptr_ = from.ptr_;
             from.ptr_ = nullptr;
-            from.sync_ = nullptr;
         }
         return *this;
     }
@@ -227,7 +229,9 @@ public:
     std::unique_lock<std::shared_mutex>(obj.lock), sync_(obj), ptr_(&obj.data) {}
 
     explicit writer_ptr(writer_ptr&& from) noexcept :
-    std::unique_lock<std::shared_mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {}
+    std::unique_lock<std::shared_mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {
+        from.ptr_ = nullptr;
+    }
 
     ~writer_ptr() = default;
 
@@ -247,7 +251,6 @@ public:
             sync_ = from.sync_;
             ptr_ = from.ptr_;
             from.ptr_ = nullptr;
-            from.sync_ = nullptr;
         }
         return *this;
     }
