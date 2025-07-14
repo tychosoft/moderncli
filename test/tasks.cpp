@@ -86,14 +86,24 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         ++heartbeat;
     });
 
-    timers.periodic(50, [&fast]{
+    auto id = timers.periodic(50, [&fast]{
         ++fast;
     });
 
-    yield(500);
+    yield(400);
+    assert(timers.size() == 2);
+    assert(timers.exists(id));
+    timers.cancel(id);
+    assert(!timers.exists(id));
+    assert(timers.size() == 1);
+    auto saved = fast;
+    auto prior = heartbeat;
+    yield(240);
+    assert(fast == saved);
     timers.shutdown();
     assert(heartbeat >= 2 && fast > heartbeat && heartbeat <= 5);
-    auto saved = fast;
+    assert(heartbeat > prior);
+    saved = fast;
 
     task_pool pool(4);
     pool.start();
@@ -111,7 +121,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
     // definately not still running...
     assert(saved == fast);
-    assert(fast >= 2 * heartbeat);
+    assert(fast > heartbeat);
     return 0;
 }
 

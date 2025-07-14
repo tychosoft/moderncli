@@ -154,6 +154,14 @@ public:
         return false;
     }
 
+    auto exists(uint64_t id) const noexcept {
+        const std::lock_guard lock(lock_);
+        for(const auto& [expires, item] : timers_) {
+            if(std::get<0>(item) == id) return true;
+        }
+        return false;
+    }
+
     auto find(uint64_t id) const noexcept {
         const std::lock_guard lock(lock_);
         for(const auto& [expires, item] : timers_) {
@@ -165,6 +173,11 @@ public:
     void clear() noexcept {
         const std::lock_guard lock(lock_);
         timers_.clear();
+    }
+
+    auto size() const noexcept {
+        const std::lock_guard lock(lock_);
+        return timers_.size();
     }
 
     auto empty() const noexcept {
@@ -197,20 +210,19 @@ private:
             const auto now = std::chrono::steady_clock::now();
             if(expires <= now) {
                 const auto item(std::move(it->second));
-                timers_.erase(it);
-                lock.unlock();
                 const auto& [id, period, task] = item;
+                timers_.erase(it);
+                if(period != period_t(0)) {
+                    expires += period;
+                    timers_.emplace(expires, std::make_tuple(id, period, task));
+                    cond_.notify_all();
+                }
+                lock.unlock();
                 try {
                     task();
                 }
                 catch(const std::exception& e) {
                     errors_(e);
-                }
-                lock.lock();
-                if(period != period_t(0)) {
-                    expires += period;
-                    timers_.emplace(expires, std::make_tuple(id, period, task));
-                    cond_.notify_all();
                 }
                 continue;
             }
