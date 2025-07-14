@@ -1265,6 +1265,20 @@ public:
         return io_error(::recvfrom(so_, static_cast<char *>(to), int(size), flags, addr.data(), &len));
     }
 
+#ifdef  AF_UNIX
+    static auto un(const struct sockaddr *addr) {
+        return addr->sa_family == AF_UNIX ? reinterpret_cast<const struct sockaddr_un *>(addr) : nullptr;
+    }
+#endif
+
+    static auto in4(const struct sockaddr *addr) {
+        return addr->sa_family == AF_INET ? reinterpret_cast<const struct sockaddr_in *>(addr) : nullptr;
+    }
+
+    static auto in6(const struct sockaddr *addr) {
+        return addr->sa_family == AF_INET6 ? reinterpret_cast<const struct sockaddr_in6 *>(addr) : nullptr;
+    }
+
     // type converted send to for portable socket code
     static auto send_to(int so, const void *from, std::size_t size, int flags = 0, const struct sockaddr *addr = nullptr, socklen_t asize = sizeof(struct sockaddr_storage)) noexcept {
      return ::sendto(so, static_cast<const char *>(from), int(size), flags, addr, asize);
@@ -1273,6 +1287,54 @@ public:
     // type converted send to for portable socket code
     static auto recv_from(int so, void *to, std::size_t size, int flags = 0, struct sockaddr *addr = nullptr, socklen_t *asize = nullptr) noexcept {
         return ::recvfrom(so, static_cast<char *>(to), int(size), flags, addr, asize);
+    }
+
+    static auto join(int so, const struct sockaddr *member, unsigned ifindex = 0) {
+        if(so == -1) return EBADF;
+        auto res = 0;
+        multicast_t multicast;
+        memset(&multicast, 0, sizeof(multicast));
+        switch(member->sa_family) {
+        case AF_INET:
+            multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
+            multicast.ipv4.imr_multiaddr = in4(member)->sin_addr;
+            if(setsockopt(so, IPPROTO_IP, IP_ADD_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv4)) == -1)
+                res = errno;
+            break;
+        case AF_INET6:
+            multicast.ipv6.ipv6mr_interface = ifindex;
+            multicast.ipv6.ipv6mr_multiaddr = in6(member)->sin6_addr;
+            if(setsockopt(so, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv6)) == -1)
+                res = errno;
+            break;
+        default:
+            res = EAI_FAMILY;
+        }
+        return res;
+    }
+
+    static auto drop(int so, const struct sockaddr *member, unsigned ifindex = 0) {
+        if(so == -1) return EBADF;
+        auto res = 0;
+        multicast_t multicast;
+        memset(&multicast, 0, sizeof(multicast));
+        switch(member->sa_family) {
+        case AF_INET:
+            multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
+            multicast.ipv4.imr_multiaddr = in4(member)->sin_addr;
+            if(setsockopt(so, IPPROTO_IP, IP_DROP_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv4)) == -1)
+                res = errno;
+            break;
+        case AF_INET6:
+            multicast.ipv6.ipv6mr_interface = ifindex;
+            multicast.ipv6.ipv6mr_multiaddr = in6(member)->sin6_addr;
+            if(setsockopt(so, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv6)) == -1)
+                res = errno;
+            break;
+        default:
+            res = EAI_FAMILY;
+        }
+        return res;
     }
 
 #ifdef USE_CLOSESOCKET
@@ -1467,20 +1529,6 @@ inline auto inet_family(const std::string& host, int any = AF_UNSPEC) {
     if(dots == 3) return AF_INET;
     return AF_UNSPEC;
 }
-
-inline auto inet_in4(struct sockaddr_storage& store) {
-    return store.ss_family == AF_INET ? reinterpret_cast<struct sockaddr_in *>(&store) : nullptr;
-}
-
-inline auto inet_in6(struct sockaddr_storage& store) {
-    return store.ss_family == AF_INET6 ? reinterpret_cast<struct sockaddr_in6 *>(&store) : nullptr;
-}
-
-#ifdef  AF_UNIX
-inline auto inet_un(struct sockaddr_storage& store) {
-    return store.ss_family == AF_UNIX ? reinterpret_cast<struct sockaddr_un *>(&store) : nullptr;
-}
-#endif
 
 inline auto inet_any(const std::string& host, int any = AF_INET) {
     if(host == "*") return any;
