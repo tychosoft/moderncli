@@ -618,12 +618,14 @@ public:
         }
 
         auto operator=(interfaces&& from) noexcept -> auto& {
-            if(list_)
-                free(list_);    // NOLINT
-            list_ = from.list_;
-            count_ = from.count_;
-            from.list_ = nullptr;
-            from.count_ = 0;
+            if(this != &from) {
+                if(list_)
+                    free(list_);    // NOLINT
+                list_ = from.list_;
+                count_ = from.count_;
+                from.list_ = nullptr;
+                from.count_ = 0;
+            }
             return *this;
         }
 
@@ -809,12 +811,14 @@ public:
         }
 
         auto operator=(interfaces&& from) noexcept -> auto& {
-            if(list_)
-                freeifaddrs(list_);
-            count_ = from.count_;
-            list_ = from.list_;
-            from.count_ = 0;
-            from.list_ = nullptr;
+            if(this != &from) {
+                if(list_)
+                    freeifaddrs(list_);
+                count_ = from.count_;
+                list_ = from.list_;
+                from.count_ = 0;
+                from.list_ = nullptr;
+            }
             return *this;
         }
 

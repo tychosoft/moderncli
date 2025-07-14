@@ -377,6 +377,7 @@ public:
     }
 
     auto operator=(posix_file&& other) noexcept -> auto& {
+        if(this == &other) return *this;
         release();
         fd_ = other.fd_;
         return *this;
@@ -554,6 +555,7 @@ public:
     }
 
     auto operator=(pager_file&& other) noexcept -> auto& {
+        if(this == &other) return *this;
         posix_file::assign(other.fd_);
         offset_ = other.offset_;
         header_ = other.header_;

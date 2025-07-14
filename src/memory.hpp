@@ -298,6 +298,7 @@ public:
     }
 
     auto operator=(memreuse&& other) noexcept -> auto& {
+        if(&other == this) return *this;
         free_ = std::move(other.free_);
         alloc_ = std::move(other.alloc_);
         other.free_.clear();
@@ -405,6 +406,7 @@ public:
     }
 
     auto operator=(mempool&& other) noexcept -> auto& {
+        if(this == &other) return *this;
         if(ptr_ && dynamic_)
             delete[] ptr_;
         ptr_ = other.ptr_;
