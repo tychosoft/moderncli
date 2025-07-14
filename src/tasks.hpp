@@ -156,7 +156,7 @@ public:
 
     auto exists(uint64_t id) const noexcept {
         const std::lock_guard lock(lock_);
-        for(const auto& [expires, item] : timers_) {
+        for(const auto& [expires, item] : timers_) {    // NOLINT
             if(std::get<0>(item) == id) return true;
         }
         return false;
@@ -215,7 +215,6 @@ private:
                 if(period != period_t(0)) {
                     expires += period;
                     timers_.emplace(expires, std::make_tuple(id, period, task));
-                    cond_.notify_all();
                 }
                 lock.unlock();
                 try {
