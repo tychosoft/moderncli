@@ -80,7 +80,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     timer_queue timers;
     auto fast = 0;
     auto heartbeat = 0;
-    timers.startup();
+    timers.startup([]{print("Start timer thread\n");});
 
     timers.periodic(std::chrono::milliseconds(150), [&heartbeat]{
         ++heartbeat;
@@ -106,7 +106,6 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     saved = fast;
 
     task_pool pool(4);
-    pool.start();
     std::mutex cout_mutex;
     for (int i = 0; i < 8; ++i) {
         pool.dispatch([i, &cout_mutex] {
@@ -124,4 +123,5 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(fast > heartbeat);
     return 0;
 }
+
 

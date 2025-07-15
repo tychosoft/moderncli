@@ -99,9 +99,11 @@ public:
         return stop_.load();
     }
 
-    void startup() noexcept {
-        if(!thread_.joinable())
+    void startup(task_t init = []{}) noexcept {
+        if(!thread_.joinable()) {
+            startup_ = init;
             thread_ = std::thread(&timer_queue::run, this);
+        }
     }
 
     void shutdown() {
@@ -237,7 +239,7 @@ public:
         return timers_.empty();
     }
 
-private:
+protected:
     using timer_t = std::tuple<id_t, period_t, task_t>;
     error_t errors_{[](const std::exception& e) {}};
     std::multimap<timepoint_t, timer_t> timers_;
@@ -245,9 +247,11 @@ private:
     std::condition_variable cond_;
     std::thread thread_;
     std::atomic<bool> stop_{false};
+    task_t startup_{[]{}};
     id_t next_{0};
 
     void run() noexcept {
+        startup_();
         for(;;) {
             std::unique_lock lock(lock_);
             if(!stop_ && timers_.empty())
@@ -390,7 +394,7 @@ public:
         return running_;
     }
 
-private:
+protected:
     timeout_strategy timeout_{default_timeout};
     shutdown_strategy shutdown_{[](){}};
     error_t errors_{[](const std::exception& e) {}};
@@ -430,14 +434,15 @@ private:
     }
 };
 
+// common thread pool, may be derived
 class task_pool {
 public:
     task_pool() = default;
     task_pool(const task_pool&) = delete;
     auto operator=(const task_pool&) -> auto& = delete;
 
-    explicit task_pool(std::size_t count) {
-        start(count);
+    explicit task_pool(std::size_t count, task_t init = []{}) {
+        start(count, init);
     }
 
     ~task_pool() {
@@ -454,7 +459,7 @@ public:
         if(count) start(count);
     }
 
-    void start(std::size_t count = 0) {
+    void start(std::size_t count = 0, task_t init = []{}) {
         if(count == 0)
             count = std::thread::hardware_concurrency();
         if(count == 0)
@@ -465,8 +470,10 @@ public:
         started_ = true;
         workers_.clear();
         workers_.reserve(count);
+        startup_ = init;
         for(std::size_t i = 0; i < count; ++i) {
             workers_.emplace_back([this] {
+                startup_();
                 while (true) {
                     std::function<void()> task;
                     std::unique_lock lock(mutex_);
@@ -509,13 +516,14 @@ public:
         started_ = false;
     }
 
-private:
+protected:
     std::vector<std::thread> workers_;
     std::queue<std::function<void()>> tasks_;
     mutable std::mutex mutex_;
     std::condition_variable cvar_;
     std::atomic<bool> accepting_{false};
     bool started_{false};
+    task_t startup_{[]{}};
 };
 
 // may optimize much faster but bloaty and more limited...
