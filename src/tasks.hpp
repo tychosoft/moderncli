@@ -71,6 +71,7 @@ using thread_t = std::jthread;
 // We may derive a timer subsystem from a protected timer queue
 class timer_queue {
 public:
+    using id_t = uint64_t;
     using period_t = std::chrono::milliseconds;
     using timepoint_t = std::chrono::steady_clock::time_point;
 
@@ -124,8 +125,8 @@ public:
         return at(target, std::move(task)); // delegate to your existing overload
     }
 
-    auto periodic(unsigned period, task_t task) {
-        const auto expires = std::chrono::steady_clock::now() + std::chrono::milliseconds(period);
+    auto periodic(uint32_t period, task_t task, uint32_t shorten = 0U) {
+        const auto expires = std::chrono::steady_clock::now() + std::chrono::milliseconds(period - shorten);;
         const std::lock_guard lock(lock_);
         const auto id = next_++;
         timers_.emplace(expires, std::make_tuple(id, period, task));
@@ -133,8 +134,8 @@ public:
         return id;
     }
 
-    auto periodic(const period_t& period, task_t task) {
-        const auto expires = std::chrono::steady_clock::now() + period;
+    auto periodic(const period_t& period, task_t task, const period_t shorten = period_t(0)) {
+        const auto expires = std::chrono::steady_clock::now() + period - shorten;
         const std::lock_guard lock(lock_);
         const auto id = next_++;
         timers_.emplace(expires, std::make_tuple(id, period, task));
@@ -142,10 +143,10 @@ public:
         return id;
     }
 
-    auto cancel(uint64_t id) {
+    auto cancel(id_t tid) {
         const std::lock_guard lock(lock_);
         for(auto it = timers_.begin(); it != timers_.end(); ++it) {
-            if(std::get<0>(it->second) == id) {
+            if(std::get<0>(it->second) == tid) {
                 timers_.erase(it);
                 cond_.notify_all();
                 return true;
@@ -154,7 +155,29 @@ public:
         return false;
     }
 
-    auto exists(uint64_t id) const noexcept {
+    auto refresh(id_t tid) {
+        const std::lock_guard lock(lock_);
+        for(auto it = timers_.begin(); it != timers_.end(); ++it) {
+            const auto& [id, period, task] = it->second;
+            if(tid == id) {
+                auto result = true;
+                if(period == period_t(0)) return false;
+                const auto current = std::chrono::steady_clock::now();
+                const auto expires = current + period;
+                const auto when = it->first;
+                timers_.erase(it);
+                if(when > current) {   // if hasnt expired, refresh...
+                    result = true;
+                    timers_.emplace(expires, std::make_tuple(id, period, task));
+                }
+                cond_.notify_all();
+                return result;
+            }
+        }
+        return false;
+    }
+
+    auto exists(id_t id) const noexcept {
         const std::lock_guard lock(lock_);
         for(const auto& [expires, item] : timers_) {    // NOLINT
             if(std::get<0>(item) == id) return true;
@@ -162,7 +185,7 @@ public:
         return false;
     }
 
-    auto find(uint64_t id) const noexcept {
+    auto find(id_t id) const noexcept {
         const std::lock_guard lock(lock_);
         for(const auto& [expires, item] : timers_) {
             if(std::get<0>(item) == id) return expires;
@@ -187,14 +210,14 @@ public:
     }
 
 private:
-    using timer_t = std::tuple<uint64_t, period_t, task_t>;
+    using timer_t = std::tuple<id_t, period_t, task_t>;
     error_t errors_{[](const std::exception& e) {}};
     std::multimap<timepoint_t, timer_t> timers_;
     mutable std::mutex lock_;
     std::condition_variable cond_;
     std::thread thread_;
     std::atomic<bool> stop_{false};
-    uint64_t next_{0};
+    id_t next_{0};
 
     void run() noexcept {
         for(;;) {
