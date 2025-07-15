@@ -75,6 +75,7 @@ public:
     using period_t = std::chrono::milliseconds;
     using timepoint_t = std::chrono::steady_clock::time_point;
 
+    static constexpr period_t zero = std::chrono::milliseconds(0);
     static constexpr period_t second = std::chrono::milliseconds(1000);
     static constexpr period_t minute = second * 60;
     static constexpr period_t hour = minute * 60;
@@ -139,13 +140,35 @@ public:
         return id;
     }
 
-    auto periodic(const period_t& period, task_t task, const period_t shorten = period_t(0)) {
+    auto periodic(const period_t& period, task_t task, const period_t& shorten = zero) {
         const auto expires = std::chrono::steady_clock::now() + period - shorten;
         const std::lock_guard lock(lock_);
         const auto id = next_++;
         timers_.emplace(expires, std::make_tuple(id, period, task));
         cond_.notify_all();
         return id;
+    }
+
+    auto repeats(id_t tid) const {
+        const std::lock_guard lock(lock_);
+        for(const auto& it : timers_) {
+            if(std::get<0>(it.second) == tid) return std::get<1>(it.second);
+        }
+        return zero;
+    }
+
+    auto repeats(id_t tid, const period_t& period) {
+        const std::lock_guard lock(lock_);
+        for(auto& it : timers_) {
+            if(std::get<0>(it.second) != tid) continue;
+            std::get<1>(it.second) = period;
+            return true;
+        }
+        return false;
+    }
+
+    auto finish(id_t tid) {
+        return repeats(tid, zero);
     }
 
     auto cancel(id_t tid) {
@@ -166,7 +189,7 @@ public:
             const auto& [id, period, task] = it->second;
             if(tid == id) {
                 auto result = true;
-                if(period == period_t(0)) return false;
+                if(period == zero) return false;
                 const auto current = std::chrono::steady_clock::now();
                 const auto expires = current + period;
                 const auto when = it->first;
@@ -240,7 +263,7 @@ private:
                 const auto item(std::move(it->second));
                 const auto& [id, period, task] = item;
                 timers_.erase(it);
-                if(period != period_t(0)) {
+                if(period != zero) {
                     expires += period;
                     timers_.emplace(expires, std::make_tuple(id, period, task));
                 }
