@@ -470,6 +470,16 @@ public:
         drain();
     }
 
+    operator bool() const noexcept {
+        const std::lock_guard lock(mutex_);
+        return started_;
+    }
+
+    auto operator!() const noexcept {
+        const std::lock_guard lock(mutex_);
+        return !started_;
+    }
+
     auto size() const noexcept {
         const std::lock_guard lock(mutex_);
         return workers_.size();
@@ -520,6 +530,19 @@ public:
         return true;
     }
 
+    void shutdown() noexcept {
+        drain();
+    }
+
+protected:
+    std::vector<std::thread> workers_;
+    std::queue<std::function<void()>> tasks_;
+    mutable std::mutex mutex_;
+    std::condition_variable cvar_;
+    task_t startup_{[]{}};
+    std::atomic<bool> accepting_{false};
+    volatile bool started_{false};
+
     void drain() noexcept {
         std::unique_lock lock(mutex_);
         accepting_ = false;
@@ -536,15 +559,6 @@ public:
         workers_.clear();
         started_ = false;
     }
-
-protected:
-    std::vector<std::thread> workers_;
-    std::queue<std::function<void()>> tasks_;
-    mutable std::mutex mutex_;
-    std::condition_variable cvar_;
-    std::atomic<bool> accepting_{false};
-    bool started_{false};
-    task_t startup_{[]{}};
 };
 
 // may optimize much faster but bloaty and more limited...
