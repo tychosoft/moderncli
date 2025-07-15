@@ -75,6 +75,11 @@ public:
     using period_t = std::chrono::milliseconds;
     using timepoint_t = std::chrono::steady_clock::time_point;
 
+    static constexpr period_t second = std::chrono::milliseconds(1000);
+    static constexpr period_t minute = second * 60;
+    static constexpr period_t hour = minute * 60;
+    static constexpr period_t day = hour * 24;
+
     explicit timer_queue(error_t handler = [](const std::exception& e){}) noexcept :
     errors_(std::move(handler)) {}
 
