@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <condition_variable>
 #include <functional>
+#include <algorithm>
 #include <stdexcept>
 #include <atomic>
 #include <chrono>
@@ -153,10 +154,11 @@ public:
 
     auto repeats(id_t tid) const {
         const std::lock_guard lock(lock_);
-        for(const auto& it : timers_) {
-            if(std::get<0>(it.second) == tid) return std::get<1>(it.second);
-        }
-        return zero;
+        auto it = std::find_if(timers_.begin(), timers_.end(), [&](const auto& pair) {
+            const auto& [id, period, task] = pair.second;
+            return id == tid;
+        });
+        return (it != timers_.end()) ? std::get<1>(it->second) : zero;
     }
 
     auto repeats(id_t tid, const period_t& period) {
@@ -185,6 +187,26 @@ public:
         return false;
     }
 
+    auto reset(id_t tid, const period_t& offset = zero, const period_t& interval = zero) {
+        const std::lock_guard lock(lock_);
+        auto it = std::find_if(timers_.begin(), timers_.end(), [&](const auto& pair) {
+            const auto& [id, period, task] = pair.second;
+            return tid == id;
+        });
+        if(it != timers_.end()) {
+            auto& [id, period, task] = it->second;
+            const auto expires = std::chrono::steady_clock::now() + offset;
+            if(interval != zero)
+                period = interval;
+
+            timers_.erase(it);
+            timers_.emplace(expires, std::make_tuple(id, period, task));
+            cond_.notify_all();
+            return true;
+        }
+        return false;
+    }
+
     auto refresh(id_t tid) {
         const std::lock_guard lock(lock_);
         for(auto it = timers_.begin(); it != timers_.end(); ++it) {
@@ -209,10 +231,9 @@ public:
 
     auto exists(id_t id) const noexcept {
         const std::lock_guard lock(lock_);
-        for(const auto& [expires, item] : timers_) {    // NOLINT
-            if(std::get<0>(item) == id) return true;
-        }
-        return false;
+        return std::any_of(timers_.begin(), timers_.end(), [&](const auto& it) {
+            return std::get<0>(it.second) == id;
+        });
     }
 
     auto find(id_t id) const noexcept {
