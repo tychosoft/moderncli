@@ -363,16 +363,7 @@ inline auto get_bool(std::string_view& text) {
 
 template<typename T = unsigned>
 inline auto get_hex(std::string_view text, T min = 0, T max = std::numeric_limits<T>::max())  {
-    static_assert(
-        std::is_same_v<T, unsigned> ||
-        std::is_same_v<T, unsigned short> ||
-        std::is_same_v<T, unsigned long> ||
-        std::is_same_v<T, unsigned long long> ||
-        std::is_same_v<T, uint64_t> ||
-        std::is_same_v<T, uint32_t> ||
-        std::is_same_v<T, uint16_t> ||
-        std::is_same_v<T, uint8_t>,
-        "Invalid unsigned type" );
+    static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>, "Invalid unsigned type" );
 
     if(!scan::match(text, "0x")) {
         if(!text.empty() && text.front() == '$')
@@ -396,14 +387,7 @@ inline auto get_hex_or(std::string_view text, const T& or_else, T min = 0, T max
 
 template<typename T = unsigned>
 inline auto get_unsigned(std::string_view text, T min = 0, T max = std::numeric_limits<T>::max()) {
-    static_assert(
-        std::is_same_v<T, unsigned> ||
-        std::is_same_v<T, unsigned short> ||
-        std::is_same_v<T, unsigned long> ||
-        std::is_same_v<T, uint32_t> ||
-        std::is_same_v<T, uint16_t> ||
-        std::is_same_v<T, uint8_t>,
-        "Invalid unsigned type" );
+    static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>, "Invalid unsigned type" );
 
     if(text.empty() || !isdigit(text.front())) throw std::invalid_argument("Value missing or invalid");
     if(scan::match(text, "0x")) return get_hex<T>(text, min, max);
@@ -427,16 +411,7 @@ inline auto get_unsigned_or(std::string_view text, T or_else = 0, T min = 0, T m
 
 template<typename T = int>
 inline auto get_integer(std::string_view text, T min = std::numeric_limits<T>::min(), T max = std::numeric_limits<T>::max()) {
-    static_assert(
-        std::is_same_v<T, int> ||
-        std::is_same_v<T, long> ||
-        std::is_same_v<T, short> ||
-        std::is_same_v<T, int32_t> ||
-        std::is_same_v<T, int16_t> ||
-        std::is_same_v<T, char> ||
-        std::is_same_v<T, int8_t>,
-        "Invalid integer type");
-
+    static_assert(std::is_integral_v<T>, "Invalid integral type" );
     return T(get_value(text, int32_t(min), int32_t(max)));
 }
 
