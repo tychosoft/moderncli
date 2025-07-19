@@ -18,7 +18,7 @@ constexpr auto is_null(const T& ptr) {
     if constexpr (std::is_pointer_v<T>)
         return ptr == nullptr;
     else
-        return ptr.operator bool();
+        return ptr.operator!();
 }
 
 template<typename T=void>
@@ -27,15 +27,10 @@ constexpr auto void_ptr(void *ptr, std::size_t offset) {
 }
 
 template<typename T>
-constexpr auto bound_ptr(const T* pointer, const T* base, std::size_t count) {
+constexpr auto in_bounds(const T* pointer, const T* base, std::size_t count) {
     if(pointer < base || pointer >= &base[count]) return false;
     if((std::size_t(pointer - base)) % sizeof(T)) return false;
     return true;
-}
-
-template<typename T>
-constexpr auto deref_ptr(T *ptr) -> T& {
-    return *ptr;
 }
 
 template<typename T>
