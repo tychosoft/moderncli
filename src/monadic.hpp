@@ -23,7 +23,7 @@ public:
         return maybe<decltype(func(std::declval<T>()).value_)>();
     }
 
-    operator bool() const {
+    explicit operator bool() const {
         return value_.has_value();
     }
 

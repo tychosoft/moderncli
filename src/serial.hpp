@@ -63,7 +63,7 @@ public:
         close();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return device_ > -1;
     }
 
@@ -478,7 +478,7 @@ public:
         return device_ == invalid_;
     }
 
-    operator bool() const {
+    explicit operator bool() const {
         return device_ != invalid_;
     }
 

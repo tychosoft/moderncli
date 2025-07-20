@@ -73,7 +73,7 @@ public:
         return *this;
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return ctx_ != nullptr;
     }
 

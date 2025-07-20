@@ -41,7 +41,7 @@ public:
         return share();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return cert_ != nullptr;
     }
 

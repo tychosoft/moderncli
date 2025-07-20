@@ -68,7 +68,7 @@ public:
         return std::make_pair(data_, size_);
     }
 
-    operator bool() const {
+    explicit operator bool() const {
         return size_ > 0;
     }
 
@@ -232,7 +232,7 @@ public:
         return *this;
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return ctx_ != nullptr;
     }
 
@@ -368,7 +368,7 @@ public:
         return *this;
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return ctx_ != nullptr;
     }
 

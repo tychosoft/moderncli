@@ -58,7 +58,7 @@ public:
             BN_CTX_free(ctx_);
     }
 
-    operator BIGNUM *() const noexcept {
+    explicit operator BIGNUM *() const noexcept {
         return get();
     }
 
@@ -66,7 +66,7 @@ public:
         return to_string();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return !BN_is_zero(num_);
     }
 

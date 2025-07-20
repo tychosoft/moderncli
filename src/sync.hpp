@@ -265,7 +265,7 @@ public:
         wait();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return !empty();
     }
 
@@ -525,7 +525,7 @@ public:
     ~event_sync() = default;
     auto operator=(const event_sync&) noexcept -> auto& = delete;
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return is_notified();
     }
 

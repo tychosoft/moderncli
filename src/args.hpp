@@ -128,7 +128,7 @@ public:
         option(const option&) = delete;
         auto operator=(const option&) -> auto& = delete;
 
-        operator bool() const {
+        explicit operator bool() const {
             return value_.index > 0 || value_.flag;
         }
 

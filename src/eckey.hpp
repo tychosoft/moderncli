@@ -88,7 +88,7 @@ public:
         return share();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return key_ != nullptr;
     }
 

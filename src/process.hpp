@@ -114,7 +114,7 @@ public:
         return *this;
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return handle_ != invalid_handle();
     }
 
@@ -200,7 +200,7 @@ public:
         release();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return addr_ != MAP_FAILED;
     };
 
@@ -559,7 +559,7 @@ public:
         return *this;
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return handle_ != invalid_handle();
     }
 
@@ -617,7 +617,7 @@ public:
         release();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return addr_ != MAP_FAILED;
     };
 

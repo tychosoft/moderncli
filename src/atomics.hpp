@@ -72,7 +72,7 @@ public:
     once_t(const once_t&) = delete;
     auto operator=(const once_t&) = delete;
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return flag_.exchange(false);
     }
 
@@ -94,7 +94,7 @@ public:
     stack_t(const stack_t&) = delete;
     auto operator=(const stack_t&) -> auto& = delete;
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return count_.load() > 0;
     }
 
@@ -168,7 +168,7 @@ public:
     buffer_t(const buffer_t&) = delete;
     auto operator=(const buffer_t&) -> auto& = delete;
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         const auto head = head_.load(std::memory_order_relaxed);
         const auto tail = tail_.load(std::memory_order_relaxed);
         return head != tail;
@@ -278,7 +278,7 @@ public:
         return *this;
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return count_.load() > 0;
     }
 
@@ -529,7 +529,7 @@ public:
         return load();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return load() != 0;
     }
 

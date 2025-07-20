@@ -78,7 +78,7 @@ public:
         return key();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return size_ > 0;
     }
 
@@ -401,7 +401,7 @@ public:
             delete[] ptr_;
     }
 
-    operator bool() {
+    explicit operator bool() {
         return !empty();
     }
 

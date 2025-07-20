@@ -140,7 +140,7 @@ public:
         return memcmp(&store_, &other.store_, max_(size(), other.size())) >= 0;
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return store_.ss_family != 0;
     }
 
@@ -465,7 +465,7 @@ public:
             return list_;
         }
 
-        operator bool() const noexcept {
+        explicit operator bool() const noexcept {
             return list_ != nullptr;
         }
 
@@ -609,7 +609,7 @@ public:
             release();
         }
 
-        operator bool() const noexcept {
+        explicit operator bool() const noexcept {
             return count_ > 0;
         }
 
@@ -802,7 +802,7 @@ public:
             release();
         }
 
-        operator bool() const noexcept {
+        explicit operator bool() const noexcept {
             return count_ > 0;
         }
 
@@ -1028,7 +1028,7 @@ public:
         return *this;
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return so_ != -1;
     }
 

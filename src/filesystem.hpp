@@ -397,7 +397,7 @@ public:
         return fd_;
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return fd_ != -1;
     }
 
@@ -545,7 +545,7 @@ public:
     }
 
     //cppcheck-suppress duplInheritedMember
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return posix_file::is_open();
     }
 

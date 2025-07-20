@@ -125,7 +125,7 @@ public:
         return std::make_pair(reinterpret_cast<const uint8_t *>(this->data()), this->size());
     }
 
-    operator bool() const {
+    explicit operator bool() const {
         return !this->empty();
     }
 
@@ -242,7 +242,7 @@ public:
     template <typename Container, typename = std::enable_if_t<std::is_same_v<T, typename Container::value_type>>>
     span(Container& container) : span(container.data(), container.size()) {} // cppcheck-suppress noExplicitConstructor
 
-    operator bool() {
+    explicit operator bool() {
         return !empty();
     }
 

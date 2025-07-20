@@ -92,7 +92,7 @@ public:
         shutdown();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return !stop_.load();
     }
 
@@ -322,7 +322,7 @@ public:
         shutdown();
     };
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         const std::lock_guard lock(mutex_);
         return running_;
     }
@@ -470,7 +470,7 @@ public:
         drain();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         const std::lock_guard lock(mutex_);
         return started_;
     }

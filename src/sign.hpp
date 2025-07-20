@@ -75,7 +75,7 @@ public:
         return share();
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return key_ != nullptr;
     }
 
@@ -132,7 +132,7 @@ public:
             EVP_PKEY_free(key_);
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return ctx_ != nullptr;
     }
 
@@ -201,7 +201,7 @@ public:
              EVP_PKEY_free(key_);
     }
 
-    operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return ctx_ != nullptr;
     }
 
