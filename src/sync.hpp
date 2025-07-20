@@ -93,12 +93,10 @@ public:
     auto operator=(const sync_ptr&) -> auto& = delete;
 
     explicit sync_ptr(unique_sync<U>& obj) :
-    unique_lock(obj.lock), sync_(obj), ptr_(&obj.data) {}
+    unique_lock(obj.lock), ptr_(&obj.data) {}
 
-    explicit sync_ptr(sync_ptr&& from) noexcept :
-    std::unique_lock<std::mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {
-        from.ptr_ = nullptr;
-    }
+    sync_ptr(sync_ptr&& from) noexcept :
+    std::unique_lock<std::mutex>(std::move(from)), ptr_(std::exchange(from.ptr_, nullptr)) {}
 
     ~sync_ptr() = default;
 
@@ -113,12 +111,10 @@ public:
     }
 
     auto operator=(sync_ptr&& from) noexcept -> sync_ptr& {
-        if (this != &from) {
-            std::unique_lock<std::mutex>::operator=(std::move(from));
-            sync_ = from.sync_;
-            ptr_ = from.ptr_;
-            from.ptr_ = nullptr;
-        }
+        if(this == &from) return *this;
+        if(owns_lock()) unlock();
+        std::unique_lock<std::mutex>::operator=(std::move(from));
+        ptr_  = std::exchange(from.ptr_, nullptr);
         return *this;
     }
 
@@ -128,8 +124,7 @@ public:
     }
 
 private:
-    unique_sync<U> &sync_;  // NOLINT
-    U* ptr_;
+    U* ptr_{nullptr};
 };
 
 template <typename U>
@@ -140,30 +135,29 @@ public:
     auto operator=(const guard_ptr&) -> auto& = delete;
 
     explicit guard_ptr(unique_sync<U>& obj) :
-    sync_(obj), ptr_(&obj.data) {
-        sync_.lock.lock();
+    obj_(obj) {
+        obj_.lock.lock();
     }
 
     ~guard_ptr() {
-        sync_.lock.unlock();
+        obj_.lock.unlock();
     }
 
     auto operator->() {
-        return ptr_;
+        return &obj_.data;
     }
 
     auto operator*() -> U& {
-        return *ptr_;
+        return obj_.data;
     }
 
     template<typename I>
     auto operator[](const I& index) -> decltype(std::declval<U&>()[index]) {
-        return ptr_->operator[](index);
+        return obj_.data.operator[](index);
     }
 
 private:
-    unique_sync<U> &sync_;  // NOLINT
-    U* ptr_;
+    unique_sync<U>& obj_;
 };
 
 template <typename U>
@@ -171,15 +165,13 @@ class reader_ptr final : public std::shared_lock<std::shared_mutex> {
 public:
     reader_ptr() = delete;
     reader_ptr(const reader_ptr&) = delete;
-    auto operator=(const reader_ptr&) -> auto& = delete;
+    auto operator=(const reader_ptr&) -> reader_ptr& = delete;
 
     explicit reader_ptr(shared_sync<U>& obj) :
-    std::shared_lock<std::shared_mutex>(obj.lock), sync_(obj), ptr_(&obj.data) {}
+    std::shared_lock<std::shared_mutex>(obj.lock), ptr_(&obj.data) {}
 
-    explicit reader_ptr(reader_ptr&& from) noexcept :
-    std::shared_lock<std::shared_mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {
-        from.ptr_ = nullptr;
-    }
+    reader_ptr(reader_ptr&& from) noexcept :
+    std::shared_lock<std::shared_mutex>(std::move(from)), ptr_(std::exchange(from.ptr_, nullptr)) {}
 
     ~reader_ptr() = default;
 
@@ -194,12 +186,10 @@ public:
     }
 
     auto operator=(reader_ptr&& from) noexcept -> reader_ptr& {
-        if (this != &from) {
-            std::shared_lock<std::shared_mutex>::operator=(std::move(from));
-            sync_ = from.sync_;
-            ptr_ = from.ptr_;
-            from.ptr_ = nullptr;
-        }
+        if(this == &from) return *this;
+        if(owns_lock()) unlock();
+        std::shared_lock<std::shared_mutex>::operator=(std::move(from));
+        ptr_  = std::exchange(from.ptr_, nullptr);
         return *this;
     }
 
@@ -214,8 +204,7 @@ public:
     }
 
 private:
-    shared_sync<U> &sync_;  // NOLINT
-    const U* ptr_;
+    const U* ptr_{nullptr};
 };
 
 template <typename U>
@@ -223,15 +212,13 @@ class writer_ptr final : public std::unique_lock<std::shared_mutex> {
 public:
     writer_ptr() = delete;
     writer_ptr(const writer_ptr&) = delete;
-    auto operator=(const writer_ptr&) -> auto& = delete;
+    auto operator=(const writer_ptr&) -> writer_ptr& = delete;
 
     explicit writer_ptr(shared_sync<U>& obj) :
-    std::unique_lock<std::shared_mutex>(obj.lock), sync_(obj), ptr_(&obj.data) {}
+    std::unique_lock<std::shared_mutex>(obj.lock), ptr_(&obj.data) {}
 
-    explicit writer_ptr(writer_ptr&& from) noexcept :
-    std::unique_lock<std::shared_mutex>(std::move(from)), sync_(from.sync_), ptr_(from.ptr_) {
-        from.ptr_ = nullptr;
-    }
+    writer_ptr(writer_ptr&& from) noexcept :
+    std::unique_lock<std::shared_mutex>(std::move(from)), ptr_(std::exchange(from.ptr_, nullptr)) {}
 
     ~writer_ptr() = default;
 
@@ -246,12 +233,10 @@ public:
     }
 
     auto operator=(writer_ptr&& from) noexcept -> writer_ptr& {
-        if (this != &from) {
-            std::unique_lock<std::shared_mutex>::operator=(std::move(from));
-            sync_ = from.sync_;
-            ptr_ = from.ptr_;
-            from.ptr_ = nullptr;
-        }
+        if(this == &from) return *this;
+        if(owns_lock()) unlock();
+        std::unique_lock<std::shared_mutex>::operator=(std::move(from));
+        ptr_  = std::exchange(from.ptr_, nullptr);
         return *this;
     }
 
@@ -261,8 +246,7 @@ public:
     }
 
 private:
-    shared_sync<U> &sync_;  // NOLINT
-    U* ptr_;
+    U* ptr_{nullptr};
 };
 
 class semaphore_t final {
@@ -427,22 +411,41 @@ private:
     unsigned active_{0};
 };
 
-class semaphore_guard {
+class semaphore_lock {
 public:
-    semaphore_guard(const semaphore_guard&) = delete;
-    auto operator=(const semaphore_guard&) -> auto& = delete;
+    semaphore_lock(const semaphore_lock&) = delete;
+    auto operator=(const semaphore_lock&) -> semaphore_lock& = delete;
 
-    explicit semaphore_guard(semaphore_t& sem) : sem_(sem) {
-        sem_.acquire();
+    explicit semaphore_lock(semaphore_t& sem) : sem_(&sem) {
+        sem_->acquire();
     }
 
-    ~semaphore_guard() {
-        sem_.release();
+    semaphore_lock(semaphore_lock&& other) noexcept :
+    sem_(std::exchange(other.sem_, nullptr)) {}
+
+    ~semaphore_lock() {
+        release();
+    }
+
+    auto operator=(semaphore_lock&& other) noexcept -> semaphore_lock& {
+        if(this == &other) return *this;
+        release();
+        sem_ = std::exchange(other.sem_, nullptr);
+        return *this;
     }
 
 private:
-    semaphore_t& sem_;
+    semaphore_t* sem_{nullptr};
+
+    void release() noexcept {
+        if(sem_) {
+            sem_->release();
+            sem_ = nullptr;
+        }
+    }
 };
+
+using semaphore_guard = semaphore_lock;
 
 class barrier_t final {
 public:
@@ -648,14 +651,33 @@ class sync_group final {
 public:
     sync_group() = delete;
     sync_group(const sync_group&) = delete;
-    auto operator=(const sync_group&) -> auto& = delete;
-    explicit sync_group(wait_group& wg) : wg_(wg) {}
+    auto operator=(const sync_group&) -> sync_group& = delete;
+    explicit sync_group(wait_group& wg) :
+    wg_(&wg) {}
+
+    sync_group(sync_group&& other) noexcept :
+    wg_(std::exchange(other.wg_, nullptr)) {}
+
     ~sync_group() {
-        wg_.release();
+        release();
+    }
+
+    auto operator=(sync_group&& other) noexcept -> sync_group& {
+        if(this == &other) return *this;
+        release();
+        wg_ = std::exchange(other.wg_, nullptr);
+        return *this;
     }
 
 private:
-    wait_group& wg_;
+    wait_group* wg_{nullptr};
+
+    void release() noexcept {
+        if(wg_) {
+            wg_->release();
+            wg_ = nullptr;
+        }
+    }
 };
 
 #if __cplusplus >= 202002L
@@ -669,9 +691,11 @@ concept ThreadContainer =
 template<typename Completion = void(*)()>
 class sync_arrival final {
 public:
-    explicit sync_arrival(std::barrier<Completion>& barrier) : barrier_(barrier) {
+    explicit sync_arrival(std::barrier<Completion>& barrier) :
+    barrier_(barrier) {
         static_assert(std::is_invocable_v<Completion>, "Completion must be callable with zero arguments");
     }
+
     ~sync_arrival() { barrier_.arrive_and_wait(); }
 
 private:
@@ -683,16 +707,37 @@ class sync_counting final {
     static_assert(Max > 0, "Max must be a positive integer");
 
 public:
-    explicit sync_counting(std::counting_semaphore<Max>& sem) : sem_(sem) {
-        sem_.acquire();
+    explicit sync_counting(std::counting_semaphore<Max>& sem) : sem_(&sem) {
+        sem_->acquire();
     }
 
+    sync_counting(sync_counting&& other) noexcept :
+    sem_(std::exchange(other.sem_, nullptr)) {}
+
+    sync_counting(const sync_counting&) = delete;
+
     ~sync_counting() {
-        sem_.release();
+        release();
+    }
+
+    auto operator=(const sync_counting&) -> sync_counting& = delete;
+
+    auto operator=(sync_counting&& other) noexcept -> sync_counting& {
+        if(this == &other) return *this;
+        release();
+        sem_ = std::exchange(other.sem_, nullptr);
+        return *this;
     }
 
 private:
-    std::counting_semaphore<Max>& sem_;
+    std::counting_semaphore<Max> *sem_{nullptr};
+
+    void release() noexcept {
+        if(sem_) {
+            sem_->release();
+            sem_ = nullptr;
+        }
+    }
 };
 
 // for std::jthread call barrier.arrive_and_wait directly or use sync_arrival
