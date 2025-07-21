@@ -8,65 +8,47 @@
 #include <string_view>
 #include <iostream>
 #include <vector>
-#include <exception>
+#include <stdexcept>
 #include <cstring>
 #include <cstdlib>
-#include <cassert>
 
 namespace { // NOLINT   only use in mains...
-class bad_arg final : public std::exception {
+class bad_arg final : public std::runtime_error {
 public:
-    explicit bad_arg(const char *text) noexcept : msg(dup(text)) {}
-
-    ~bad_arg() override {
-        if(msg)
-            ::free(msg); // NOLINT
-    }
-
-    auto what() const noexcept -> const char * override {
-        return msg;
-    }
+    explicit bad_arg(const std::string& text) noexcept :
+    std::runtime_error(text) {}
 
 private:
     friend class args;
 
-    char *msg{};
-
-    bad_arg(std::string text, std::string_view value) {
+    static auto format(std::string text, std::string_view value) {
         text += " ";
         if(value[0] != '+' && value[0] != '-')
             text += "--";
 
         text += value;
-        msg = dup(text.c_str());
+        return bad_arg(text);
     }
 
-    bad_arg(const std::string& text, char code) : msg(dup((text + " -" + code).c_str())) {}
+    static auto format(const std::string& text, char code) {
+        return bad_arg(text + " -" + code);
+    }
 
     static auto str_size(const char *cp, std::size_t max = 255) {
         std::size_t count = 0;
         while(cp && *cp && count++ <= max)
             ++cp;
 
-        if(count > max) throw bad_arg("string size too large", cp);
+        if(count > max) throw bad_arg::format("string size too large", cp);
         return count;
     }
 
     static auto str_value(const char *cp) {
         char *ep = nullptr;
         auto value = strtol(cp, &ep, 0);
-        if(ep && *ep) throw bad_arg("value format wrong", cp);
+        if(ep && *ep) throw bad_arg::format("value format wrong", cp);
         return value;
     }
-#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-    static auto dup(const char *str) -> char * {
-        return _strdup(str);
-    }
-#else
-    static auto dup(const char *str) -> char * {
-        return ::strdup(str);
-    }
-#endif
 };
 
 class args final {
@@ -161,12 +143,12 @@ public:
         }
 
         void set(const char *from) {
-            assert(usage_);
+            if(!usage_) throw bad_arg("usage missing");
             value_ = from;
         }
 
         void set(const std::string& str) {
-            assert(usage_);
+            if(!usage_) throw bad_arg("usage missing");
             value_ = str.c_str();
         }
 
@@ -178,13 +160,13 @@ public:
         }
 
         void set_if_unset(const char *from) {
-            assert(usage_);
+            if(!usage_) throw bad_arg("usage missing");
             if(value_.index < 1)
                 value_ = from;
         }
 
         void set_if_unset(const std::string& str) {
-            assert(usage_);
+            if(!usage_) throw bad_arg("usage missing");
             if(value_.index < 1)
                 value_ = str.c_str();
         }
@@ -229,8 +211,7 @@ public:
     }
 
     static auto parse([[maybe_unused]] int argc, const char **list) {
-        assert(list != nullptr && list[0] != nullptr);
-
+        if(list == nullptr || list[0] == nullptr) throw bad_arg("arguments missing");
         argv0_ = *(list++);
         while(*list) {
             auto arg = std::string_view(*(list++));
@@ -268,9 +249,9 @@ public:
                     break;
                 }
 
-                if(op->value_.index > 0 || op->value_.flag) throw bad_arg("already used", keyword);
+                if(op->value_.index > 0 || op->value_.flag) throw bad_arg::format("already used", keyword);
                 if(!op->usage_) {
-                    if(key_split != std::string_view::npos) throw bad_arg("invalid value", keyword);
+                    if(key_split != std::string_view::npos) throw bad_arg::format("invalid value", keyword);
 
                     op->value_ = true;
                     break;
@@ -281,13 +262,13 @@ public:
                     break;
                 }
 
-                if(!*list) throw bad_arg("missing value", keyword);
+                if(!*list) throw bad_arg::format("missing value", keyword);
                 op->value_ = *(list++);
                 break;
             }
 
             if(static_cast<bool>(op)) continue;
-            if(!has_short) throw bad_arg("unknown argument", keyword);
+            if(!has_short) throw bad_arg::format("unknown argument", keyword);
             auto pos = 0U;
             while(pos < arg.size()) {
                 op = option::first_;
@@ -296,7 +277,7 @@ public:
                     op = op->next_;
                 }
 
-                if(!op) throw bad_arg("unknown option", arg[pos]);
+                if(!op) throw bad_arg::format("unknown option", arg[pos]);
                 if(op->counter_) {
                     if(op->value_.index < 1)
                         op->value_ = 1U;
@@ -306,11 +287,11 @@ public:
                     continue;
                 }
 
-                if(op->value_.index > 0 || op->value_.flag) throw bad_arg("already used", arg[pos]);
+                if(op->value_.index > 0 || op->value_.flag) throw bad_arg::format("already used", arg[pos]);
                 if(!op->usage_)
                     op->value_.flag = true;
                 else {
-                    if(!*list) throw bad_arg("missing value", arg[pos]);
+                    if(!*list) throw bad_arg::format("missing value", arg[pos]);
                     op->value_ = *(list++);
                 }
                 ++pos;
