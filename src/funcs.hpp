@@ -8,6 +8,7 @@
 #include <thread>
 #include <future>
 #include <type_traits>
+#include <functional>
 #include <stdexcept>
 #include <atomic>
 #include <memory>
@@ -42,6 +43,23 @@ template<typename Func, typename... Args>
 inline auto await(Func&& func, Args&&... args) -> std::future<typename std::invoke_result_t<Func, Args...>> {
     static_assert(std::is_invocable_v<Func, Args...>, "Func must be invocable");
     return std::async(std::launch::async, std::forward<Func>(func), std::forward<Args>(args)...);
+}
+
+template<typename Func, typename... Args>
+inline void parallel_sync(std::size_t count, Func&& func, Args&&... args) {
+    static_assert(std::is_invocable<Func, Args...>::value, "Func must be invocable with the given arguments");
+    if(!count)
+        count = std::thread::hardware_concurrency();
+    if(!count)
+        count = 1;
+
+    auto task = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
+    std::vector<std::thread> threads;
+    threads.reserve(count);
+    for(std::size_t i = 0; i < count; ++i)
+        threads.emplace_back(task);
+    for(auto& t : threads)
+        t.join();
 }
 
 template<typename Func, typename T = typename std::invoke_result_t<Func>>

@@ -212,7 +212,7 @@ different arbitrary functions onto queues that are called later from another
 thread. I also avoid argukment wrapping when I do this so I pass arguments by
 capture. I may later introduce a saperate templated version of tasks that
 only bind and queue one specific kind of function template for optimized
-performance. Parallel\_func is a placeholder for this future funcs.hpp.
+performance.
 
 ## templates.hpp
 

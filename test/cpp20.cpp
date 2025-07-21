@@ -146,7 +146,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
         std::atomic<int> total = 0;
-        parallel_func(3, [&total]{
+        parallel_sync(3, [&total]{
             total += 2;
         });
         assert(total == 6);
@@ -182,7 +182,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         const reader_ptr<struct test> tester(testing);
         assert(tester->v1 == 2);
     }
-    catch(...) {
+    catch(std::exception& e) {
+        print("err: {}\n", e.what());
         ::exit(-1);
     }
     assert(wg.count() == 0);

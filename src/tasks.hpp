@@ -561,22 +561,6 @@ protected:
     }
 };
 
-// may optimize much faster but bloaty and more limited...
-template<typename Func>
-inline void parallel_func(std::size_t count, Func func) {
-    if(!count)
-        count = std::thread::hardware_concurrency();
-    if(!count)
-        count = 1;
-
-    std::vector<thread_t> threads;
-    threads.reserve(count);
-    for(std::size_t i = 0; i < count; ++i) {
-        threads.emplace_back(func);
-    }
-    std::this_thread::yield();
-}
-
 inline void parallel_task(std::size_t count, task_t task) {
     if(!count)
         count = std::thread::hardware_concurrency();
