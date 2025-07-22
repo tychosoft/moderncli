@@ -29,6 +29,12 @@ inline void detach(Func&& func, Args&&... args) {
     }).detach();
 }
 
+inline auto concurrency(unsigned count = 0) {
+    if(!count) count = std::thread::hardware_concurrency();
+    if(!count) return 1U;
+    return std::min(count, std::thread::hardware_concurrency());
+}
+
 template<typename T, typename Pred>
 inline auto get_future(std::function<T>& future, Pred pred, std::chrono::milliseconds interval = std::chrono::milliseconds(100)) {
     static_assert(std::is_invocable_v<Pred>, "Pred must be invocable");
@@ -47,11 +53,8 @@ inline auto await(Func&& func, Args&&... args) -> std::future<typename std::invo
 
 template<typename Func, typename... Args>
 inline void parallel_sync(std::size_t count, Func&& func, Args&&... args) {
-    static_assert(std::is_invocable_v<Func, Args...>, "Func must be invocable with the given arguments");
-    if(!count)
-        count = std::thread::hardware_concurrency();
-    if(!count)
-        count = 1;
+    static_assert(std::is_invocable_v<Func, Args...>, "Func must be invocable");
+    count = concurrency(count);
 
     auto task = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
     std::vector<std::thread> threads;
@@ -66,11 +69,7 @@ template<typename Func, typename... Args>
 inline auto parallel_async(std::size_t count, Func&& func, Args&&... args) {
     using T = std::invoke_result_t<Func>;
     static_assert(std::is_invocable_v<Func, Args...>, "Func must be invocable");
-    if (!count)
-        count = std::thread::hardware_concurrency();
-
-    if (!count)
-        count = 1;
+    count = concurrency(count);
 
     auto promise = std::make_shared<std::promise<T>>();
     auto result = promise->get_future();
