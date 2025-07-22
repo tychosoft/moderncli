@@ -47,7 +47,7 @@ inline auto await(Func&& func, Args&&... args) -> std::future<typename std::invo
 
 template<typename Func, typename... Args>
 inline void parallel_sync(std::size_t count, Func&& func, Args&&... args) {
-    static_assert(std::is_invocable<Func, Args...>::value, "Func must be invocable with the given arguments");
+    static_assert(std::is_invocable_v<Func, Args...>, "Func must be invocable with the given arguments");
     if(!count)
         count = std::thread::hardware_concurrency();
     if(!count)
@@ -62,9 +62,10 @@ inline void parallel_sync(std::size_t count, Func&& func, Args&&... args) {
         t.join();
 }
 
-template<typename Func, typename T = typename std::invoke_result_t<Func>>
-inline auto parallel_async(std::size_t count, Func func) {
-    static_assert(std::is_invocable_v<Func>, "Func must be invocable");
+template<typename Func, typename... Args>
+inline auto parallel_async(std::size_t count, Func&& func, Args&&... args) {
+    using T = std::invoke_result_t<Func>;
+    static_assert(std::is_invocable_v<Func, Args...>, "Func must be invocable");
     if (!count)
         count = std::thread::hardware_concurrency();
 
@@ -74,10 +75,11 @@ inline auto parallel_async(std::size_t count, Func func) {
     auto promise = std::make_shared<std::promise<T>>();
     auto result = promise->get_future();
     auto done = std::make_shared<std::atomic<bool>>(false);
+    auto task = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
     for(std::size_t i = 0; i < count; ++i) {
-        std::thread([promise, done, func]{
+        std::thread([task = std::move(task), promise, done]() mutable {
             try {
-                T val = func();
+                T val = std::invoke(task);
                 if(!done->exchange(true))
                     promise->set_value(std::move(val));
             } catch (...) {

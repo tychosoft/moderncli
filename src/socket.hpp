@@ -1112,13 +1112,13 @@ public:
         case AF_INET:
             multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
             multicast.ipv4.imr_multiaddr = member.in()->sin_addr;
-            if(setsockopt(so_, IPPROTO_IP, IP_ADD_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv4)) == -1)
+            if(setsockopt(so_, IPPROTO_IP, IP_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
                 res = errno;
             break;
         case AF_INET6:
             multicast.ipv6.ipv6mr_interface = ifindex;
             multicast.ipv6.ipv6mr_multiaddr = member.in6()->sin6_addr;
-            if(setsockopt(so_, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv6)) == -1)
+            if(setsockopt(so_, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
                 res = errno;
             break;
         default:
@@ -1148,13 +1148,13 @@ public:
         case AF_INET:
             multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
             multicast.ipv4.imr_multiaddr = member.in()->sin_addr;
-            if(setsockopt(so_, IPPROTO_IP, IP_DROP_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv4)) == -1)
+            if(setsockopt(so_, IPPROTO_IP, IP_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
                 res = errno;
             break;
         case AF_INET6:
             multicast.ipv6.ipv6mr_interface = ifindex;
             multicast.ipv6.ipv6mr_multiaddr = member.in6()->sin6_addr;
-            if(setsockopt(so_, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv6)) == -1)
+            if(setsockopt(so_, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
                 res = errno;
             break;
         default:
@@ -1273,14 +1273,26 @@ public:
     static auto un(const struct sockaddr *addr) {
         return addr->sa_family == AF_UNIX ? reinterpret_cast<const struct sockaddr_un *>(addr) : nullptr;
     }
+
+    static auto un(struct sockaddr *addr) {
+        return addr->sa_family == AF_UNIX ? reinterpret_cast<struct sockaddr_un *>(addr) : nullptr;
+    }
 #endif
 
     static auto in4(const struct sockaddr *addr) {
         return addr->sa_family == AF_INET ? reinterpret_cast<const struct sockaddr_in *>(addr) : nullptr;
     }
 
+    static auto in4(struct sockaddr *addr) {
+        return addr->sa_family == AF_INET ? reinterpret_cast<struct sockaddr_in *>(addr) : nullptr;
+    }
+
     static auto in6(const struct sockaddr *addr) {
         return addr->sa_family == AF_INET6 ? reinterpret_cast<const struct sockaddr_in6 *>(addr) : nullptr;
+    }
+
+    static auto in6(struct sockaddr *addr) {
+        return addr->sa_family == AF_INET6 ? reinterpret_cast<struct sockaddr_in6 *>(addr) : nullptr;
     }
 
     // type converted send to for portable socket code
@@ -1302,13 +1314,13 @@ public:
         case AF_INET:
             multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
             multicast.ipv4.imr_multiaddr = in4(member)->sin_addr;
-            if(setsockopt(so, IPPROTO_IP, IP_ADD_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv4)) == -1)
+            if(setsockopt(so, IPPROTO_IP, IP_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
                 res = errno;
             break;
         case AF_INET6:
             multicast.ipv6.ipv6mr_interface = ifindex;
             multicast.ipv6.ipv6mr_multiaddr = in6(member)->sin6_addr;
-            if(setsockopt(so, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv6)) == -1)
+            if(setsockopt(so, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
                 res = errno;
             break;
         default:
@@ -1326,13 +1338,13 @@ public:
         case AF_INET:
             multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
             multicast.ipv4.imr_multiaddr = in4(member)->sin_addr;
-            if(setsockopt(so, IPPROTO_IP, IP_DROP_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv4)) == -1)
+            if(setsockopt(so, IPPROTO_IP, IP_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
                 res = errno;
             break;
         case AF_INET6:
             multicast.ipv6.ipv6mr_interface = ifindex;
             multicast.ipv6.ipv6mr_multiaddr = in6(member)->sin6_addr;
-            if(setsockopt(so, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, opt_cast(&multicast), sizeof(multicast.ipv6)) == -1)
+            if(setsockopt(so, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
                 res = errno;
             break;
         default:
@@ -1416,8 +1428,12 @@ protected:
         return code;
     }
 
-    static auto opt_cast(const void *from) -> const char * {
+    static auto to_option(const void *from) -> const char * {
         return static_cast<const char *>(from);
+    }
+
+    static auto to_option(void *from) -> const char * {
+        return static_cast<char *>(from);
     }
 
 private:
