@@ -77,7 +77,7 @@ buffer for 64 bit scattered distributed keys.
 
 ## keyfile.hpp
 
-This allows for parsing config files that may be broken into \[sections\] and
+This allows for parsing config files that may be divided into \[sections\] and
 have key=value key pairs in each section.  It allows for an instantiation of a
 section as a collection of keys as well as iterating over named sections and
 key collections. It can also be used to modify and re-write the key file with

@@ -101,12 +101,12 @@ public:
     ~sync_ptr() = default;
 
     auto operator->() {
-        if(!owns_lock()) throw std::runtime_error("unique lock error");
+        if(!ptr_) throw std::runtime_error("sync ptr error");
         return ptr_;
     }
 
     auto operator*() -> U& {
-        if(!owns_lock()) throw std::runtime_error("unique lock error");
+        if(!ptr_) throw std::runtime_error("sync ptr error");
         return *ptr_;
     }
 
@@ -120,6 +120,7 @@ public:
 
     template<typename I>
     auto operator[](const I& index) -> decltype(std::declval<U&>()[index]) {
+        if(!ptr_) throw std::runtime_error("sync ptr error");
         return ptr_->operator[](index);
     }
 
@@ -176,12 +177,12 @@ public:
     ~reader_ptr() = default;
 
     auto operator->() const -> const U* {
-        if(!owns_lock()) throw std::runtime_error("read lock error");
+        if(!ptr_) throw std::runtime_error("reader lock error");
         return ptr_;
     }
 
     auto operator*() const -> const U& {
-        if(!owns_lock()) throw std::runtime_error("read lock error");
+        if(!ptr_) throw std::runtime_error("reader lock error");
         return *ptr_;
     }
 
@@ -195,11 +196,13 @@ public:
 
     template<typename I>
     auto operator[](const I& index) const -> decltype(std::declval<const U&>()[index]) {
+        if(!ptr_) throw std::runtime_error("reader lock error");
         return ptr_->operator[](index);
     }
 
     template<typename I>
     auto at(const I& index) const {
+        if(!ptr_) throw std::runtime_error("reader lock error");
         return ptr_->at(index);
     }
 
@@ -223,12 +226,12 @@ public:
     ~writer_ptr() = default;
 
     auto operator->() {
-        if(!owns_lock()) throw std::runtime_error("write lock error");
+        if(!ptr_) throw std::runtime_error("writer lock error");
         return ptr_;
     }
 
     auto operator*() -> U& {
-        if(!owns_lock()) throw std::runtime_error("write lock error");
+        if(!ptr_) throw std::runtime_error("writer lock error");
         return *ptr_;
     }
 
@@ -242,6 +245,7 @@ public:
 
     template<typename I>
     auto operator[](const I& index) -> decltype(std::declval<U&>()[index]) {
+        if(!ptr_) throw std::runtime_error("writer lock error");
         return ptr_->operator[](index);
     }
 
