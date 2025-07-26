@@ -1305,6 +1305,16 @@ public:
         return ::recvfrom(so, static_cast<char *>(to), int(size), flags, addr, asize);
     }
 
+    static auto bind_from(int so, struct addrinfo *addr) {
+        if(!addr) return -1;
+        return ::bind(so, addr->ai_addr, addr->ai_addrlen);
+    }
+
+    static auto connect_to(int so, struct addrinfo *addr) {
+        if(!addr) return -1;
+        return ::connect(so, addr->ai_addr, addr->ai_addrlen);
+    }
+
     static auto join(int so, const struct sockaddr *member, unsigned ifindex = 0) {
         if(so == -1) return EBADF;
         auto res = 0;
