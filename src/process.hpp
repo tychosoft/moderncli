@@ -515,6 +515,19 @@ using handle_t = int;
 
 inline constexpr auto dso_suffix = ".so";
 
+// Only exists for posix...
+template <typename F, typename... Args>
+auto at_fork(F func, Args... args) -> pid_t {
+    using result_t = std::invoke_result_t<F, Args...>;
+    static_assert(std::is_convertible_v<result_t, int>, "Callable not valid");
+
+    auto child = fork();
+    if(!child) {
+        ::_exit(func(args...));
+    }
+    return child;
+}
+
 constexpr auto invalid_handle() -> handle_t {
     return -1;
 }
