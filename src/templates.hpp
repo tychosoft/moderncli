@@ -5,6 +5,7 @@
 #define TYCHO_TEMPLATES_HPP_
 
 #include <stdexcept>
+#include <cstdint>
 #include <memory>
 
 namespace tycho {
