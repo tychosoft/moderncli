@@ -131,6 +131,9 @@ add_test(NAME test-monads COMMAND test_monads)
 add_executable(test_array test/array.cpp src/array.hpp)
 add_test(NAME test-array COMMAND test_array)
 
+add_executable(test_binary test/binary.cpp src/binary.hpp)
+add_test(NAME test-binary COMMAND test_binary)
+
 add_executable(test_ranges test/ranges.cpp src/ranges.hpp)
 add_test(NAME test-ranges COMMAND test_ranges)
 

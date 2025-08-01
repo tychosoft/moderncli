@@ -23,6 +23,12 @@ Atomic types and lockfree data structures and features. This includes lockfree
 stack and buffer implimentations which perhaps something like C#
 ConcurrentStack and ConcurrentQueue.
 
+## binary.hpp
+
+A new, clean, very C++17 friendly byte array type, binary traits, and encoding
+functions. Thiswill eventually replace both array.hpp and encoding.hpp at some
+point in the future.
+
 ## bignum.hpp
 
 Arbitrary precision integer math. This will eventually be extended to support
