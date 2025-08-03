@@ -131,7 +131,20 @@ public:
         const auto delay = when - now;
         const auto target = std::chrono::steady_clock::now() +
             std::chrono::duration_cast<std::chrono::steady_clock::duration>(delay);
-        return at(target, std::move(task)); // delegate to your existing overload
+        return at(target, std::move(task));
+    }
+
+    auto once(const period_t period, task_t task) {
+        const auto expires = std::chrono::steady_clock::now() + period;
+        const std::lock_guard lock(lock_);
+        const auto id = next_++;
+        timers_.emplace(expires, std::make_tuple(id, period_t(0), task));
+        cond_.notify_all();
+        return id;
+    }
+
+    auto once(uint32_t period, task_t task) {
+        return once(std::chrono::milliseconds(period), task);
     }
 
     auto periodic(uint32_t period, task_t task, uint32_t shorten = 0U) {

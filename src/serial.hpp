@@ -763,7 +763,7 @@ inline auto recv(const serial_t& sio, T& msg) {
     return sio.get(&msg, sizeof(msg));
 }
 
-inline auto getline(const serial_t& sio, char *buf, std::size_t max, int eol = '\n', bool echo = false, int echo_code = EOF, const char *ignore = nullptr) {
+inline auto cgetline(const serial_t& sio, char *buf, std::size_t max, int eol = '\n', bool echo = false, int echo_code = EOF, const char *ignore = nullptr) {
     *buf = 0;
     --max;
 
@@ -811,7 +811,7 @@ inline auto until(const serial_t& sio, int match = EOF, unsigned max = 1) {
 
 inline auto csum8(const uint8_t *data, std::size_t size) {
     uint8_t sum = 0;
-    while (size--)
+    while(size--)
         sum += *data++;
     return sum;
 }
@@ -831,12 +831,12 @@ inline auto crc16(const uint8_t *data, std::size_t size) {
 }
 
 inline auto crc32(const uint8_t *data, std::size_t size) {
-    static crc32_t table[256]{0};
+    crc32_t table[256]{0};
     crc32_t crc = 0xffffffff;
 
-    for (std::size_t i = 0; i < 256; i++) {
+    for(std::size_t i = 0; i < 256; i++) {
         crc32_t c = i;
-        for (std::size_t j = 0; j < 8; j++)
+        for(std::size_t j = 0; j < 8; j++)
             c = (c & 1) ? 0xedb88320 ^ (c >> 1) : c >> 1;
         table[i] = c;
     }
