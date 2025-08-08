@@ -1,8 +1,8 @@
 // Copyright (C) 2025 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "print.hpp"
 #include "ranges.hpp"
 #include "memory.hpp"
@@ -20,7 +20,7 @@
 namespace {
 struct test {
     int v1{2};
-    //int v2{7};
+    // int v2{7};
 };
 
 auto count = 0;
@@ -30,7 +30,7 @@ unique_sync<std::unordered_map<std::string, std::string>> mapper;
 unique_sync<int> counter(3);
 shared_sync<std::unordered_map<std::string, std::string>> tshared;
 shared_sync<struct test> testing;
-shared_sync<tycho::array<int,10>> tarray;
+shared_sync<tycho::array<int, 10>> tarray;
 
 auto process_command(const std::string& text, int number) {
     return tq.dispatch([text, number] {
@@ -55,15 +55,15 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
         const std::vector<int> numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         auto evens = numbers |
-            ranges::filter([](const int& n) {return n % 2 == 0;}) |
-            ranges::transform([](const int& n) { return n * n; });
+                     ranges::filter([](const int& n) { return n % 2 == 0; }) |
+                     ranges::transform([](const int& n) { return n * n; });
         assert(evens.size() == 5);
         assert(evens[0] == 4);
 
-        ranges::each(evens, [](int& n) { n = n * 2;});
+        ranges::each(evens, [](int& n) { n = n * 2; });
         assert(evens[0] == 8);
 
-        auto made = ranges::make<std::vector<int>>(3, []{return -1;});
+        auto made = ranges::make<std::vector<int>>(3, [] { return -1; });
         assert(made.size() == 3);
         assert(made[0] == -1);
 
@@ -80,7 +80,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(even[0] == 2);
         assert(even.size() == 2);
         const std::vector<int> move = std::move(even);
-        assert(even.empty());   // NOLINT
+        assert(even.empty()); // NOLINT
         assert(move.size() == 2);
         assert(move[0] == 2);
 
@@ -100,7 +100,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(slicer.contains("last"));
         auto copy = slicer;
         assert(copy.size() == slicer.size());
-        assert(copy[0] == slicer[0]);   // independent memory copies...
+        assert(copy[0] == slicer[0]); // independent memory copies...
         assert(copy.data() != slicer.data());
         assert(copy == slicer);
 
@@ -118,11 +118,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(shared1[2] == 7);
         assert(shared1[0] == 9);
 
-
         tq.startup();
         assert(process_command("test", 42));
         assert(process_command("more", 10));
-        while(!tq.empty()) {
+        while (!tq.empty()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         tq.shutdown();
@@ -132,7 +131,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         task_queue tq1; // NOLINT
         const std::shared_ptr<int> ptr = std::make_shared<int>(count);
         auto use = ptr.use_count();
-        event_sync done;    // NOLINT
+        event_sync done; // NOLINT
         tq1.startup();
         tq1.dispatch([ptr, &use, &done] {
             use = ptr.use_count();
@@ -155,7 +154,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
                 {
                     const std::lock_guard lock(cout_mutex);
                     std::cout << "Task " << i << " is running on thread "
-                        << std::this_thread::get_id() << '\n';
+                              << std::this_thread::get_id() << '\n';
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(120));
             });
@@ -198,13 +197,10 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
             const reader_ptr map(tarray);
             assert(map[2] == 17);
         }
-    }
-    catch(...) {
+    } catch (...) {
         ::exit(-1);
     }
     assert(wg.count() == 0);
 #endif
     return 0;
 }
-
-

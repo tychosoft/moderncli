@@ -1,8 +1,8 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "tasks.hpp"
 #include "sync.hpp"
 #include "print.hpp"
@@ -43,13 +43,13 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     std::string old = "here";
     assert(!old.empty());
     move_command(std::move(old), 0);
-    assert(old.empty());    // NOLINT
+    assert(old.empty()); // NOLINT
 
     assert(process_command("test", 42));
     assert(process_command("more", 10));
 
-    while(!tq.empty()) {
-         std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    while (!tq.empty()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     tq.shutdown();
     assert(count == 52);
@@ -58,7 +58,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     task_queue tq1; // NOLINT
     const std::shared_ptr<int> ptr = std::make_shared<int>(count);
     auto use = ptr.use_count();
-    event_sync done;    // NOLINT
+    event_sync done; // NOLINT
     tq1.startup();
     tq1.dispatch([ptr, &use, &done] {
         use = ptr.use_count();
@@ -71,7 +71,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(use == 2);
 
     std::atomic<int> total = 0;
-    parallel_task(3, [&total]{
+    parallel_task(3, [&total] {
         yield(3);
         total += 2;
     });
@@ -80,13 +80,13 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     timer_queue timers;
     auto fast = 0;
     auto heartbeat = 0;
-    timers.startup([]{print("Start timer thread\n");});
+    timers.startup([] { print("Start timer thread\n"); });
 
-    timers.periodic(std::chrono::milliseconds(150), [&heartbeat]{
+    timers.periodic(std::chrono::milliseconds(150), [&heartbeat] {
         ++heartbeat;
     });
 
-    auto id = timers.periodic(50, [&fast]{
+    auto id = timers.periodic(50, [&fast] {
         ++fast;
     });
 
@@ -112,7 +112,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
             {
                 const std::lock_guard lock(cout_mutex);
                 std::cout << "Task " << i << " is running on thread "
-                      << std::this_thread::get_id() << '\n';
+                          << std::this_thread::get_id() << '\n';
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(120));
         });
@@ -123,5 +123,3 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(fast > heartbeat);
     return 0;
 }
-
-

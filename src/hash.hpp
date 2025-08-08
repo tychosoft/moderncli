@@ -17,25 +17,24 @@
 #include <atomic>
 
 namespace tycho::crypto {
-inline constexpr const EVP_MD* (*SHA256)()      = EVP_sha256;
-inline constexpr const EVP_MD* (*SHA512)()      = EVP_sha512;
-inline constexpr const EVP_MD* (*SHA2_256)()    = EVP_sha256;
-inline constexpr const EVP_MD* (*SHA2_512)()    = EVP_sha512;
-inline constexpr const EVP_MD* (*SHA3_256)()    = EVP_sha3_256;
-inline constexpr const EVP_MD* (*SHA3_512)()    = EVP_sha3_512;
+inline constexpr const EVP_MD *(*SHA256)() = EVP_sha256;
+inline constexpr const EVP_MD *(*SHA512)() = EVP_sha512;
+inline constexpr const EVP_MD *(*SHA2_256)() = EVP_sha256;
+inline constexpr const EVP_MD *(*SHA2_512)() = EVP_sha512;
+inline constexpr const EVP_MD *(*SHA3_256)() = EVP_sha3_256;
+inline constexpr const EVP_MD *(*SHA3_512)() = EVP_sha3_512;
 
-template <typename T, const EVP_MD* (*Algo)() = SHA256>
+template <typename T, const EVP_MD *(*Algo)() = SHA256>
 struct hash_t final {
-    static_assert((std::is_convertible_v<decltype(std::declval<const T&>().data()), const char*> || std::is_convertible_v<decltype(std::declval<const T&>().data()), const uint8_t*>) && std::is_convertible_v<decltype(std::declval<const T&>().size()), std::size_t>,
-        "T must have data() convertible to const char* or const uint8_t* and size() convertible to std::size_t"
-    );
+    static_assert((std::is_convertible_v<decltype(std::declval<const T&>().data()), const char *> || std::is_convertible_v<decltype(std::declval<const T&>().data()), const uint8_t *>) && std::is_convertible_v<decltype(std::declval<const T&>().size()), std::size_t>,
+    "T must have data() convertible to const char* or const uint8_t* and size() convertible to std::size_t");
 
     // let's us use this as a std::hash too...
     auto operator()(const T& key) const -> std::size_t {
         return std::size_t(to_u64(key));
     }
 
-    template<uint64_t B = 16>
+    template <uint64_t B = 16>
     auto to_bits(const T& key) const -> uint64_t {
         static_assert(B >= 1 && B <= 64, "B must be [1, 64]");
         return to_64(key) & ((1ULL << B) - 1);
@@ -47,32 +46,31 @@ struct hash_t final {
 
     auto to_u64(const T& key) const -> uint64_t {
         const auto size = digest_size(Algo());
-        if(size == 0) return 0;
+        if (size == 0) return 0;
 
         alignas(std::max_align_t) uint8_t buf[EVP_MAX_MD_SIZE]{};
         auto count = digest(key, buf, Algo());
-        if(count < sizeof(uint64_t)) throw std::out_of_range("Consistent digest too small");
+        if (count < sizeof(uint64_t)) throw std::out_of_range("Consistent digest too small");
 
         // big endian byte order, consistent value
         uint64_t result{0};
-        for(std::size_t i = 0; i < sizeof(result); ++i) {
+        for (std::size_t i = 0; i < sizeof(result); ++i) {
             result = (result << 8) | buf[i];
         }
         return result;
     }
 };
 
-template<typename Key, const EVP_MD* (*Algo)() = SHA256>
+template <typename Key, const EVP_MD *(*Algo)() = SHA256>
 class hash64_ring {
 public:
     using Hash = hash_t<std::string, Algo>;
 
     explicit hash64_ring(int vnodes = 100) : vnodes_(vnodes) {}
 
-    hash64_ring(std::initializer_list<std::string> nodes, int vnodes = 100) :
-    vnodes_(vnodes) {
+    hash64_ring(std::initializer_list<std::string> nodes, int vnodes = 100) : vnodes_(vnodes) {
         for (const auto& node : nodes) {
-            for(auto i = 0; i < vnodes_; ++i) {
+            for (auto i = 0; i < vnodes_; ++i) {
                 std::string vnode = node + "#" + std::to_string(i);
                 ring_.emplace(hash_.to_u64(vnode), node);
             }
@@ -118,13 +116,13 @@ public:
     auto insert(const std::string& node) {
         bool inserted = false;
         const std::unique_lock lock(mutex_);
-        for(auto i = 0; i < vnodes_; ++i) {
+        for (auto i = 0; i < vnodes_; ++i) {
             std::string vnode = node + "#" + std::to_string(i);
             auto [_, success] = ring_.emplace(hash_.to_u64(vnode), node);
-            if(success)
+            if (success)
                 inserted = true;
         }
-        if(inserted)
+        if (inserted)
             size_++;
         return inserted;
     }
@@ -132,17 +130,17 @@ public:
     auto remove(const std::string& node) {
         bool removed = false;
         const std::unique_lock lock(mutex_);
-        for(int i = 0; i < vnodes_; ++i) {
+        for (int i = 0; i < vnodes_; ++i) {
             std::string vnode = node + "#" + std::to_string(i);
             auto index = hash_.to_u64(vnode);
             auto it = ring_.find(index);
-            if(it != ring_.end() && it->second == node) {
+            if (it != ring_.end() && it->second == node) {
                 ring_.erase(it);
                 removed = true;
             }
         }
 
-        if(removed)
+        if (removed)
             --size_;
         return removed;
     }
@@ -151,7 +149,7 @@ public:
         const std::shared_lock lock(mutex_);
         auto hash = hash_.to_u64(to_string(key));
         auto it = ring_.lower_bound(hash);
-        if(it == ring_.end())
+        if (it == ring_.end())
             it = ring_.begin();
         return it->second;
     }
@@ -171,7 +169,7 @@ private:
 };
 
 // customary conventions of portable version
-template<const EVP_MD* (*Algo)() = SHA256>
+template <const EVP_MD *(*Algo)() = SHA256>
 using ring64 = hash64_ring<std::string, Algo>;
-} // end namespace
+} // namespace tycho::crypto
 #endif

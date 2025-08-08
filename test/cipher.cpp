@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "cipher.hpp"
 #include "encoding.hpp"
 

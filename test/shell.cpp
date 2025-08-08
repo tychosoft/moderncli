@@ -1,30 +1,30 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
-#include "args.hpp"         // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
+#include "args.hpp"     // IWYU pragma: keep
 #include "funcs.hpp"
-#include "print.hpp"        // IWYU pragma: keep
-#include "filesystem.hpp"   // IWYU pragma: keep
+#include "print.hpp"      // IWYU pragma: keep
+#include "filesystem.hpp" // IWYU pragma: keep
 #include "templates.hpp"
-#include "output.hpp"       // IWYU pragma: keep
+#include "output.hpp" // IWYU pragma: keep
 
 // cspell:disable-next-line
 // Test of init trick, a "kind of" atinit() function or golang init().
 namespace {
 int value = 0;
 
-const init _init([]{
+const init _init([] {
     ++value;
 });
 
 void caller() {
-    const defer stack([]{
+    const defer stack([] {
         ++value;
     });
 }
-} // end anon namespace
+} // namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     using namespace tycho;
@@ -64,4 +64,3 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     logger_stream logger;
     logger.error() << "Error testing";
 }
-

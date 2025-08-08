@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "random.hpp"
 #include "strings.hpp"
 #include "encoding.hpp"
@@ -27,5 +27,3 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     // cspell:disable-next-line
     assert(eq("ABCDZ12", reinterpret_cast<const char *>(msg)));
 }
-
-

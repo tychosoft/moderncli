@@ -1,8 +1,8 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "funcs.hpp"
 #include "print.hpp"
 
@@ -21,4 +21,3 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
     return 0;
 }
-

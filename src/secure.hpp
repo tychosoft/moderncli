@@ -18,33 +18,32 @@ struct secure_certs {
 template <std::size_t S = 512>
 class secure_stream : public socket_stream<S> {
 public:
-    secure_stream(int from, const struct sockaddr *peer, const secure_certs& certs = secure_certs{}, std::size_t size = S, const SSL_METHOD *method = TLS_server_method()) :
-    socket_stream<S>(from, peer, size), ctx_(SSL_CTX_new(method)) {
-        if(!super::is_open() || !ctx_)
+    secure_stream(int from, const struct sockaddr *peer, const secure_certs& certs = secure_certs{}, std::size_t size = S, const SSL_METHOD *method = TLS_server_method()) : socket_stream<S>(from, peer, size), ctx_(SSL_CTX_new(method)) {
+        if (!super::is_open() || !ctx_)
             return;
 
-        if(!certs.certfile.empty())
+        if (!certs.certfile.empty())
             SSL_CTX_use_certificate_file(ctx_, certs.certfile.c_str(), SSL_FILETYPE_PEM);
-        if(!certs.keyfile.empty())
+        if (!certs.keyfile.empty())
             SSL_CTX_use_PrivateKey_file(ctx_, certs.keyfile.c_str(), SSL_FILETYPE_PEM);
 
-        if(!certs.keyfile.empty() || !SSL_CTX_check_private_key(ctx_)) {
+        if (!certs.keyfile.empty() || !SSL_CTX_check_private_key(ctx_)) {
             SSL_CTX_free(ctx_);
             ctx_ = nullptr;
             return;
         }
 
-        if(!certs.capath.empty() && SSL_CTX_load_verify_locations(ctx_, certs.capath.c_str(), nullptr))
+        if (!certs.capath.empty() && SSL_CTX_load_verify_locations(ctx_, certs.capath.c_str(), nullptr))
             SSL_CTX_set_verify(ctx_, SSL_VERIFY_PEER, nullptr);
 
         ssl_ = SSL_new(ctx_);
-        if(!ssl_) return;
+        if (!ssl_) return;
         SSL_set_fd(ssl_, super::io_socket());
-        if(SSL_accept(ssl_) <= 0) return;
+        if (SSL_accept(ssl_) <= 0) return;
         bio_ = SSL_get_wbio(ssl_);
         peer_cert = SSL_get_peer_certificate(ssl_);
-        if(peer_cert && !certs.capath.empty()) {
-            switch(SSL_get_verify_result(ssl_)) {
+        if (peer_cert && !certs.capath.empty()) {
+            switch (SSL_get_verify_result(ssl_)) {
             case X509_V_OK:
                 verified = VERIFIED;
                 break;
@@ -57,32 +56,31 @@ public:
         }
     }
 
-    explicit secure_stream(const struct sockaddr *peer, const secure_certs& certs = secure_certs{}, std::size_t size = S, const SSL_METHOD *method = TLS_client_method()) :
-    socket_stream<S>(peer, size), ctx_(SSL_CTX_new(method)) {
-        if(!super::is_open() || !ctx_) return;
-        if(!certs.certfile.empty())
+    explicit secure_stream(const struct sockaddr *peer, const secure_certs& certs = secure_certs{}, std::size_t size = S, const SSL_METHOD *method = TLS_client_method()) : socket_stream<S>(peer, size), ctx_(SSL_CTX_new(method)) {
+        if (!super::is_open() || !ctx_) return;
+        if (!certs.certfile.empty())
             SSL_CTX_use_certificate_file(ctx_, certs.certfile.c_str(), SSL_FILETYPE_PEM);
 
-        if(!certs.keyfile.empty())
+        if (!certs.keyfile.empty())
             SSL_CTX_use_PrivateKey_file(ctx_, certs.keyfile.c_str(), SSL_FILETYPE_PEM);
 
-        if(!certs.keyfile.empty() && !SSL_CTX_check_private_key(ctx_)) {
+        if (!certs.keyfile.empty() && !SSL_CTX_check_private_key(ctx_)) {
             SSL_CTX_free(ctx_);
             ctx_ = nullptr;
             return;
         }
 
-        if(!certs.capath.empty() && SSL_CTX_load_verify_locations(ctx_, certs.capath.c_str(), nullptr))
+        if (!certs.capath.empty() && SSL_CTX_load_verify_locations(ctx_, certs.capath.c_str(), nullptr))
             SSL_CTX_set_verify(ctx_, SSL_VERIFY_PEER, nullptr);
 
         ssl_ = SSL_new(ctx_);
-        if(!ssl_) return;
+        if (!ssl_) return;
         SSL_set_fd(ssl_, super::io_socket());
-        if(SSL_connect(ssl_) <= 0) return;
+        if (SSL_connect(ssl_) <= 0) return;
         bio_ = SSL_get_wbio(ssl_);
         peer_cert = SSL_get_peer_certificate(ssl_);
-        if(peer_cert && !certs.capath.empty()) {
-            switch(SSL_get_verify_result(ssl_)) {
+        if (peer_cert && !certs.capath.empty()) {
+            switch (SSL_get_verify_result(ssl_)) {
             case X509_V_OK:
                 verified = VERIFIED;
                 break;
@@ -95,8 +93,7 @@ public:
         }
     }
 
-    secure_stream(secure_stream&& from) noexcept :
-    socket_stream<S>(from), peer_cert(from.peer_cert), ctx_(from.ctx_), accepted(from.accepted), verified(from.verified), bio_(from.bio_), ssl_(from.ssl_) {
+    secure_stream(secure_stream&& from) noexcept : socket_stream<S>(from), peer_cert(from.peer_cert), ctx_(from.ctx_), accepted(from.accepted), verified(from.verified), bio_(from.bio_), ssl_(from.ssl_) {
         from.ctx_ = nullptr;
         from.ssl_ = nullptr;
         from.bio_ = nullptr;
@@ -104,13 +101,13 @@ public:
     }
 
     ~secure_stream() override {
-        if(bio_)
+        if (bio_)
             SSL_shutdown(ssl_);
-        if(peer_cert)
+        if (peer_cert)
             X509_free(peer_cert);
-        if(ssl_)
+        if (ssl_)
             SSL_free(ssl_);
-        if(ctx_)
+        if (ctx_)
             SSL_CTX_free(ctx_);
         super::stop();
         super::clear();
@@ -139,7 +136,7 @@ public:
     }
 
     auto peer() const noexcept {
-        if(peer_cert)
+        if (peer_cert)
             X509_up_ref(peer_cert);
         return peer_cert;
     }
@@ -161,24 +158,26 @@ public:
     }
 
     auto underflow() -> int override {
-        if(!bio_) return super::underflow();
-        if(super::gptr() == super::egptr()) {
+        if (!bio_) return super::underflow();
+        if (super::gptr() == super::egptr()) {
             auto len = SSL_read(ssl_, super::gbuf, super::getsize);
-            if(len <= 0) return EOF;
+            if (len <= 0) return EOF;
             super::setg(super::gbuf, super::gbuf, super::gbuf + len);
         }
         return super::get_type(*super::gptr());
     }
 
     auto sync() -> int override {
-        if(!bio_) return super::sync();
+        if (!bio_) return super::sync();
         auto len = super::pptr() - super::pbase();
-        if(len && !SSL_write(ssl_, super::pbase(), len)) return 0;
+        if (len && !SSL_write(ssl_, super::pbase(), len)) return 0;
         return BIO_flush(bio_);
     }
 
 protected:
-    using verify_t = enum {NONE, SIGNED, VERIFIED};
+    using verify_t = enum { NONE,
+        SIGNED,
+        VERIFIED };
     using super = secure_stream<S>;
 
     X509 *peer_cert{nullptr};
@@ -194,6 +193,6 @@ private:
 // 512 is really more for cipher block alignment and optimized under ipv4
 // fragment size.
 using sslstream = secure_stream<512>;
-} // end namespace
+} // namespace tycho
 
 #endif

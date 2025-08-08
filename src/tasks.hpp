@@ -32,23 +32,23 @@ public:
     auto operator=(const thread_t&) -> thread_t& = delete;
     auto operator=(thread_t&&) -> thread_t& = default;
 
-    template<typename Callable, typename... Args,
+    template <typename Callable, typename... Args,
     typename = std::enable_if_t<!std::is_same_v<std::decay_t<Callable>, thread_t>>>
-    explicit thread_t(Callable&& f, Args&&... args) : thread_(std::forward<Callable>(f), std::forward<Args>(args)...) {}
+    explicit thread_t(Callable&& f, Args&&...args) : thread_(std::forward<Callable>(f), std::forward<Args>(args)...) {}
 
     ~thread_t() {
-        if(thread_.joinable())
+        if (thread_.joinable())
             thread_.join();
     }
 
     operator std::thread::id() const noexcept { return thread_.get_id(); }
 
-    auto native_handle() {return thread_.native_handle();}
-    auto get_id() const noexcept {return thread_.get_id();}
+    auto native_handle() { return thread_.native_handle(); }
+    auto get_id() const noexcept { return thread_.get_id(); }
     auto joinable() const noexcept -> bool { return thread_.joinable(); }
 
     void join() {
-        if(thread_.joinable())
+        if (thread_.joinable())
             thread_.join();
     }
 
@@ -57,7 +57,7 @@ public:
     }
 
     void detach() noexcept {
-        if(thread_.joinable())
+        if (thread_.joinable())
             thread_.detach();
     }
 
@@ -65,7 +65,7 @@ private:
     std::thread thread_;
 };
 #else
-#define MODERNCLI_HAS_JTHREAD   1
+#define MODERNCLI_HAS_JTHREAD 1
 using thread_t = std::jthread;
 #endif
 
@@ -82,8 +82,7 @@ public:
     static constexpr period_t hour = minute * 60;
     static constexpr period_t day = hour * 24;
 
-    explicit timer_queue(error_t handler = [](const std::exception& e){}) noexcept :
-    errors_(std::move(handler)) {}
+    explicit timer_queue(error_t handler = [](const std::exception& e) {}) noexcept : errors_(std::move(handler)) {}
 
     timer_queue(const timer_queue&) = delete;
     auto operator=(const timer_queue&) -> auto& = delete;
@@ -100,8 +99,8 @@ public:
         return stop_.load();
     }
 
-    void startup(task_t init = []{}) noexcept {
-        if(!thread_.joinable()) {
+    void startup(task_t init = [] {}) noexcept {
+        if (!thread_.joinable()) {
             startup_ = init;
             thread_ = std::thread(&timer_queue::run, this);
         }
@@ -109,11 +108,11 @@ public:
 
     void shutdown() {
         std::unique_lock lock(lock_);
-        if(stop_) return;
+        if (stop_) return;
         stop_ = true;
         lock.unlock();
         cond_.notify_all();
-        if(thread_.joinable())
+        if (thread_.joinable())
             thread_.join(); // sync on thread exit
     }
 
@@ -130,7 +129,7 @@ public:
         const auto when = std::chrono::system_clock::from_time_t(expires);
         const auto delay = when - now;
         const auto target = std::chrono::steady_clock::now() +
-            std::chrono::duration_cast<std::chrono::steady_clock::duration>(delay);
+                            std::chrono::duration_cast<std::chrono::steady_clock::duration>(delay);
         return at(target, std::move(task));
     }
 
@@ -148,7 +147,8 @@ public:
     }
 
     auto periodic(uint32_t period, task_t task, uint32_t shorten = 0U) {
-        const auto expires = std::chrono::steady_clock::now() + std::chrono::milliseconds(period - shorten);;
+        const auto expires = std::chrono::steady_clock::now() + std::chrono::milliseconds(period - shorten);
+        ;
         const std::lock_guard lock(lock_);
         const auto id = next_++;
         timers_.emplace(expires, std::make_tuple(id, period, task));
@@ -176,8 +176,8 @@ public:
 
     auto repeats(id_t tid, const period_t& period) {
         const std::lock_guard lock(lock_);
-        for(auto& it : timers_) {
-            if(std::get<0>(it.second) != tid) continue;
+        for (auto& it : timers_) {
+            if (std::get<0>(it.second) != tid) continue;
             std::get<1>(it.second) = period;
             return true;
         }
@@ -190,8 +190,8 @@ public:
 
     auto cancel(id_t tid) {
         const std::lock_guard lock(lock_);
-        for(auto it = timers_.begin(); it != timers_.end(); ++it) {
-            if(std::get<0>(it->second) == tid) {
+        for (auto it = timers_.begin(); it != timers_.end(); ++it) {
+            if (std::get<0>(it->second) == tid) {
                 timers_.erase(it);
                 cond_.notify_all();
                 return true;
@@ -206,10 +206,10 @@ public:
             const auto& [id, period, task] = pair.second;
             return tid == id;
         });
-        if(it != timers_.end()) {
+        if (it != timers_.end()) {
             auto& [id, period, task] = it->second;
             const auto expires = std::chrono::steady_clock::now() + offset;
-            if(interval != zero)
+            if (interval != zero)
                 period = interval;
 
             timers_.erase(it);
@@ -222,16 +222,16 @@ public:
 
     auto refresh(id_t tid) {
         const std::lock_guard lock(lock_);
-        for(auto it = timers_.begin(); it != timers_.end(); ++it) {
+        for (auto it = timers_.begin(); it != timers_.end(); ++it) {
             const auto& [id, period, task] = it->second;
-            if(tid == id) {
+            if (tid == id) {
                 auto result = true;
-                if(period == zero) return false;
+                if (period == zero) return false;
                 const auto current = std::chrono::steady_clock::now();
                 const auto expires = current + period;
                 const auto when = it->first;
                 timers_.erase(it);
-                if(when > current) {   // if hasnt expired, refresh...
+                if (when > current) { // if hasnt expired, refresh...
                     result = true;
                     timers_.emplace(expires, std::make_tuple(id, period, task));
                 }
@@ -251,8 +251,8 @@ public:
 
     auto find(id_t id) const noexcept {
         const std::lock_guard lock(lock_);
-        for(const auto& [expires, item] : timers_) {
-            if(std::get<0>(item) == id) return expires;
+        for (const auto& [expires, item] : timers_) {
+            if (std::get<0>(item) == id) return expires;
         }
         return timepoint_t::min();
     }
@@ -269,7 +269,7 @@ public:
 
     auto empty() const noexcept {
         const std::lock_guard lock(lock_);
-        if(stop_) return true;
+        if (stop_) return true;
         return timers_.empty();
     }
 
@@ -281,35 +281,34 @@ protected:
     std::condition_variable cond_;
     std::thread thread_;
     std::atomic<bool> stop_{false};
-    task_t startup_{[]{}};
+    task_t startup_{[] {}};
     id_t next_{0};
 
     void run() noexcept {
         startup_();
-        for(;;) {
+        for (;;) {
             std::unique_lock lock(lock_);
-            if(!stop_ && timers_.empty())
+            if (!stop_ && timers_.empty())
                 cond_.wait(lock);
 
-            if(stop_) break;
-            if(timers_.empty()) continue;
+            if (stop_) break;
+            if (timers_.empty()) continue;
 
             auto it = timers_.begin();
             auto expires = it->first;
             const auto now = std::chrono::steady_clock::now();
-            if(expires <= now) {
+            if (expires <= now) {
                 const auto item(std::move(it->second));
                 const auto& [id, period, task] = item;
                 timers_.erase(it);
-                if(period != zero) {
+                if (period != zero) {
                     expires += period;
                     timers_.emplace(expires, std::make_tuple(id, period, task));
                 }
                 lock.unlock();
                 try {
                     task();
-                }
-                catch(const std::exception& e) {
+                } catch (const std::exception& e) {
                     errors_(e);
                 }
                 continue;
@@ -325,8 +324,7 @@ public:
     using timeout_strategy = std::function<std::chrono::milliseconds()>;
     using shutdown_strategy = std::function<void()>;
 
-    explicit task_queue(timeout_strategy timeout = &default_timeout, shutdown_strategy shutdown = [](){}) noexcept :
-    timeout_(std::move(timeout)), shutdown_(std::move(shutdown)) {}
+    explicit task_queue(timeout_strategy timeout = &default_timeout, shutdown_strategy shutdown = []() {}) noexcept : timeout_(std::move(timeout)), shutdown_(std::move(shutdown)) {}
 
     task_queue(const task_queue&) = delete;
     auto operator=(const task_queue&) -> auto& = delete;
@@ -347,7 +345,7 @@ public:
 
     auto priority(task_t task) {
         std::unique_lock lock(mutex_);
-        if(!running_) return false;
+        if (!running_) return false;
         tasks_.push_front(std::move(task));
         lock.unlock();
         cvar_.notify_one();
@@ -356,8 +354,8 @@ public:
 
     auto dispatch(task_t task, std::size_t max = 0) {
         const std::lock_guard lock(mutex_);
-        if(!running_) return false;
-        if(max && tasks_.size() >= max) return false;
+        if (!running_) return false;
+        if (max && tasks_.size() >= max) return false;
         tasks_.push_back(std::move(task));
         cvar_.notify_one();
         return true;
@@ -365,44 +363,44 @@ public:
 
     void notify() {
         const std::unique_lock lock(mutex_);
-        if(running_)
+        if (running_)
             cvar_.notify_one();
     }
 
     void startup() {
         const std::unique_lock lock(mutex_);
-        if(running_) return;
+        if (running_) return;
         running_ = true;
         thread_ = std::thread(&task_queue::process, this);
     }
 
     void shutdown() {
         std::unique_lock lock(mutex_);
-        if(!running_) return;
+        if (!running_) return;
         running_ = false;
         lock.unlock();
         cvar_.notify_all();
-        if(thread_.joinable())
+        if (thread_.joinable())
             thread_.join();
     }
 
     auto shutdown(shutdown_strategy handler) -> auto& {
         const std::lock_guard lock(mutex_);
-        if(running_) throw std::runtime_error("cannot modify running task queue");
+        if (running_) throw std::runtime_error("cannot modify running task queue");
         shutdown_ = handler;
         return *this;
     }
 
     auto timeout(timeout_strategy handler) -> auto& {
         const std::lock_guard lock(mutex_);
-        if(running_) throw std::runtime_error("cannot modify running task queue");
+        if (running_) throw std::runtime_error("cannot modify running task queue");
         timeout_ = handler;
         return *this;
     }
 
     auto errors(error_t handler) -> auto& {
         const std::lock_guard lock(mutex_);
-        if(running_) throw std::runtime_error("cannot modify running task queue");
+        if (running_) throw std::runtime_error("cannot modify running task queue");
         errors_ = std::move(handler);
         return *this;
     }
@@ -414,7 +412,7 @@ public:
 
     auto empty() const noexcept {
         const std::lock_guard lock(mutex_);
-        if(!running_) return true;
+        if (!running_) return true;
         return tasks_.empty();
     }
 
@@ -430,7 +428,7 @@ public:
 
 protected:
     timeout_strategy timeout_{default_timeout};
-    shutdown_strategy shutdown_{[](){}};
+    shutdown_strategy shutdown_{[]() {}};
     error_t errors_{[](const std::exception& e) {}};
     std::deque<task_t> tasks_;
     mutable std::mutex mutex_;
@@ -443,13 +441,13 @@ protected:
     }
 
     void process() noexcept {
-        for(;;) {
+        for (;;) {
             std::unique_lock lock(mutex_);
-            if(!running_) break;
-            if(tasks_.empty())
+            if (!running_) break;
+            if (tasks_.empty())
                 cvar_.wait_for(lock, timeout_());
 
-            if(tasks_.empty()) continue;
+            if (tasks_.empty()) continue;
             try {
                 auto func(std::move(tasks_.front()));
                 tasks_.pop_front();
@@ -457,8 +455,7 @@ protected:
                 // unlock before running task
                 lock.unlock();
                 func();
-            }
-            catch(const std::exception& e) {
+            } catch (const std::exception& e) {
                 errors_(e);
             }
         }
@@ -475,7 +472,7 @@ public:
     task_pool(const task_pool&) = delete;
     auto operator=(const task_pool&) -> auto& = delete;
 
-    explicit task_pool(std::size_t count, task_t init = []{}) {
+    explicit task_pool(std::size_t count, task_t init = [] {}) {
         start(count, init);
     }
 
@@ -500,22 +497,22 @@ public:
 
     void resize(std::size_t count) {
         drain();
-        if(count) start(count);
+        if (count) start(count);
     }
 
-    void start(std::size_t count = 0, task_t init = []{}) {
-        if(count == 0)
+    void start(std::size_t count = 0, task_t init = [] {}) {
+        if (count == 0)
             count = std::thread::hardware_concurrency();
-        if(count == 0)
+        if (count == 0)
             count = 1;
         const std::lock_guard lock(mutex_);
-        if(started_) return;
+        if (started_) return;
         accepting_ = true;
         started_ = true;
         workers_.clear();
         workers_.reserve(count);
         startup_ = init;
-        for(std::size_t i = 0; i < count; ++i) {
+        for (std::size_t i = 0; i < count; ++i) {
             workers_.emplace_back([this] {
                 startup_();
                 while (true) {
@@ -525,7 +522,7 @@ public:
                         return !accepting_ || !tasks_.empty();
                     });
 
-                    if(!accepting_ && tasks_.empty()) return;
+                    if (!accepting_ && tasks_.empty()) return;
                     task = std::move(tasks_.front());
                     tasks_.pop();
                     lock.unlock();
@@ -537,7 +534,7 @@ public:
 
     auto dispatch(task_t task) {
         const std::lock_guard lock(mutex_);
-        if(!accepting_) return false;
+        if (!accepting_) return false;
         tasks_.push(std::move(task));
         cvar_.notify_one();
         return true;
@@ -552,7 +549,7 @@ protected:
     std::queue<std::function<void()>> tasks_;
     mutable std::mutex mutex_;
     std::condition_variable cvar_;
-    task_t startup_{[]{}};
+    task_t startup_{[] {}};
     std::atomic<bool> accepting_{false};
     volatile bool started_{false};
 
@@ -563,8 +560,8 @@ protected:
         lock.unlock();
 
         // joins are outside lock so we dont block if waiting to join
-        for(auto& worker : workers_) {
-            if(worker.joinable())
+        for (auto& worker : workers_) {
+            if (worker.joinable())
                 worker.join();
         }
 
@@ -575,14 +572,14 @@ protected:
 };
 
 inline void parallel_task(std::size_t count, task_t task) {
-    if(!count)
+    if (!count)
         count = std::thread::hardware_concurrency();
-    if(!count)
+    if (!count)
         count = 1;
 
     std::vector<thread_t> threads;
     threads.reserve(count);
-    for(std::size_t i = 0; i < count; ++i) {
+    for (std::size_t i = 0; i < count; ++i) {
         threads.emplace_back(task);
     }
     std::this_thread::yield();
@@ -597,8 +594,8 @@ inline void yield() {
 }
 
 inline void invoke(action_t action) {
-    if(action != nullptr)
+    if (action != nullptr)
         action();
 }
-} // end namespace
+} // namespace tycho
 #endif

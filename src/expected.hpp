@@ -25,11 +25,11 @@ public:
         return value();
     }
 
-    auto operator->() -> T* {
+    auto operator->() -> T * {
         return &(value());
     }
 
-    auto operator->() const -> const T* {
+    auto operator->() const -> const T * {
         return &(value());
     }
 
@@ -54,7 +54,7 @@ public:
     }
 
     auto value_or(T& alt) -> T& {
-        if(has_value()) return value();
+        if (has_value()) return value();
         return alt;
     }
 
@@ -65,5 +65,5 @@ public:
 private:
     std::variant<T, E> value_;
 };
-} // end namespace
+} // namespace tycho
 #endif

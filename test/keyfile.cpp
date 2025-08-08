@@ -1,13 +1,13 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "keyfile.hpp"
 #include "scan.hpp"
 
 #ifndef TEST_DATA
-#define TEST_DATA "."   // NOLINT
+#define TEST_DATA "." // NOLINT
 #endif
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
@@ -27,14 +27,12 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(test_keys.exists("initial"));
 
     test_keys.load("more", {
-        {"hello", "world"},
-        {"mixed", "CaSe"},
-    });
+                           {"hello", "world"},
+                           {"mixed", "CaSe"},
+                           });
 
     assert(test_keys.exists("more"));
     keys = test_keys["more"];
     assert(keys["hello"] == "world");
     assert(get_lower(keys["mixed"]) == "case");
 }
-
-

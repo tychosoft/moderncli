@@ -27,50 +27,46 @@
 namespace tycho {
 namespace crypto {
 using key_t = std::pair<const uint8_t *, std::size_t>;
-} // end namespace
+} // namespace crypto
 
-template<typename T>
+template <typename T>
 class shared_mem final {
 public:
     using size_type = uint32_t;
-    using pointer = T*;
-    using const_pointer = const T*;
-    using iterator = T*;
-    using const_iterator = const T*;
+    using pointer = T *;
+    using const_pointer = const T *;
+    using iterator = T *;
+    using const_iterator = const T *;
     using element_type = T;
 
     shared_mem() = default;
     shared_mem(const shared_mem& other) = default;
 
-    explicit shared_mem(size_type size) :
-    array_(std::make_shared<T>(size)), size_(size) {}
+    explicit shared_mem(size_type size) : array_(std::make_shared<T>(size)), size_(size) {}
 
-    shared_mem(size_type size, const T& init) :
-    array_(std::make_shared<T>(size)), size_(size) {
+    shared_mem(size_type size, const T& init) : array_(std::make_shared<T>(size)), size_(size) {
         std::fill(data(), data() + size, init);
     }
 
-    template<typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
+    template <typename U = T, std::enable_if_t<sizeof(U) == 1, int> = 0>
     shared_mem(const crypto::key_t& key) : // cppcheck-suppress noExplicitConstructor
-    array_(key.second ? std::make_shared<T>(uint32_t(key.second / sizeof(T))) : nullptr), size_(key.second / sizeof(T)) {
-        if(size_)
+                                           array_(key.second ? std::make_shared<T>(uint32_t(key.second / sizeof(T))) : nullptr), size_(key.second / sizeof(T)) {
+        if (size_)
             memcpy(array_.get(), key.first, key.second);
     }
 
-    shared_mem(const T* from, size_type size) :
-    array_(size ? std::make_shared<T>(size) : nullptr), size_(size) {
-        if(size)
+    shared_mem(const T *from, size_type size) : array_(size ? std::make_shared<T>(size) : nullptr), size_(size) {
+        if (size)
             memcpy(array_.get(), from, sizeof(T) * size);
     }
 
-    shared_mem(shared_mem&& other) noexcept :
-    array_(std::move(other.array_)), size_(other.size_) {
+    shared_mem(shared_mem&& other) noexcept : array_(std::move(other.array_)), size_(other.size_) {
         other.size_ = 0;
     }
 
     // finalize shared data
     ~shared_mem() {
-        if(!empty() && count() == 1)
+        if (!empty() && count() == 1)
             zero();
     }
 
@@ -91,7 +87,7 @@ public:
     }
 
     auto operator=(shared_mem&& other) noexcept -> auto& {
-        if(this != &other) {
+        if (this != &other) {
             array_ = std::move(other.array_);
             size_ = other.size_;
             other.size_ = 0;
@@ -100,72 +96,72 @@ public:
     }
 
     auto operator[](size_type index) -> T& {
-        if(index >= size_) throw std::out_of_range("Index is out of range");
+        if (index >= size_) throw std::out_of_range("Index is out of range");
         return array_.get()[index];
     }
 
     auto operator[](size_type index) const -> const T& {
-        if(index >= size_) throw std::out_of_range("Index is out of range");
+        if (index >= size_) throw std::out_of_range("Index is out of range");
         return array_[index];
     }
 
-    auto operator *() noexcept -> uint8_t * {
+    auto operator*() noexcept -> uint8_t * {
         return reinterpret_cast<uint8_t>(array_.get());
     }
 
-    auto operator *() const noexcept -> const uint8_t * {
+    auto operator*() const noexcept -> const uint8_t * {
         return reinterpret_cast<uint8_t>(array_.get());
     }
 
     auto operator()() {
-        if(!size_) throw std::out_of_range("Cannot return empty object");
+        if (!size_) throw std::out_of_range("Cannot return empty object");
         return *array_;
     }
 
     auto operator()() const {
-        if(!size_) throw std::out_of_range("Cannot return empty object");
+        if (!size_) throw std::out_of_range("Cannot return empty object");
         return *array_;
     }
 
     auto operator==(const shared_mem& other) const noexcept {
-        if(size_bytes() != other.size_bytes()) return false;
-        if(array_.get() == other.array_.get()) return true;
+        if (size_bytes() != other.size_bytes()) return false;
+        if (array_.get() == other.array_.get()) return true;
         return memcmp(array_.get(), other.array_.get(), size_bytes()) == 0;
     }
 
     auto operator!=(const shared_mem& other) const noexcept {
-        if(size_bytes() != other.size_bytes()) return true;
-        if(array_.get() == other.array_.get()) return false;
+        if (size_bytes() != other.size_bytes()) return true;
+        if (array_.get() == other.array_.get()) return false;
         return memcmp(array_.get(), other.array_.get(), size_bytes()) != 0;
     }
 
-    auto get_or(size_type index, T* or_else = nullptr) -> T* {
-        if(index >= size_) return or_else;
+    auto get_or(size_type index, T *or_else = nullptr) -> T * {
+        if (index >= size_) return or_else;
         return *array_ + index;
     }
 
-    auto get_or(size_type index, const T* or_else = nullptr) const -> T* {
-        if(index >= size_) return or_else;
+    auto get_or(size_type index, const T *or_else = nullptr) const -> T * {
+        if (index >= size_) return or_else;
         return *array_ + index;
     }
 
     auto get(size_type index) const -> std::optional<T> {
-        if(index >= size_) return {};
+        if (index >= size_) return {};
         return at(index);
     }
 
-    auto data() -> T* {
-        if(!size_) throw std::out_of_range("Cannot return empty object");
+    auto data() -> T * {
+        if (!size_) throw std::out_of_range("Cannot return empty object");
         return array_.get();
     }
 
-    auto data() const -> const T* {
-        if(!size_) throw std::out_of_range("Cannot return empty object");
+    auto data() const -> const T * {
+        if (!size_) throw std::out_of_range("Cannot return empty object");
         return array_.get();
     }
 
     auto key() const -> crypto::key_t {
-        return std::make_pair(reinterpret_cast<uint8_t*>(array_.get()), size_bytes());
+        return std::make_pair(reinterpret_cast<uint8_t *>(array_.get()), size_bytes());
     }
 
     auto empty() const noexcept {
@@ -181,12 +177,12 @@ public:
     }
 
     auto at(size_type index) -> T& {
-        if(index >= size_) throw std::out_of_range("Index is out of range");
+        if (index >= size_) throw std::out_of_range("Index is out of range");
         return array_.get()[index];
     }
 
     auto at(size_type index) const -> const T& {
-        if(index >= size_) throw std::out_of_range("Index is out of range");
+        if (index >= size_) throw std::out_of_range("Index is out of range");
         return array_.get()[index];
     }
 
@@ -203,7 +199,7 @@ public:
     }
 
     auto zero() noexcept {
-        if(size_)
+        if (size_)
             memset(array_.get(), 0, sizeof(T) * size_);
     }
 
@@ -236,7 +232,7 @@ public:
     }
 
     auto subarray(size_type pos, size_t count = 0) const {
-        if(pos + count > size_) throw std::out_of_range("Invalid subarray range");
+        if (pos + count > size_) throw std::out_of_range("Invalid subarray range");
         return shared_mem(data() + pos, count ? count : size_ - pos);
     }
 
@@ -248,21 +244,21 @@ public:
         auto bsize = from.size() / 2;
         if constexpr (sizeof(T) > 1) {
             // cppcheck-suppress moduloofone
-            while(bsize % sizeof(T))
+            while (bsize % sizeof(T))
                 ++bsize;
         }
         auto mem = shared_mem(uint32_t(bsize / sizeof(T)));
-        if(tycho::from_hex(from, mem.get(), bsize) < from.size() / 2) return shared_mem();
+        if (tycho::from_hex(from, mem.get(), bsize) < from.size() / 2) return shared_mem();
         return mem;
     }
 
     static auto from_b64(std::string_view from) {
         auto bsize = size_b64(from);
         auto alloc = bsize;
-        while(sizeof(T) > 1 && alloc % sizeof(T))
+        while (sizeof(T) > 1 && alloc % sizeof(T))
             ++alloc;
         auto mem = shared_mem(uint32_t(alloc / sizeof(T)));
-        if(tycho::from_b64(from, mem.get(), bsize) < bsize) return shared_mem();
+        if (tycho::from_b64(from, mem.get(), bsize) < bsize) return shared_mem();
         return mem;
     }
 
@@ -273,22 +269,20 @@ private:
     size_type size_{0};
 };
 
-template<typename T>
+template <typename T>
 class memreuse {
 public:
     using value_type = T;
-    using alloc_func = void*(*)(std::size_t);
+    using alloc_func = void *(*)(std::size_t);
 
     memreuse(const memreuse&) = delete;
     auto operator=(const memreuse&) -> auto& = delete;
 
     memreuse() = default;
 
-    explicit memreuse(alloc_func alloc) :
-    alloc_(alloc) {}
+    explicit memreuse(alloc_func alloc) : alloc_(alloc) {}
 
-    memreuse(memreuse&& other) noexcept :
-    free_(std::move(other.free_)), alloc_(std::move(other.alloc_)) {
+    memreuse(memreuse&& other) noexcept : free_(std::move(other.free_)), alloc_(std::move(other.alloc_)) {
         other.free_.clear();
         other.alloc_ = nullptr;
     }
@@ -298,7 +292,7 @@ public:
     }
 
     auto operator=(memreuse&& other) noexcept -> auto& {
-        if(&other == this) return *this;
+        if (&other == this) return *this;
         free_ = std::move(other.free_);
         alloc_ = std::move(other.alloc_);
         other.free_.clear();
@@ -311,41 +305,41 @@ public:
     }
 
     void clear() {
-        for(auto& mem : free_) {
+        for (auto& mem : free_) {
             delete mem;
         }
         free_.clear();
     }
 
-    template<typename... Args>
-    auto create(Args&&... args) -> T* {
-        if(!free_.empty()) {
+    template <typename... Args>
+    auto create(Args&&...args) -> T * {
+        if (!free_.empty()) {
             auto ptr = free_.front();
             free_.pop_front();
-            return new(ptr) T(std::forward<Args>(args)...);
+            return new (ptr) T(std::forward<Args>(args)...);
         }
-        if(alloc_ != nullptr) {
+        if (alloc_ != nullptr) {
             auto ptr = alloc_(sizeof(T));
-            if(ptr)
-                return new(ptr) T(std::forward<Args>(args)...);
+            if (ptr)
+                return new (ptr) T(std::forward<Args>(args)...);
             return nullptr;
         }
         return new T(std::forward<Args>(args)...);
     }
 
-    template<typename... Args>
-    void renew(T& obj, Args&&... args) {
+    template <typename... Args>
+    void renew(T& obj, Args&&...args) {
         obj.~T();
-        new(&obj) T(std::forward<Args>(args)...);
+        new (&obj) T(std::forward<Args>(args)...);
     }
 
-    template<typename... Args>
-    void renew(T* ptr, Args&&... args) {
+    template <typename... Args>
+    void renew(T *ptr, Args&&...args) {
         ptr->~T();
-        new(ptr) T(std::forward<Args>(args)...);
+        new (ptr) T(std::forward<Args>(args)...);
     }
 
-    void release(T* ptr) {
+    void release(T *ptr) {
         ptr->~T();
         free_.push_back(ptr);
     }
@@ -356,11 +350,11 @@ public:
     }
 
 private:
-    std::list<T*> free_;
+    std::list<T *> free_;
     alloc_func alloc_{nullptr};
 };
 
-template<typename T>
+template <typename T>
 class mempool {
 public:
     using size_type = std::size_t;
@@ -371,33 +365,29 @@ public:
 
     mempool() = default;
 
-    mempool(T* ptr, size_type size) noexcept :
-    ptr_(ptr), size_(size) {}
+    mempool(T *ptr, size_type size) noexcept : ptr_(ptr), size_(size) {}
 
-    mempool(void *ptr, size_type size) noexcept :
-    ptr_(reinterpret_cast<T*>(ptr)), size_(size) {}
+    mempool(void *ptr, size_type size) noexcept : ptr_(reinterpret_cast<T *>(ptr)), size_(size) {}
 
-    mempool(mempool&& other) noexcept :
-    ptr_(other.ptr_), size_(other.size_), used_(other.used_), free_(std::move(other.free_)), dynamic_(other.dynamic_) {
+    mempool(mempool&& other) noexcept : ptr_(other.ptr_), size_(other.size_), used_(other.used_), free_(std::move(other.free_)), dynamic_(other.dynamic_) {
         other.dynamic_ = false;
         other.ptr_ = nullptr;
         other.size_ = 0;
         other.used_ = 0;
     }
 
-    explicit mempool(size_type size) :
-    ptr_(new T[size]), size_(size), dynamic_(true) {}
+    explicit mempool(size_type size) : ptr_(new T[size]), size_(size), dynamic_(true) {}
 
-    template<size_type S>
-    mempool(T(&arr)[S]) noexcept : // cppcheck-suppress noExplicitConstructor
-    mempool(arr, S) {}
+    template <size_type S>
+    mempool(T (&arr)[S]) noexcept : // cppcheck-suppress noExplicitConstructor
+                                    mempool(arr, S) {}
 
-    template<typename Container, typename = std::enable_if_t<std::is_same_v<T, typename Container::value_type>>>
+    template <typename Container, typename = std::enable_if_t<std::is_same_v<T, typename Container::value_type>>>
     mempool(Container& container) : // cppcheck-suppress noExplicitConstructor
-    mempool(container.data(), container.size()) {}
+                                    mempool(container.data(), container.size()) {}
 
     ~mempool() {
-        if(dynamic_ && ptr_)
+        if (dynamic_ && ptr_)
             delete[] ptr_;
     }
 
@@ -406,8 +396,8 @@ public:
     }
 
     auto operator=(mempool&& other) noexcept -> auto& {
-        if(this == &other) return *this;
-        if(ptr_ && dynamic_)
+        if (this == &other) return *this;
+        if (ptr_ && dynamic_)
             delete[] ptr_;
         ptr_ = other.ptr_;
         size_ = other.size_;
@@ -429,7 +419,7 @@ public:
         return *get();
     }
 
-    void release(T* ptr) {
+    void release(T *ptr) {
         ptr->~T();
         free_.push_back(ptr);
     }
@@ -439,7 +429,7 @@ public:
         free_.push_back(&obj);
     }
 
-    void reuse(T* ptr) {
+    void reuse(T *ptr) {
         free_.push_front(ptr);
     }
 
@@ -447,13 +437,13 @@ public:
         free_.push_front(&obj);
     }
 
-    auto get_or(T *or_else = nullptr) -> T* {
-        if(!free_.empty()) {
+    auto get_or(T *or_else = nullptr) -> T * {
+        if (!free_.empty()) {
             auto ptr = free_.front();
             free_.pop_front();
             return ptr;
         }
-        if(ptr_ && used_ < size_) {
+        if (ptr_ && used_ < size_) {
             auto ptr = ptr_ + used_;
             ++used_;
             return ptr;
@@ -461,13 +451,13 @@ public:
         return or_else;
     }
 
-    auto get() -> T* {
-        if(!free_.empty()) {
+    auto get() -> T * {
+        if (!free_.empty()) {
             auto ptr = free_.front();
             free_.pop_front();
             return ptr;
         }
-        if(ptr_ && used_ < size_) {
+        if (ptr_ && used_ < size_) {
             auto ptr = ptr_ + used_;
             ++used_;
             return ptr;
@@ -475,7 +465,7 @@ public:
         throw std::out_of_range("Pool exhausted");
     }
 
-    auto begin() const -> T* {
+    auto begin() const -> T * {
         return ptr_;
     }
 
@@ -508,7 +498,7 @@ private:
     T *ptr_{nullptr};
     size_type size_{0};
     size_type used_{0};
-    std::list<T*> free_;
+    std::list<T *> free_;
     bool dynamic_{false};
 };
 
@@ -518,11 +508,9 @@ public:
     imemstream(const imemstream&) = delete;
     auto operator=(const imemstream&) -> auto& = delete;
 
-    imemstream(const uint8_t *data, std::size_t size) :
-    std::istream(static_cast<std::streambuf *>(this)), pos(data), count(size) {}
+    imemstream(const uint8_t *data, std::size_t size) : std::istream(static_cast<std::streambuf *>(this)), pos(data), count(size) {}
 
-    explicit imemstream(const char *cp) :
-    std::istream(static_cast<std::streambuf *>(this)), pos(reinterpret_cast<const uint8_t *>(cp)), count(::strlen(cp)) {}
+    explicit imemstream(const char *cp) : std::istream(static_cast<std::streambuf *>(this)), pos(reinterpret_cast<const uint8_t *>(cp)), count(::strlen(cp)) {}
 
     auto size() const noexcept {
         return count;
@@ -541,12 +529,12 @@ protected:
     std::size_t count{0};
 
     auto underflow() -> int override {
-        if(!count || !pos) return EOF;
+        if (!count || !pos) return EOF;
         return *pos;
     }
 
     auto uflow() -> int override {
-        if(!count || !pos) return EOF;
+        if (!count || !pos) return EOF;
         --count;
         return *(pos++);
     }
@@ -558,9 +546,8 @@ public:
     omemstream(const omemstream&) = delete;
     auto operator=(const omemstream&) -> auto& = delete;
 
-    omemstream(uint8_t *data, std::size_t size, bool flag = false) :
-    std::ostream(static_cast<std::streambuf *>(this)), base(data), limit(size), zero(flag) {
-        if(flag && size) {
+    omemstream(uint8_t *data, std::size_t size, bool flag = false) : std::ostream(static_cast<std::streambuf *>(this)), base(data), limit(size), zero(flag) {
+        if (flag && size) {
             *base = 0;
             ++count;
         }
@@ -584,9 +571,9 @@ protected:
     bool zero{false};
 
     auto overflow(int ch) -> int override {
-        if(ch == EOF || count >= limit || !base) return EOF;
+        if (ch == EOF || count >= limit || !base) return EOF;
         base[count++] = uint8_t(ch);
-        if(zero)
+        if (zero)
             base[count] = 0;
         return ch;
     }
@@ -597,14 +584,12 @@ public:
     mempager(const mempager&) = delete;
     auto operator=(const mempager&) -> auto& = delete;
 
-    explicit mempager(std::size_t size = 0) noexcept :
-    size_(size), align_(aligned_page()) {
-        if(size_ <= align_)
+    explicit mempager(std::size_t size = 0) noexcept : size_(size), align_(aligned_page()) {
+        if (size_ <= align_)
             align_ = aligned_cache();
     }
 
-    mempager(mempager&& move) noexcept :
-    size_(move.size_), align_(move.align_), count_(move.count_), current_(move.current_) {
+    mempager(mempager&& move) noexcept : size_(move.size_), align_(move.align_), count_(move.count_), current_(move.current_) {
         move.current_ = nullptr;
         move.count_ = 0;
     }
@@ -614,7 +599,7 @@ public:
     }
 
     auto operator=(mempager&& move) noexcept -> auto& {
-        if(&move == this) return *this;
+        if (&move == this) return *this;
         size_ = move.size_;
         align_ = move.align_;
         count_ = move.count_;
@@ -624,21 +609,21 @@ public:
         return *this;
     }
 
-    template<typename T>
+    template <typename T>
     auto make(std::size_t adjust = 0) {
-        return static_cast<T*>(alloc(sizeof(T) + adjust));
+        return static_cast<T *>(alloc(sizeof(T) + adjust));
     }
 
     auto alloc(std::size_t size) -> void * {
-        while(size % sizeof(void *))
+        while (size % sizeof(void *))
             ++size;
 
-        if(size > (size_ - sizeof(page_ptr))) return nullptr;
-        if(!current_ || size > size_ - current_->used) {
+        if (size > (size_ - sizeof(page_ptr))) return nullptr;
+        if (!current_ || size > size_ - current_->used) {
             page_ptr page{nullptr};
             page_alloc(&page, size_, align_);
 
-            if(!page) return nullptr;
+            if (!page) return nullptr;
             page->used = sizeof(page_t);
             page->next = current_;
             ++count_;
@@ -653,7 +638,7 @@ public:
     auto dup(const std::string_view& str) -> char * {
         auto len = str.size();
         auto mem = static_cast<char *>(alloc(len + 1));
-        if(mem) {
+        if (mem) {
             memcpy(mem, str.data(), len);
             mem[len] = 0;
         }
@@ -662,7 +647,7 @@ public:
 
     void clear() noexcept {
         page_ptr next{};
-        while(current_) {
+        while (current_) {
             next = current_->next;
             ::free(current_); // NOLINT
             current_ = next;
@@ -688,12 +673,12 @@ public:
 
     static constexpr auto aligned_size(std::size_t size) -> std::size_t {
         std::size_t align = 1;
-        while(align < size)
+        while (align < size)
             align <<= 1;
         return align;
     }
 
-    static auto aligned_page(std::size_t min = 0) -> std::size_t{
+    static auto aligned_page(std::size_t min = 0) -> std::size_t {
 #if defined(_SC_PAGESIZE)
         std::size_t asize = aligned_size(std::size_t(sysconf(_SC_PAGESIZE)));
 #elif defined(PAGESIZE)
@@ -704,7 +689,7 @@ public:
         std::size_t asize = 1024;
 #endif
         min = aligned_size(min);
-        while(asize < min)
+        while (asize < min)
             asize <<= 2;
         return asize;
     }
@@ -731,12 +716,12 @@ private:
 
     static void page_alloc(page_ptr *mem, std::size_t size, std::size_t align = 0) {
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-        *mem = static_cast<page_ptr>(::malloc(size));  // NOLINT
+        *mem = static_cast<page_ptr>(::malloc(size)); // NOLINT
 #else
-        if(!align)
-            *mem = static_cast<page_ptr>(::malloc(size));  // NOLINT
+        if (!align)
+            *mem = static_cast<page_ptr>(::malloc(size)); // NOLINT
         else
-#ifdef  __clang__
+#ifdef __clang__
             posix_memalign(reinterpret_cast<void **>(mem), align, size);
 #else
             *mem = static_cast<page_ptr>(::aligned_alloc(align, size));
@@ -745,7 +730,7 @@ private:
     }
 };
 
-template<typename T>
+template <typename T>
 using shared_memory = shared_mem<T>;
 using bytearray_t = shared_mem<uint8_t>;
 using chararray_t = shared_mem<char>;
@@ -753,67 +738,67 @@ using wordarray_t = shared_mem<uint16_t>;
 using longarray_t = shared_mem<uint32_t>;
 using mempager_t = mempager;
 
-template<typename T>
+template <typename T>
 inline void mem_alloc(T **mem, std::size_t size, std::size_t align = 0) {
-    if(!mem) throw std::runtime_error("memory handle is null");
-    if(*mem) {
-        ::free(*mem);   // NOLINT
+    if (!mem) throw std::runtime_error("memory handle is null");
+    if (*mem) {
+        ::free(*mem); // NOLINT
         *mem = nullptr;
     }
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
-    *mem = static_cast<T*>(::malloc(size));  // NOLINT
+    *mem = static_cast<T *>(::malloc(size)); // NOLINT
 #else
-    if(!align)
-        *mem = static_cast<T*>(::malloc(size));  // NOLINT
+    if (!align)
+        *mem = static_cast<T *>(::malloc(size)); // NOLINT
     else
-#ifdef  __clang__
+#ifdef __clang__
         posix_memalign(reinterpret_cast<void **>(mem), align, size);
 #else
-        *mem = static_cast<T*>(::aligned_alloc(align, size));
+        *mem = static_cast<T *>(::aligned_alloc(align, size));
 #endif
 #endif
 }
 
-template<typename T>
+template <typename T>
 inline void mem_free(T **mem) {
-    if(!mem) throw std::runtime_error("memory handle is null");
-    if(*mem) {
-        ::free(*mem);   // NOLINT
+    if (!mem) throw std::runtime_error("memory handle is null");
+    if (*mem) {
+        ::free(*mem); // NOLINT
         *mem = nullptr;
     }
 }
 
 inline auto mem_index(const uint8_t *mem, std::size_t size) -> unsigned {
-    if(!mem) throw std::runtime_error("memory index is null");
+    if (!mem) throw std::runtime_error("memory index is null");
     unsigned val = 0;
-    while(size--)
+    while (size--)
         val = (val << 1) ^ (*(mem++) & 0x1f);
 
     return val;
 }
 
 inline auto mem_size(const char *cp, std::size_t max = 128) -> std::size_t {
-    if(!cp) throw std::runtime_error("memory size for null");
+    if (!cp) throw std::runtime_error("memory size for null");
     std::size_t count = 0;
-    while(cp && *cp && count++ <= max)
+    while (cp && *cp && count++ <= max)
         ++cp;
 
-    if(count > max) throw std::runtime_error("memory size too large");
+    if (count > max) throw std::runtime_error("memory size too large");
     return count;
 }
 
 inline auto mem_append(char *dest, std::size_t max, const char *value) -> std::size_t {
-    if(!dest || !value || !max) throw std::runtime_error("memory append invalid");
-    while(max && *dest) {
+    if (!dest || !value || !max) throw std::runtime_error("memory append invalid");
+    while (max && *dest) {
         ++dest;
         --max;
     }
 
-    if(!max) throw std::runtime_error("memory append size invalid");
+    if (!max) throw std::runtime_error("memory append size invalid");
     --max; // null byte at end...
 
     std::size_t pos = 0;
-    while(*value && pos < max) {
+    while (*value && pos < max) {
         *(dest++) = *(value++);
         ++pos;
     }
@@ -822,50 +807,50 @@ inline auto mem_append(char *dest, std::size_t max, const char *value) -> std::s
 }
 
 inline auto mem_view(char *target, std::size_t size, std::string_view s) -> bool {
-    if(!target) throw std::runtime_error("memory view target invalid");
+    if (!target) throw std::runtime_error("memory view target invalid");
     auto count = s.size();
     auto from = s.data();
-    if(count >= size) return false;
+    if (count >= size) return false;
 
-    while(count--)
+    while (count--)
         *(target++) = *(from++);
     *target = 0;
     return true;
 }
 
 inline auto mem_copy(char *target, std::size_t size, const char *from) -> bool {
-    if(!from || !target) throw std::runtime_error("memory view target invalid");
+    if (!from || !target) throw std::runtime_error("memory view target invalid");
     auto count = mem_size(from, size);
 
-    if(count >= size) return false;
-    while(count--)
+    if (count >= size) return false;
+    while (count--)
         *(target++) = *(from++);
     *target = 0;
     return true;
 }
 
 inline auto mem_value(char *target, std::size_t size, unsigned value) -> bool {
-    if(!target) throw std::runtime_error("memory view target invalid");
+    if (!target) throw std::runtime_error("memory view target invalid");
     auto max = 1U;
     auto zero = false;
 
-    while(--size)
+    while (--size)
         max *= 10;
 
-    if(value >= max) return false;
-    while(max) {
+    if (value >= max) return false;
+    while (max) {
         auto dig = 0U;
         max /= 10;
-        if(max) {
+        if (max) {
             dig = value / max;
             value %= max;
         }
 
-        if(dig || zero) {
+        if (dig || zero) {
             *(target++) = char('0' + dig);
             zero = true;
         }
-        if(max == 1) break;
+        if (max == 1) break;
     }
     *target = 0;
     return true;
@@ -879,35 +864,35 @@ inline auto key_index(const char *cp, std::size_t max) {
     return mem_index(reinterpret_cast<const uint8_t *>(cp), mem_size(cp, max));
 }
 
-template<typename T, std::size_t S>
-constexpr auto make_pool(T(&arr)[S]) {
+template <typename T, std::size_t S>
+constexpr auto make_pool(T (&arr)[S]) {
     return mempool<T>(arr);
 }
 
-template<typename Container>
+template <typename Container>
 inline auto make_pool(Container& container) -> mempool<typename Container::value_type> {
     return mempool<typename Container::value_type>(container);
 }
 
-template<typename T>
+template <typename T>
 inline auto make_pool(std::size_t size) {
     return mempool<T>(size);
 }
-} // end namespace
+} // namespace tycho
 
 namespace std {
-template<>
+template <>
 struct hash<tycho::bytearray_t> {
     auto operator()(const tycho::bytearray_t& obj) const {
         std::size_t result{0U};
         const auto data = obj.data();
-        for(std::size_t pos = 0; pos < obj.size(); ++pos) {
+        for (std::size_t pos = 0; pos < obj.size(); ++pos) {
             result = (result * 131) + data[pos];
         }
         return result;
     }
 };
-} // end namespace
+} // namespace std
 
 inline auto operator new(std::size_t size, tycho::mempager& pager) -> void * {
     return pager.alloc(size);
@@ -915,7 +900,7 @@ inline auto operator new(std::size_t size, tycho::mempager& pager) -> void * {
 
 inline void operator delete([[maybe_unused]] void *page, [[maybe_unused]] tycho::mempager& pager) {}
 
-template<typename T>
+template <typename T>
 inline auto operator<<(std::ostream& out, const tycho::shared_mem<T>& bin) -> std::ostream& {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
     out << bin.to_hex();

@@ -76,7 +76,7 @@ public:
     // cppcheck-suppress noExplicitConstructor
     random_t(const key_t key) {
         zero(data_);
-        if(key.first && key.second && key.second <= (S / 8))
+        if (key.first && key.second && key.second <= (S / 8))
             memcpy(data_, key.first, key.second);
         else
             throw std::runtime_error("key size mismatch");
@@ -95,13 +95,13 @@ public:
         return std::make_pair(data_, S / 8);
     }
 
-    auto operator *() const {
+    auto operator*() const {
         return std::make_pair(data_, S / 8);
     }
 
     auto operator=(const key_t key) -> auto& {
         zero(data_);
-        if(key.first && key.second && key.second  <= (S / 8))
+        if (key.first && key.second && key.second <= (S / 8))
             memcpy(data_, key.first, key.second);
         else
             throw std::runtime_error("key size mismatch");
@@ -110,7 +110,7 @@ public:
 
     auto operator=(const random_t& other) -> auto& {
         static_assert(other.size() == size());
-        if(this != &other)
+        if (this != &other)
             memcpy(data_, other.data_, sizeof(data_));
         return *this;
     }
@@ -152,7 +152,7 @@ inline auto unique_key() {
 }
 
 using salt_t = random_t<salt>;
-} // end namespace
+} // namespace tycho::crypto
 
 inline auto operator<<(std::ostream& out, const tycho::crypto::key_t& key) -> std::ostream& {
     out << tycho::crypto::to_b64(key);

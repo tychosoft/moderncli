@@ -1,8 +1,8 @@
 // Copyright (C) 2025 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "array.hpp"
 #include "memory.hpp"
 #include <string>
@@ -23,7 +23,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(even[0] == 2);
         assert(even.size() == 2);
         const std::vector<int> move = std::move(even);
-        assert(even.empty());   // NOLINT
+        assert(even.empty()); // NOLINT
         assert(move.size() == 2);
         assert(move[0] == 2);
 
@@ -65,7 +65,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(slicer.contains("last"));
         auto copy = slicer;
         assert(copy.size() == slicer.size());
-        assert(copy[0] == slicer[0]);   // independent memory copies...
+        assert(copy[0] == slicer[0]); // independent memory copies...
         assert(copy.data() != slicer.data());
         assert(copy == slicer);
 
@@ -82,9 +82,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         assert(shared1.count() == 2);
         assert(shared1[2] == 7);
         assert(shared1[0] == 9);
-    }
-    catch(...) {
+    } catch (...) {
         ::exit(-1);
     }
 }
-

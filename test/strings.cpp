@@ -1,8 +1,8 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "print.hpp"
 #include "strings.hpp"
 #include "encoding.hpp"
@@ -55,7 +55,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
     char yes[] = {'y', 'e', 's', 0};
     yes[0] = 'y';
-    assert(!eq("yes", "no"));                           // NOLINT
+    assert(!eq("yes", "no")); // NOLINT
     assert(eq("yes", yes));
 
     assert(!begins_case("hi", "hi, there"));
@@ -66,5 +66,3 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     static_assert(u8verify("\xc3\xb1"));
     static_assert(!u8verify("\xa0\xa1"));
 }
-
-

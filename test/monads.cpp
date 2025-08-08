@@ -1,8 +1,8 @@
 // Copyright (C) 2025 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "monadic.hpp"
 #include <cstdlib>
 
@@ -47,14 +47,14 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
 
         const std::vector<maybe<int>> maybe_vec = {some(1), some(2), some(3)};
         auto traversed = traverse(maybe_vec, add_one);
-        if(traversed.has_value()) {
+        if (traversed.has_value()) {
             auto vec = *traversed;
             assert(vec[0] == 2);
             assert(vec[2] == 4);
         }
 
         auto sequenced = sequence(maybe_vec);
-        if(sequenced.has_value()) {
+        if (sequenced.has_value()) {
             auto vec = *sequenced;
             assert(vec[0] == 1);
             assert(vec[2] == 3);
@@ -63,10 +63,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         const std::vector<maybe<int>> sums = {some(1), some(2), some(3), none<int>(), some(4)};
         auto sum = fold(sums, [](int acc, int val) { return acc + val; }, 0);
         assert(sum == 10);
-    }
-    catch(...) {
+    } catch (...) {
         ::exit(-1);
     }
 }
-
-

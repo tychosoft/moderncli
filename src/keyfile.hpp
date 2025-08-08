@@ -17,9 +17,8 @@ public:
     using iterator = std::unordered_map<std::string, keys>::const_iterator;
 
     keyfile() noexcept : ptr_(std::make_shared<keyfile::data>()) {}
-    explicit keyfile(const std::initializer_list<std::string>& paths) noexcept :
-    ptr_(std::make_shared<keyfile::data>()) {
-        for(const auto& path : paths)
+    explicit keyfile(const std::initializer_list<std::string>& paths) noexcept : ptr_(std::make_shared<keyfile::data>()) {
+        for (const auto& path : paths)
             ptr_->load(path);
     }
 
@@ -36,7 +35,7 @@ public:
     }
 
     auto get_or(const std::string& id, const std::string& or_else = "_") const {
-        if(!ptr_->exists(id))
+        if (!ptr_->exists(id))
             return ptr_->fetch(or_else);
         return ptr_->fetch(id);
     }
@@ -58,32 +57,32 @@ public:
     }
 
     void remove(const std::string& id) {
-        if(ptr_) 
+        if (ptr_)
             ptr_->remove(id);
     }
 
     auto load(const std::string& path) -> auto& {
-        if(ptr_) 
+        if (ptr_)
             ptr_->load(path);
         return *this;
     }
 
-    auto load(const std::string& id, const std::initializer_list<std::pair<std::string,std::string>>& list) -> auto& {
+    auto load(const std::string& id, const std::initializer_list<std::pair<std::string, std::string>>& list) -> auto& {
         auto& group = ptr_->fetch(id);
-        for(const auto& [key, value] : list)
+        for (const auto& [key, value] : list)
             group[key] = value;
         return *this;
     }
 
     void clear() {
-        if(ptr_)
+        if (ptr_)
             ptr_.reset();
     }
 
     auto flatten(const std::string& id = "_") const {
         std::string result;
         const auto& list = ptr_->fetch(id);
-        for(const auto& [key, value] : list)
+        for (const auto& [key, value] : list)
             result += key + "='" + value + "' ";
         return result;
     }
@@ -106,7 +105,7 @@ public:
 
     static auto create(const std::initializer_list<std::string>& list) {
         keyfile keys;
-        for(const auto& group : list)
+        for (const auto& group : list)
             keys.ptr_->fetch(group);
         return keys;
     }
@@ -149,35 +148,35 @@ private:
         auto load(const std::string& path) -> bool {
             const std::string_view whitespace(" \t\n\r");
             std::ifstream file(path);
-            if(!file.is_open()) return false;
+            if (!file.is_open()) return false;
             std::string buffer;
             std::string section = "_";
-            while(std::getline(file, buffer)) {
+            while (std::getline(file, buffer)) {
                 auto input = std::string_view(buffer);
                 auto first = input.find_first_not_of(whitespace);
-                if(first == std::string::npos) continue;
+                if (first == std::string::npos) continue;
                 input.remove_prefix(first);
                 auto last = input.find_last_not_of(whitespace);
-                if(last != std::string::npos)
+                if (last != std::string::npos)
                     input.remove_suffix(input.size() - last - 1);
 
-                if(!input.empty() && input[0] == '[' && input.back() == ']') {
+                if (!input.empty() && input[0] == '[' && input.back() == ']') {
                     section = input.substr(1, input.size() - 2);
                     continue;
                 }
 
-                if(input.empty() || !isalnum(input[0])) continue;
+                if (input.empty() || !isalnum(input[0])) continue;
                 auto pos = input.find_first_of('=');
 
-                if(pos < 1 || pos == std::string::npos) continue;
+                if (pos < 1 || pos == std::string::npos) continue;
                 auto key = input.substr(0, pos);
                 auto value = input.substr(++pos);
                 last = key.find_last_not_of(whitespace);
-                if(last != std::string::npos)
+                if (last != std::string::npos)
                     key.remove_suffix(key.size() - last - 1);
 
                 pos = value.find_first_not_of(whitespace);
-                if(pos != std::string::npos)
+                if (pos != std::string::npos)
                     value.remove_prefix(pos);
                 sections[section][std::string(key)] = std::string(value);
             }
@@ -186,19 +185,19 @@ private:
 
         auto save(const std::string& path) -> bool {
             std::ofstream out(path, std::ios::binary);
-            if(!out.is_open()) return false;
-            for(auto const& [key, value] : sections["_"]) {
-                if(!value.empty())
+            if (!out.is_open()) return false;
+            for (auto const& [key, value] : sections["_"]) {
+                if (!value.empty())
                     out << key << " = " << value << std::endl;
             }
-            if(!sections["_"].empty())
+            if (!sections["_"].empty())
                 out << std::endl;
-            for(auto const& [id, keys] : sections) {
-                if(id == "_") continue;
-                if(keys.empty()) continue;
+            for (auto const& [id, keys] : sections) {
+                if (id == "_") continue;
+                if (keys.empty()) continue;
                 out << "[" << id << "]" << std::endl;
-                for(auto const& [key, value] : keys) {
-                    if(!value.empty())
+                for (auto const& [key, value] : keys) {
+                    if (!value.empty())
                         out << key << " = " << value << std::endl;
                 }
                 out << std::endl;
@@ -215,10 +214,9 @@ private:
 inline auto key_or(const keyfile::keys& keys, const std::string& id, const std::string& or_else = "") {
     try {
         return keys.at(id);
-    }
-    catch(...) {
+    } catch (...) {
         return or_else;
     }
 }
-} // end namespace
+} // namespace tycho
 #endif

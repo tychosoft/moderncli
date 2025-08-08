@@ -108,7 +108,7 @@ public:
 
     ~output() final {
         std::cout << str();
-        if(nl_)
+        if (nl_)
             std::cout << std::string(nl_, '\n');
         std::cout.flush();
     }
@@ -127,22 +127,21 @@ public:
 
         ~logger() final {
             const std::lock_guard lock(from_.locker_);
-#ifdef  USE_SYSLOG
-            if(from_.opened_)
+#ifdef USE_SYSLOG
+            if (from_.opened_)
                 ::syslog(type_, "%s", str().c_str());
 #endif
             from_.notify_(str(), prefix_);
-            if(from_.verbose_ >= level_)
+            if (from_.verbose_ >= level_)
                 std::cerr << prefix_ << ": " << str() << std::endl;
-            if(exit_)
+            if (exit_)
                 quick_exit(exit_);
         }
 
     private:
         friend class logger_stream;
 
-        logger(unsigned level, int type, const char *prefix, logger_stream& from, int ex = 0) :
-        from_(from), level_{level}, type_{type}, prefix_{prefix}, exit_{ex} {}
+        logger(unsigned level, int type, const char *prefix, logger_stream& from, int ex = 0) : from_(from), level_{level}, type_{type}, prefix_{prefix}, exit_{ex} {}
 
         logger_stream& from_;
         unsigned level_;
@@ -151,12 +150,12 @@ public:
         int exit_{0};
     };
 
-    void set(unsigned verbose, notify_t notify = [](const std::string& str, const char *type){}) {
+    void set(unsigned verbose, notify_t notify = [](const std::string& str, const char *type) {}) {
         verbose_ = verbose;
         notify_ = notify;
     }
 
-#ifdef  USE_SYSLOG
+#ifdef USE_SYSLOG
     void open(const char *id, int level = LOG_INFO, int facility = LOG_DAEMON, int flags = LOG_CONS | LOG_NDELAY) {
         ::openlog(id, flags, facility);
         ::setlogmask(LOG_UPTO(level));
@@ -193,12 +192,12 @@ public:
     }
 
 private:
-    notify_t notify_{[](const std::string& str, const char *type){}};
+    notify_t notify_{[](const std::string& str, const char *type) {}};
     unsigned verbose_{1};
     std::mutex locker_;
-#ifdef  USE_SYSLOG
+#ifdef USE_SYSLOG
     bool opened_{false};
 #endif
 };
-} // end namespace
+} // namespace tycho
 #endif

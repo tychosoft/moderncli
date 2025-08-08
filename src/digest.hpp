@@ -16,59 +16,59 @@ class digest_t final {
 public:
     // cppcheck-suppress noExplicitConstructor
     digest_t(const EVP_MD *md = EVP_sha256()) noexcept : ctx_(EVP_MD_CTX_create()) {
-        if(ctx_ && EVP_DigestInit_ex(ctx_, md, nullptr) != 1) {
+        if (ctx_ && EVP_DigestInit_ex(ctx_, md, nullptr) != 1) {
             EVP_MD_CTX_destroy(ctx_);
             ctx_ = nullptr;
         }
     }
 
     explicit digest_t(const char *cp) noexcept : ctx_(EVP_MD_CTX_create()) {
-        if(ctx_ && EVP_DigestInit_ex(ctx_, EVP_get_digestbyname(cp), nullptr) != 1) {
+        if (ctx_ && EVP_DigestInit_ex(ctx_, EVP_get_digestbyname(cp), nullptr) != 1) {
             EVP_MD_CTX_destroy(ctx_);
             ctx_ = nullptr;
         }
     }
 
     digest_t(const digest_t& from) noexcept {
-        if(from.ctx_)
+        if (from.ctx_)
             ctx_ = EVP_MD_CTX_create();
-        if(ctx_ && EVP_MD_CTX_copy_ex(ctx_, from.ctx_) != 1) {
+        if (ctx_ && EVP_MD_CTX_copy_ex(ctx_, from.ctx_) != 1) {
             EVP_MD_CTX_destroy(ctx_);
             ctx_ = nullptr;
         }
-        if(ctx_)
+        if (ctx_)
             size_ = from.size_;
-        if(size_)
+        if (size_)
             memcpy(data_, from.data_, size_);
     }
 
     digest_t(digest_t&& from) noexcept : ctx_(from.ctx_), size_(from.size_) {
-        if(size_)
+        if (size_)
             memcpy(data_, from.data_, size_);
         from.ctx_ = nullptr;
         from.size_ = 0;
     }
 
     ~digest_t() {
-        if(ctx_)
+        if (ctx_)
             EVP_MD_CTX_destroy(ctx_);
     }
 
     auto operator=(const digest_t& from) noexcept -> auto& {
-        if(this == &from) return *this;
-        if(ctx_) {
+        if (this == &from) return *this;
+        if (ctx_) {
             EVP_MD_CTX_destroy(ctx_);
             ctx_ = nullptr;
         }
-        if(from.ctx_)
+        if (from.ctx_)
             ctx_ = EVP_MD_CTX_create();
-        if(ctx_ && EVP_MD_CTX_copy_ex(ctx_, from.ctx_) != 1) {
+        if (ctx_ && EVP_MD_CTX_copy_ex(ctx_, from.ctx_) != 1) {
             EVP_MD_CTX_destroy(ctx_);
             ctx_ = nullptr;
         }
-        if(ctx_)
+        if (ctx_)
             size_ = from.size_;
-        if(size_)
+        if (size_)
             memcpy(data_, from.data_, size_);
         return *this;
     }
@@ -110,12 +110,12 @@ public:
     }
 
     auto finish() noexcept {
-        if(!ctx_ || size_) return false;
+        if (!ctx_ || size_) return false;
         return EVP_DigestFinal_ex(ctx_, data_, &size_) == 1;
     }
 
     void reinit() noexcept {
-        if(ctx_)
+        if (ctx_)
             EVP_DigestInit_ex(ctx_, nullptr, nullptr);
         size_ = 0;
     }
@@ -129,7 +129,7 @@ private:
 #if OPENSSL_API_LEVEL >= 30000
 inline auto hmac(const std::string_view& key, const uint8_t *msg, std::size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
     unsigned olen{0};
-    if(!HMAC(md, key.data(), int(key.size()), msg, size, out, &olen))
+    if (!HMAC(md, key.data(), int(key.size()), msg, size, out, &olen))
         olen = 0;
     return std::size_t(olen);
 }
@@ -137,8 +137,8 @@ inline auto hmac(const std::string_view& key, const uint8_t *msg, std::size_t si
 inline auto hmac(const std::string_view& key, const uint8_t *msg, std::size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
     unsigned olen{0};
     auto ctx = HMAC_CTX_new();
-    if(!ctx) return std::size_t(0);
-    if(!HMAC_Init_ex(ctx, key.data(), int(key.size()), md, nullptr)) {
+    if (!ctx) return std::size_t(0);
+    if (!HMAC_Init_ex(ctx, key.data(), int(key.size()), md, nullptr)) {
         HMAC_CTX_free(ctx);
         return std::size_t(0);
     }
@@ -157,8 +157,8 @@ inline auto hmac(const std::string_view& key, const std::string_view& msg, uint8
 inline auto digest(const uint8_t *msg, std::size_t size, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
     unsigned olen{0};
     auto ctx = EVP_MD_CTX_create();
-    if(!ctx) return std::size_t(0);
-    if(!EVP_DigestInit_ex(ctx, md, nullptr)) {
+    if (!ctx) return std::size_t(0);
+    if (!EVP_DigestInit_ex(ctx, md, nullptr)) {
         EVP_MD_CTX_destroy(ctx);
         return std::size_t(0);
     }
@@ -169,17 +169,17 @@ inline auto digest(const uint8_t *msg, std::size_t size, uint8_t *out, const EVP
     return std::size_t(olen);
 }
 
-template<typename T,
+template <typename T,
 typename = std::enable_if_t<(
-std::is_convertible_v<decltype(std::declval<const T&>().data()), const char*> || std::is_convertible_v<decltype(std::declval<const T&>().data()), const uint8_t*>
-) && std::is_convertible_v<decltype(std::declval<const T&>().size()), std::size_t>>>
+                            std::is_convertible_v<decltype(std::declval<const T&>().data()), const char *> || std::is_convertible_v<decltype(std::declval<const T&>().data()), const uint8_t *>) &&
+                            std::is_convertible_v<decltype(std::declval<const T&>().size()), std::size_t>>>
 inline auto digest(const T& msg, uint8_t *out, const EVP_MD *md = EVP_sha256()) {
     return digest(reinterpret_cast<const uint8_t *>(msg.data()), msg.size(), out, md);
 }
 
 inline auto digest_size(const EVP_MD *md = EVP_sha256()) {
     auto sz = EVP_MD_get_size(md);
-    if(sz < 1) return std::size_t(0);
+    if (sz < 1) return std::size_t(0);
     return std::size_t(sz);
 }
 
@@ -190,5 +190,5 @@ inline auto digest_id(const char *name) {
 inline auto digest_name(const EVP_MD *md = EVP_sha256()) {
     return EVP_MD_get0_name(md);
 }
-} // end namespace
+} // namespace tycho::crypto
 #endif

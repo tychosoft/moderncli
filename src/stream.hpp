@@ -22,8 +22,8 @@ using ssize_t = SSIZE_T;
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 #if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
-#undef  _WIN32_WINNT
-#define _WIN32_WINNT    0x0600  // NOLINT
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600 // NOLINT
 #endif
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -41,7 +41,7 @@ using ssize_t = SSIZE_T;
 #endif
 
 #ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL    0   // NOLINT
+#define MSG_NOSIGNAL 0 // NOLINT
 #endif
 
 namespace tycho {
@@ -51,17 +51,15 @@ public:
     inline static const auto maxsize = S;
 
     // typically used to accept a tcp session from a listener socket
-    socket_stream(int from, const struct sockaddr *peer, std::size_t size = S) :
-    std::iostream(static_cast<std::streambuf *>(this)), so_(from), family_(peer ? peer->sa_family : AF_UNSPEC) {
+    socket_stream(int from, const struct sockaddr *peer, std::size_t size = S) : std::iostream(static_cast<std::streambuf *>(this)), so_(from), family_(peer ? peer->sa_family : AF_UNSPEC) {
         allocate(size);
     }
 
     // typically used to connect a tcp session to a remote service
-    explicit socket_stream(const struct sockaddr *peer, std::size_t size = S) :
-    std::iostream(static_cast<std::streambuf *>(this)), family_(peer ? peer->sa_family : AF_UNSPEC) {
+    explicit socket_stream(const struct sockaddr *peer, std::size_t size = S) : std::iostream(static_cast<std::streambuf *>(this)), family_(peer ? peer->sa_family : AF_UNSPEC) {
         socklen_t plen = sizeof(sockaddr_storage);
-        if(peer)
-            switch(peer->sa_family) {
+        if (peer)
+            switch (peer->sa_family) {
             case AF_INET:
                 plen = sizeof(struct sockaddr_in);
                 break;
@@ -73,10 +71,10 @@ public:
             }
 
         auto to = -1;
-        if(peer)
+        if (peer)
             to = make_socket(::socket(peer->sa_family, SOCK_STREAM, IPPROTO_TCP));
-        if(to == -1 || ::connect(to, peer, plen) == -1) {
-            if(to != -1)
+        if (to == -1 || ::connect(to, peer, plen) == -1) {
+            if (to != -1)
                 close_socket(to);
             else
                 errno = EBADF;
@@ -101,8 +99,8 @@ public:
     auto operator=(const socket_stream&) -> socket_stream& = delete;
 
     auto operator=(socket_stream&& from) noexcept -> socket_stream& {
-        if(this != &from) {
-            if(so_ != -1)
+        if (this != &from) {
+            if (so_ != -1)
                 close_socket(so_);
 
             so_ = from.so_;
@@ -117,8 +115,8 @@ public:
 
     auto sync() -> int override {
         auto len = pptr() - pbase();
-        if(!len) return 0;
-        if(send_socket(pbase(), len)) {
+        if (!len) return 0;
+        if (send_socket(pbase(), len)) {
             setp(pbuf, pbuf + bufsize);
             return 0;
         }
@@ -145,7 +143,7 @@ public:
         return bufsize;
     }
 
-    void stop() {                       // may be called from another thread
+    void stop() { // may be called from another thread
         auto so = so_;
         so_ = -1;
         close_socket(so);
@@ -163,14 +161,14 @@ public:
         pfd.revents = 0;
         pfd.events = POLLIN;
 
-        if(pfd.fd == -1) return false;
-        if(gptr() < egptr()) return true;
+        if (pfd.fd == -1) return false;
+        if (gptr() < egptr()) return true;
         auto status = wait_socket(&pfd, timeout);
-        if(status < 0) {    // low level error...
+        if (status < 0) { // low level error...
             io_err(status);
             return false;
         }
-        if(!status) return false;   // timeout...
+        if (!status) return false; // timeout...
         // return if low level is pending...
         return (pfd.revents & POLLIN);
     }
@@ -185,9 +183,9 @@ protected:
     }
 
     auto io_err(ssize_t result) {
-        if(result == -1) {
+        if (result == -1) {
             auto error = errno;
-            switch(error) {
+            switch (error) {
             case EAGAIN:
             case EINTR:
                 return std::size_t(0);
@@ -214,28 +212,28 @@ protected:
         if (!size)
             ++size;
 
-        size = (std::min)(size, maxsize); 
+        size = (std::min)(size, maxsize);
         setg(gbuf, gbuf, gbuf);
         setp(pbuf, pbuf + size);
         bufsize = getsize = size;
     }
 
     auto underflow() -> int override {
-        if(gptr() == egptr()) {
+        if (gptr() == egptr()) {
             auto len = recv_socket(gbuf, getsize);
-            if(!len) return EOF;
+            if (!len) return EOF;
             setg(gbuf, gbuf, gbuf + len);
         }
         return get_type(*gptr());
     }
 
     auto overflow(int c) -> int override {
-        if(c == EOF) {
-            if(sync() == 0) return not_eof(c);
+        if (c == EOF) {
+            if (sync() == 0) return not_eof(c);
             return EOF;
         }
 
-        if(pptr() == epptr() && sync() != 0) return EOF;
+        if (pptr() == epptr() && sync() != 0) return EOF;
         *pptr() = put_type(c);
         pbump(1);
         return c;
@@ -278,7 +276,7 @@ private:
 
     auto wait_socket(struct pollfd *pfd, int timeout) noexcept {
         auto status = WSAPoll(pfd, 1, timeout);
-        if(pfd->revents & (POLLNVAL|POLLHUP)) {
+        if (pfd->revents & (POLLNVAL | POLLHUP)) {
             auto so = so_;
             so_ = -1;
             close_socket(so);
@@ -307,7 +305,7 @@ private:
 
     static void block_socket(int so, bool enable) noexcept {
         auto flags = fcntl(so, F_GETFL, 0);
-        if(enable)
+        if (enable)
             fcntl(so, F_SETFL, flags & ~O_NONBLOCK);
         else
             fcntl(so, F_SETFL, flags | O_NONBLOCK);
@@ -315,7 +313,7 @@ private:
 
     auto wait_socket(struct pollfd *pfd, int timeout) noexcept {
         auto status = ::poll(pfd, 1, timeout);
-        if(pfd->revents & (POLLNVAL|POLLHUP)) {
+        if (pfd->revents & (POLLNVAL | POLLHUP)) {
             auto so = so_;
             so_ = -1;
             close_socket(so);
@@ -337,6 +335,6 @@ private:
 
 using tcpstream = socket_stream<536>;
 using tcpstream6 = socket_stream<1220>;
-} // end namespace
+} // namespace tycho
 
 #endif

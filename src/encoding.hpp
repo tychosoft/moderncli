@@ -14,46 +14,45 @@
 
 namespace tycho::crypto {
 using key_t = std::pair<const uint8_t *, std::size_t>;
-} // end namespace
+} // namespace tycho::crypto
 
 namespace tycho {
 inline auto to_b64(const uint8_t *data, std::size_t size) {
     constexpr std::array<char, 64> base64_chars = {
-        'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
-        'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
-        'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
-        'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'
-    };
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+    'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+    'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+    'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'};
 
     std::string out;
 
-    for(std::size_t i = 0; i < size; i += 3) {
+    for (std::size_t i = 0; i < size; i += 3) {
         uint32_t c = 0;
-        for(std::size_t j = 0; j < 3; ++j) {
+        for (std::size_t j = 0; j < 3; ++j) {
             c <<= 8;
-            if(i + j < size)
+            if (i + j < size)
                 c |= uint32_t(data[i + j]);
         }
 
         out += base64_chars[(c >> 18) & 0x3F];
         out += base64_chars[(c >> 12) & 0x3F];
-        if(i < (size - 1))
+        if (i < (size - 1))
             out += base64_chars[(c >> 6) & 0x3F];
-        if(i < (size - 2))
+        if (i < (size - 2))
             out += base64_chars[c & 0x3F];
     }
 
-    if(size % 3 == 1)
+    if (size % 3 == 1)
         out += "==";
-    else if(size % 3 == 2)
+    else if (size % 3 == 2)
         out += '=';
     return out;
 }
 
 constexpr auto base64_index(char c) {
-    if(c >= 'A' && c <= 'Z') return c - 'A';
-    if(c >= 'a' && c <= 'z') return c - 'a' + 26;
-    if(c >= '0' && c <= '9') return c - '0' + 52;
+    if (c >= 'A' && c <= 'Z') return c - 'A';
+    if (c >= 'a' && c <= 'z') return c - 'a' + 26;
+    if (c >= '0' && c <= '9') return c - '0' + 52;
     if (c == '+') return 62;
     if (c == '/') return 63;
     return -1;
@@ -61,13 +60,13 @@ constexpr auto base64_index(char c) {
 
 inline auto size_b64(std::string_view from) {
     auto size = from.size();
-    if(!size) return std::size_t(0);
+    if (!size) return std::size_t(0);
     --size;
-    while(size && from[size] == '=')
+    while (size && from[size] == '=')
         --size;
     auto out = ((size / 4) * 3) + 3;
 
-    switch(size % 4) {
+    switch (size % 4) {
     case 0:
         return out;
     case 1:
@@ -82,16 +81,16 @@ inline auto size_b64(std::string_view from) {
 inline auto from_b64(std::string_view from, uint8_t *to, std::size_t maxsize) {
     auto out = size_b64(from);
 
-    if(out > maxsize) return std::size_t(0);
+    if (out > maxsize) return std::size_t(0);
     uint32_t val = 0;
     std::size_t bits = 0, count = 0;
-    for(const auto &ch : from) {
-        if(count >= out) break;
+    for (const auto& ch : from) {
+        if (count >= out) break;
         auto index = base64_index(ch);
-        if(index >= 0) {
+        if (index >= 0) {
             val = (val << 6) | uint32_t(index);
             bits += 6;
-            if(bits >= 8) {
+            if (bits >= 8) {
                 to[count++] = (val >> (bits - 8));
                 bits -= 8;
             }
@@ -105,7 +104,7 @@ inline auto to_hex(const uint8_t *from, std::size_t size) {
     out.resize(size * 2);
     auto hex = out.data();
 
-    for(auto pos = std::size_t(0); pos < size; ++pos) {
+    for (auto pos = std::size_t(0); pos < size; ++pos) {
         snprintf(hex, 3, "%02x", from[pos]);
         hex += 2;
     }
@@ -124,27 +123,27 @@ inline auto from_hex(std::string_view from, uint8_t *to, std::size_t size) {
     auto hex = from.data();
     auto maxsize = size * 2;
     maxsize = std::min(from.size(), maxsize);
-    for(auto pos = std::size_t(0); pos < maxsize; pos += 2) {
+    for (auto pos = std::size_t(0); pos < maxsize; pos += 2) {
         char buf[3]{};
         buf[0] = hex[pos];
         buf[1] = hex[pos + 1];
         buf[2] = 0;
         char *end = nullptr;
         auto value = strtoul(buf, &end, 16);
-        if(*end != 0) return pos / 2;
+        if (*end != 0) return pos / 2;
         *(to++) = uint8_t(value);
     }
     return maxsize / 2;
 }
-} // end namespace
+} // namespace tycho
 
 namespace tycho::crypto {
 inline auto to_b64(const uint8_t *from, size_t size) {
-	return tycho::to_b64(from, size);
+    return tycho::to_b64(from, size);
 }
 
 inline auto to_b64(const key_t& key) {
     return tycho::to_b64(key.first, key.second);
 }
-} // end namespace
+} // namespace tycho::crypto
 #endif

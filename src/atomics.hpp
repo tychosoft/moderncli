@@ -22,7 +22,7 @@
 #endif
 
 namespace tycho::atomic {
-template<typename T = unsigned>
+template <typename T = unsigned>
 class sequence_t final {
 public:
     sequence_t() noexcept = default;
@@ -34,7 +34,7 @@ public:
     }
 
     auto operator=(const sequence_t& from) noexcept -> auto& {
-        if(&from != this)
+        if (&from != this)
             seq_.store(from.seq_.load(std::memory_order_relaxed), std::memory_order_release);
         return *this;
     }
@@ -83,11 +83,12 @@ public:
     void reset() noexcept {
         flag_.store(true, std::memory_order_release);
     }
+
 private:
     mutable std::atomic<bool> flag_{true};
 };
 
-template<typename T, std::size_t S>
+template <typename T, std::size_t S>
 class stack_t final {
 public:
     stack_t() = default;
@@ -112,8 +113,8 @@ public:
 
     auto size() const noexcept -> std::size_t {
         auto count = count_.load();
-        if(count < 0) return std::size_t(0);
-        if(count > S) return S;
+        if (count < 0) return std::size_t(0);
+        if (count > S) return S;
         return count;
     }
 
@@ -127,7 +128,7 @@ public:
 
     auto push(const T& item) noexcept {
         const auto count = count_.fetch_add(1);
-        if(count >= S) {
+        if (count >= S) {
             count_.fetch_sub(1);
             return false;
         }
@@ -137,7 +138,7 @@ public:
 
     auto pull(T& item) noexcept {
         const auto count = count_.fetch_sub(1);
-        if(count < 0) {
+        if (count < 0) {
             count_.fetch_add(1);
             return false;
         }
@@ -147,7 +148,7 @@ public:
 
     auto pop() noexcept -> std::optional<T> {
         const auto count = count_.fetch_sub(1);
-        if(count < 0) {
+        if (count < 0) {
             count_.fetch_add(1);
             return {};
         }
@@ -161,7 +162,7 @@ private:
     T data_[S];
 };
 
-template<typename T, std::size_t S>
+template <typename T, std::size_t S>
 class buffer_t final {
 public:
     buffer_t() = default;
@@ -195,7 +196,7 @@ public:
     auto full() noexcept {
         const auto tail = tail_.load(std::memory_order_relaxed);
         auto next = tail;
-        if(++next >= S)
+        if (++next >= S)
             next -= S;
 
         return next == head_.load(std::memory_order_acquire);
@@ -204,11 +205,11 @@ public:
     auto push(const T& item) noexcept {
         const auto tail = tail_.load(std::memory_order_relaxed);
         auto next = tail;
-        if(++next >= S)
+        if (++next >= S)
             next -= S;
 
         const auto head = head_.load(std::memory_order_acquire);
-        if(next == head) return false;
+        if (next == head) return false;
         data_[tail] = item;
         tail_.store(next, std::memory_order_release);
         return true;
@@ -217,9 +218,9 @@ public:
     auto pull(T& item) noexcept {
         auto head = head_.load(std::memory_order_relaxed);
         const auto tail = tail_.load(std::memory_order_acquire);
-        if(head == tail) return false;
+        if (head == tail) return false;
         item = data_[head];
-        if(++head >= S)
+        if (++head >= S)
             head -= S;
 
         tail_.store(tail, std::memory_order_release);
@@ -229,9 +230,9 @@ public:
     auto pop() noexcept -> std::optional<T> {
         auto head = head_.load(std::memory_order_relaxed);
         const auto tail = tail_.load(std::memory_order_acquire);
-        if(head == tail) return {};
+        if (head == tail) return {};
         auto item = data_[head];
-        if(++head >= S)
+        if (++head >= S)
             head -= S;
 
         tail_.store(tail, std::memory_order_release);
@@ -245,33 +246,32 @@ private:
     T data_[S];
 };
 
-template<typename K, typename V, std::size_t S = 16>
+template <typename K, typename V, std::size_t S = 16>
 class dictionary_t {
 public:
     dictionary_t(const dictionary_t&) = delete;
     auto operator=(const dictionary_t&) -> auto& = delete;
 
     dictionary_t() {
-        for(auto& bucket : table_) {
+        for (auto& bucket : table_) {
             bucket.store(nullptr);
         }
     }
 
-    dictionary_t(dictionary_t&& other) noexcept :
-    table_(std::move(other.table_)), count_(other.count_.load()) {
-        for(auto& bucket : table_) {
+    dictionary_t(dictionary_t&& other) noexcept : table_(std::move(other.table_)), count_(other.count_.load()) {
+        for (auto& bucket : table_) {
             bucket.store(nullptr);
         }
         other.count_.store(0);
     }
 
     auto operator=(dictionary_t&& other) noexcept -> auto& {
-        if(this != &other) {
+        if (this != &other) {
             clear();
             table_ = std::move(other.table_);
             count_.store(other.count_.load());
             other.count_.store(0);
-            for(auto& bucket : table_) {
+            for (auto& bucket : table_) {
                 bucket.store(nullptr);
             }
         }
@@ -295,9 +295,9 @@ public:
     }
 
     void clear() {
-        for(auto& bucket : table_) {
+        for (auto& bucket : table_) {
             auto current = bucket.exchange(nullptr);
-            while(current != nullptr) {
+            while (current != nullptr) {
                 auto next = current->next.load();
                 delete current;
                 current = next;
@@ -309,12 +309,12 @@ public:
     auto insert(const K& key, const V& value) {
         auto index = key_index(key);
         auto made = new node(key, value);
-        node* expected = nullptr;
+        node *expected = nullptr;
 
-        do {    // NOLINT
+        do { // NOLINT
             expected = table_[index].load();
             made->next.store(expected);
-        } while(!table_[index].compare_exchange_weak(expected, made));
+        } while (!table_[index].compare_exchange_weak(expected, made));
 
         count_.fetch_add(1, std::memory_order_relaxed);
         return true;
@@ -325,8 +325,8 @@ public:
         auto made = new node(key, value);
         auto current = table_[index].load();
 
-        while(current != nullptr) {
-            if(current->key == key) {
+        while (current != nullptr) {
+            if (current->key == key) {
                 current->value = value;
                 delete made;
                 return true;
@@ -342,12 +342,12 @@ public:
     auto emplace(K&& key, V&& value) {
         auto index = key_index(key);
         auto made = new node(std::move(key), std::move(value));
-        node* expected = nullptr;
+        node *expected = nullptr;
 
-        do {    // NOLINT
+        do { // NOLINT
             expected = table_[index].load();
             made->next.store(expected);
-        } while(!table_[index].compare_exchange_weak(expected, made));
+        } while (!table_[index].compare_exchange_weak(expected, made));
 
         count_.fetch_add(1, std::memory_order_relaxed);
         return true;
@@ -358,8 +358,8 @@ public:
         auto made = new node(std::move(key), std::move(value));
         auto current = table_[index].load();
 
-        while(current != nullptr) {
-            if(current->key == key) {
+        while (current != nullptr) {
+            if (current->key == key) {
                 delete made;
                 return false;
             }
@@ -374,8 +374,8 @@ public:
     auto find(const K& key) const -> std::optional<V> {
         auto index = key_index(key);
         auto current = table_[index].load();
-        while(current != nullptr) {
-            if(current->key == key) return current->value;
+        while (current != nullptr) {
+            if (current->key == key) return current->value;
             current = current->next.load();
         }
         return std::nullopt;
@@ -385,8 +385,8 @@ public:
         auto index = key_index(key);
         auto current = table_[index].load();
 
-        while(current != nullptr) {
-            if(current->key == key) return true;
+        while (current != nullptr) {
+            if (current->key == key) return true;
             current = current->next.load();
         }
         return false;
@@ -395,8 +395,8 @@ public:
     auto at(const K& key) const -> const V& {
         auto index = key_index(key);
         auto current = table_[index].load();
-        while(current != nullptr) {
-            if(current->key == key) return current->value;
+        while (current != nullptr) {
+            if (current->key == key) return current->value;
             current = current->next.load();
         }
         throw std::out_of_range("Key not in dictionary");
@@ -405,8 +405,8 @@ public:
     auto at(const K& key) -> V& {
         auto index = key_index(key);
         auto current = table_[index].load();
-        while(current != nullptr) {
-            if(current->key == key) return current->value;
+        while (current != nullptr) {
+            if (current->key == key) return current->value;
             current = current->next.load();
         }
         throw std::out_of_range("Key not in dictionary");
@@ -415,12 +415,12 @@ public:
     auto remove(const K& key) {
         auto index = key_index(key);
         auto current = table_[index].load();
-        node* prev = nullptr;
+        node *prev = nullptr;
 
-        while(current != nullptr) {
-            if(current->key == key) {
+        while (current != nullptr) {
+            if (current->key == key) {
                 auto next = current->next.load();
-                if(prev != nullptr)
+                if (prev != nullptr)
                     prev->next.store(next);
                 else
                     table_[index].store(next);
@@ -444,9 +444,9 @@ public:
 
     auto keys() const {
         std::list<K> list;
-        for(auto& bucket : table_) {
+        for (auto& bucket : table_) {
             auto current = bucket.load();
-            while(current != nullptr) {
+            while (current != nullptr) {
                 list.push_back(current->key);
                 current = current->next.load();
             }
@@ -454,11 +454,11 @@ public:
         return list;
     }
 
-    template<typename Func>
+    template <typename Func>
     void each(Func func) {
-        for(auto& bucket : table_) {
+        for (auto& bucket : table_) {
             auto current = bucket.load();
-            while(current != nullptr) {
+            while (current != nullptr) {
                 func(current->key, current->value);
                 current = current->next.load();
             }
@@ -475,17 +475,17 @@ private:
         node(K&& k, V&& v) : key(std::move(k)), value(std::move(v)) {}
     };
 
-    std::atomic<node*> table_[S];
+    std::atomic<node *> table_[S];
     std::atomic<std::size_t> count_{0};
 
     auto key_index(const K& key) const -> std::size_t {
         return std::hash<K>()(key) % S;
     }
 };
-} // end namespace
+} // namespace tycho::atomic
 
 namespace tycho {
-template<typename T=int>
+template <typename T = int>
 class atomic_ref {
 public:
     atomic_ref() = delete;
@@ -499,7 +499,7 @@ public:
     }
 
     auto operator++(int) const noexcept {
-        return fetch_add(1);     // Post-increment
+        return fetch_add(1); // Post-increment
     }
 
     auto operator--() const noexcept {
@@ -507,7 +507,7 @@ public:
     }
 
     auto operator--(int) const noexcept {
-        return fetch_sub(1);     // Post-decrement
+        return fetch_sub(1); // Post-decrement
     }
 
     auto operator=(const T& value) const noexcept -> auto& {
@@ -564,9 +564,9 @@ public:
     void store(T value) const noexcept {
 #if defined(_MSC_VER)
         if constexpr (sizeof(T) == 4)
-            _InterlockedExchange(reinterpret_cast<volatile long*>(&ref), static_cast<long>(value));
+            _InterlockedExchange(reinterpret_cast<volatile long *>(&ref), static_cast<long>(value));
         else if constexpr (sizeof(T) == 8)
-            _InterlockedExchange64(reinterpret_cast<volatile __int64*>(&ref), static_cast<__int64>(value));
+            _InterlockedExchange64(reinterpret_cast<volatile __int64 *>(&ref), static_cast<__int64>(value));
         else
             ref = value; // fallback for 1- or 2-byte types (non-atomic)
 #else
@@ -577,9 +577,9 @@ public:
     auto load() const noexcept -> T {
 #if defined(_MSC_VER)
         if constexpr (sizeof(T) == 4)
-            return static_cast<T>(_InterlockedOr(reinterpret_cast<volatile long*>(&ref), 0));
+            return static_cast<T>(_InterlockedOr(reinterpret_cast<volatile long *>(&ref), 0));
         else if constexpr (sizeof(T) == 8)
-            return static_cast<T>(_InterlockedOr64(reinterpret_cast<volatile __int64*>(&ref), 0));
+            return static_cast<T>(_InterlockedOr64(reinterpret_cast<volatile __int64 *>(&ref), 0));
         else
             return ref;
 #else
@@ -590,9 +590,9 @@ public:
     auto exchange(T value) const noexcept -> T {
 #if defined(_MSC_VER)
         if constexpr (sizeof(T) == 4)
-            return static_cast<T>(_InterlockedExchange(reinterpret_cast<volatile long*>(&ref), static_cast<long>(value)));
+            return static_cast<T>(_InterlockedExchange(reinterpret_cast<volatile long *>(&ref), static_cast<long>(value)));
         else if constexpr (sizeof(T) == 8)
-            return static_cast<T>(_InterlockedExchange64(reinterpret_cast<volatile __int64*>(&ref), static_cast<__int64>(value)));
+            return static_cast<T>(_InterlockedExchange64(reinterpret_cast<volatile __int64 *>(&ref), static_cast<__int64>(value)));
         else {
             T old = ref;
             ref = value;
@@ -606,18 +606,16 @@ public:
     auto compare_exchange_strong(T& expected, T value) const noexcept {
 #if defined(_MSC_VER)
         if constexpr (sizeof(T) == 4) {
-            long original = _InterlockedCompareExchange(reinterpret_cast<volatile long*>(&ref), static_cast<long>(value), static_cast<long>(expected));
+            long original = _InterlockedCompareExchange(reinterpret_cast<volatile long *>(&ref), static_cast<long>(value), static_cast<long>(expected));
             if (original == static_cast<long>(expected)) return true;
             expected = static_cast<T>(original);
             return false;
-        }
-        else if constexpr (sizeof(T) == 8) {
-            __int64 original = _InterlockedCompareExchange64(reinterpret_cast<volatile __int64*>(&ref), static_cast<__int64>(value), static_cast<__int64>(expected));
+        } else if constexpr (sizeof(T) == 8) {
+            __int64 original = _InterlockedCompareExchange64(reinterpret_cast<volatile __int64 *>(&ref), static_cast<__int64>(value), static_cast<__int64>(expected));
             if (original == static_cast<__int64>(expected)) return true;
             expected = static_cast<T>(original);
             return false;
-        }
-        else {
+        } else {
             if (ref == expected) {
                 ref = value;
                 return true;
@@ -633,9 +631,9 @@ public:
     auto fetch_add(T arg) const noexcept -> T {
 #if defined(_MSC_VER)
         if constexpr (sizeof(T) == 4)
-            return static_cast<T>(_InterlockedExchangeAdd(reinterpret_cast<volatile long*>(&ref), static_cast<long>(arg)));
+            return static_cast<T>(_InterlockedExchangeAdd(reinterpret_cast<volatile long *>(&ref), static_cast<long>(arg)));
         else if constexpr (sizeof(T) == 8)
-            return static_cast<T>(_InterlockedExchangeAdd64(reinterpret_cast<volatile __int64*>(&ref), static_cast<__int64>(arg)));
+            return static_cast<T>(_InterlockedExchangeAdd64(reinterpret_cast<volatile __int64 *>(&ref), static_cast<__int64>(arg)));
         else {
             T old = ref;
             ref += arg;
@@ -649,9 +647,9 @@ public:
     auto fetch_sub(T arg) const noexcept -> T {
 #if defined(_MSC_VER)
         if constexpr (sizeof(T) == 4)
-            return static_cast<T>(_InterlockedExchangeAdd(reinterpret_cast<volatile long*>(&ref), -static_cast<long>(arg)));
+            return static_cast<T>(_InterlockedExchangeAdd(reinterpret_cast<volatile long *>(&ref), -static_cast<long>(arg)));
         else if constexpr (sizeof(T) == 8)
-            return static_cast<T>(_InterlockedExchangeAdd64(reinterpret_cast<volatile __int64*>(&ref), -static_cast<__int64>(arg)));
+            return static_cast<T>(_InterlockedExchangeAdd64(reinterpret_cast<volatile __int64 *>(&ref), -static_cast<__int64>(arg)));
         else {
             T old = ref;
             ref -= arg;
@@ -667,5 +665,5 @@ private:
 
     T& ref;
 };
-} // end namespace
+} // namespace tycho
 #endif

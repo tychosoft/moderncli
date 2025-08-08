@@ -15,46 +15,38 @@ using key_t = std::pair<const uint8_t *, std::size_t>;
 
 class bignum_t final {
 public:
-    bignum_t() noexcept :
-    ctx_(BN_CTX_new()), num_(BN_new()) {}
+    bignum_t() noexcept : ctx_(BN_CTX_new()), num_(BN_new()) {}
 
     // cppcheck-suppress noExplicitConstructor
-    bignum_t(BIGNUM *bn) noexcept :
-    ctx_(BN_CTX_new()), num_(bn) {}
+    bignum_t(BIGNUM *bn) noexcept : ctx_(BN_CTX_new()), num_(bn) {}
 
-    explicit bignum_t(long value) noexcept :
-    ctx_(BN_CTX_new()), num_(BN_new()) {
-        if(value < 0) {
+    explicit bignum_t(long value) noexcept : ctx_(BN_CTX_new()), num_(BN_new()) {
+        if (value < 0) {
             BN_set_word(num_, -value);
             BN_set_negative(num_, 1);
-        }
-        else
+        } else
             BN_set_word(num_, value);
     }
 
-    bignum_t(bignum_t&& from) noexcept :
-    ctx_(from.ctx_), num_(from.num_) {
+    bignum_t(bignum_t&& from) noexcept : ctx_(from.ctx_), num_(from.num_) {
         from.reset();
     }
 
-    bignum_t(const bignum_t& copy) noexcept :
-    ctx_(BN_CTX_new()), num_(BN_dup(copy.num_)) {}
+    bignum_t(const bignum_t& copy) noexcept : ctx_(BN_CTX_new()), num_(BN_dup(copy.num_)) {}
 
     // cppcheck-suppress noExplicitConstructor
-    bignum_t(const key_t& key) noexcept :
-    ctx_(BN_CTX_new()), num_(BN_bin2bn(key.first, int(key.second), nullptr)) {}
+    bignum_t(const key_t& key) noexcept : ctx_(BN_CTX_new()), num_(BN_bin2bn(key.first, int(key.second), nullptr)) {}
 
     // cppcheck-suppress noExplicitConstructor
-    bignum_t(const std::string& text) noexcept :
-    ctx_(BN_CTX_new()) {
+    bignum_t(const std::string& text) noexcept : ctx_(BN_CTX_new()) {
         BN_dec2bn(&num_, text.c_str());
-        if(!num_)
+        if (!num_)
             num_ = BN_new();
     }
 
     ~bignum_t() {
         release();
-        if(ctx_)
+        if (ctx_)
             BN_CTX_free(ctx_);
     }
 
@@ -80,7 +72,7 @@ public:
 
     auto operator=(bignum_t&& from) noexcept -> auto& {
         release();
-        if(ctx_)
+        if (ctx_)
             BN_CTX_free(ctx_);
         ctx_ = from.ctx_;
         num_ = from.num_;
@@ -89,11 +81,11 @@ public:
     }
 
     auto operator=(const bignum_t& copy) noexcept -> auto& {
-        if(&copy == this)
+        if (&copy == this)
             return *this;
 
         release();
-        if(ctx_)
+        if (ctx_)
             BN_CTX_free(ctx_);
         num_ = BN_dup(copy.num_);
         ctx_ = BN_CTX_new();
@@ -102,7 +94,7 @@ public:
 
     auto operator=(long value) noexcept -> auto& {
         release();
-        if(value < 0) {
+        if (value < 0) {
             BN_set_word(num_, -value);
             BN_set_negative(num_, 1);
         } else
@@ -113,7 +105,7 @@ public:
     auto operator=(const std::string& text) noexcept -> auto& {
         release();
         BN_dec2bn(&num_, text.c_str());
-        if(!num_)
+        if (!num_)
             num_ = BN_new();
         return *this;
     }
@@ -353,7 +345,7 @@ public:
 
     auto to_string() const noexcept -> std::string {
         char *tmp = BN_bn2dec(num_);
-        if(!tmp) return {};
+        if (!tmp) return {};
         std::string out = tmp;
         OPENSSL_free(tmp);
         return out;
@@ -361,10 +353,10 @@ public:
 
     auto put(uint8_t *out, std::size_t max) const noexcept {
         auto used = size();
-        if(max < used) return std::size_t(0);
+        if (max < used) return std::size_t(0);
         BN_bn2bin(num_, out);
         std::size_t pos = used;
-        while(pos < max)
+        while (pos < max)
             out[pos++] = 0;
         return used;
     }
@@ -407,7 +399,7 @@ private:
     }
 
     void release() noexcept {
-        if(num_) {
+        if (num_) {
             BN_clear_free(num_);
             num_ = nullptr;
         }
@@ -420,18 +412,18 @@ private:
 using bitnum = bignum_t;
 
 inline auto btoi(const bignum_t& bn) noexcept -> int {
-    if(bn.is_negative()) return static_cast<int>(-BN_get_word(bn.num_));
+    if (bn.is_negative()) return static_cast<int>(-BN_get_word(bn.num_));
     return static_cast<int>(BN_get_word(bn.num_));
 }
 
 inline auto btol(const bignum_t& bn) noexcept -> long {
-    if(bn.is_negative()) return static_cast<long>(-BN_get_word(bn.num_));
+    if (bn.is_negative()) return static_cast<long>(-BN_get_word(bn.num_));
     return static_cast<long>(BN_get_word(bn.num_));
 }
 
 inline auto abs(const bignum_t& bn) noexcept -> bignum_t {
     auto result(bn);
-    if(result.is_negative())
+    if (result.is_negative())
         result.negative(false);
     return result;
 }
@@ -453,24 +445,23 @@ inline auto gcd(const bignum_t& a, const bignum_t& b) noexcept -> bignum_t {
     BN_gcd(result.num_, a.num_, b.num_, a.ctx_);
     return result;
 }
-} // end namespace
+} // namespace tycho::crypto
 
 namespace std {
-template<>
+template <>
 struct hash<tycho::crypto::bignum_t> {
     auto operator()(const tycho::crypto::bignum_t& bn) const {
         auto size = bn.size();
         auto data = std::make_unique<uint8_t[]>(size);
         bn.put(data.get(), size);
         std::size_t result{0U};
-        for(std::size_t pos = 0; pos < size; ++pos) {
+        for (std::size_t pos = 0; pos < size; ++pos) {
             result = (result * 131) + data[pos];
         }
         return result;
     }
 };
-} // end namespace
-
+} // namespace std
 
 inline auto operator<<(std::ostream& out, const tycho::crypto::bignum_t& bn) -> std::ostream& {
     out << bn.to_string();

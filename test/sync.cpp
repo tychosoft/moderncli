@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "sync.hpp"
 #include "tasks.hpp"
 #include <array>
@@ -10,7 +10,7 @@
 
 struct test {
     int v1{2};
-    //int v2{7};
+    // int v2{7};
 };
 
 namespace {
@@ -18,7 +18,7 @@ unique_sync<std::unordered_map<std::string, std::string>> mapper;
 unique_sync<int> counter(3);
 shared_sync<std::unordered_map<std::string, std::string>> shared;
 shared_sync<struct test> testing;
-shared_sync<std::array<int,10>> tarray;
+shared_sync<std::array<int, 10>> tarray;
 } // end namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
@@ -66,8 +66,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         const reader_ptr<struct test> tester(testing);
         assert(tester->v1 == 3);
 
-        semaphore_t sem(1);     // binary semaphore
-        const thread_t thr([&sem]{
+        semaphore_t sem(1); // binary semaphore
+        const thread_t thr([&sem] {
             const semaphore_guard ses(sem);
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             assert(sem.acquired());
@@ -76,10 +76,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         assert(sem.active() == 1);
         assert(sem.size() == 1);
-    }
-    catch(...) {
+    } catch (...) {
         ::exit(1);
     }
     assert(wg.count() == 0);
 }
-

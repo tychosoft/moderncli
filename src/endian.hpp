@@ -17,14 +17,14 @@ constexpr auto be_get16(const uint8_t *ptr) {
 
 constexpr auto be_get32(const uint8_t *ptr) {
     return ((uint32_t)(ptr[0]) << 24) | ((uint32_t)(ptr[1]) << 16) |
-        ((uint32_t)(ptr[2]) << 8) | (uint32_t)(ptr[3]);
+           ((uint32_t)(ptr[2]) << 8) | (uint32_t)(ptr[3]);
 }
 
 constexpr auto be_get64(const uint8_t *ptr) {
     return ((uint64_t)(ptr[0]) << 56) | ((uint64_t)(ptr[1]) << 48) |
-        ((uint64_t)(ptr[2]) << 40) | ((uint64_t)(ptr[3]) << 32) |
-        ((uint64_t)(ptr[4]) << 24) | ((uint64_t)(ptr[5]) << 16) |
-        ((uint64_t)(ptr[6]) << 8) | (uint64_t)(ptr[7]);
+           ((uint64_t)(ptr[2]) << 40) | ((uint64_t)(ptr[3]) << 32) |
+           ((uint64_t)(ptr[4]) << 24) | ((uint64_t)(ptr[5]) << 16) |
+           ((uint64_t)(ptr[6]) << 8) | (uint64_t)(ptr[7]);
 }
 
 constexpr auto le_get8(const uint8_t *ptr) {
@@ -37,14 +37,14 @@ constexpr auto le_get16(const uint8_t *ptr) {
 
 constexpr auto le_get32(const uint8_t *ptr) {
     return ((uint32_t)(ptr[3]) << 24) | ((uint32_t)(ptr[2]) << 16) |
-        ((uint32_t)(ptr[1]) << 8) | (uint32_t)(ptr[0]);
+           ((uint32_t)(ptr[1]) << 8) | (uint32_t)(ptr[0]);
 }
 
 constexpr auto le_get64(const uint8_t *ptr) {
     return ((uint64_t)(ptr[7]) << 56) | ((uint64_t)(ptr[6]) << 48) |
-        ((uint64_t)(ptr[5]) << 40) | ((uint64_t)(ptr[4]) << 32) |
-        ((uint64_t)(ptr[3]) << 24) | ((uint64_t)(ptr[2]) << 16) |
-        ((uint64_t)(ptr[1]) << 8) | (uint64_t)(ptr[0]);
+           ((uint64_t)(ptr[5]) << 40) | ((uint64_t)(ptr[4]) << 32) |
+           ((uint64_t)(ptr[3]) << 24) | ((uint64_t)(ptr[2]) << 16) |
+           ((uint64_t)(ptr[1]) << 8) | (uint64_t)(ptr[0]);
 }
 
 constexpr void be_set8(uint8_t *ptr, uint8_t value) {
@@ -100,5 +100,5 @@ constexpr void le_set64(uint8_t *ptr, uint64_t value) {
     ptr[1] = (value & 0x000000000000ff00) >> 8;
     ptr[0] = value & 0xff;
 }
-} // end namespace
+} // namespace tycho
 #endif

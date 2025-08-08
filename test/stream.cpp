@@ -1,22 +1,22 @@
 // Copyright (C) 2022 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "templates.hpp"
 #include "print.hpp"
 #include "secure.hpp"
 #include "socket.hpp"
 #include <cstdlib>
 
-#ifdef  _MSC_VER
+#ifdef _MSC_VER
 #pragma warning(disable : 26800)
 #endif
 
 namespace {
 const uint16_t port = 9789;
 address_t local_host("127.0.0.1", port);
-} // end anon namespace
+} // namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(Socket::startup());
@@ -29,9 +29,8 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
             print(tcp, "Not Send, compile test\n");
             return true;
         }));
-        [[maybe_unused]] tcpstream tcp(static_cast<const struct sockaddr *>(nullptr));        // NOLINT
-    }
-    catch(...) {
+        [[maybe_unused]] tcpstream tcp(static_cast<const struct sockaddr *>(nullptr)); // NOLINT
+    } catch (...) {
         // creates a connected socket...
         try {
             Socket dummy(local_host, SOCK_STREAM);
@@ -42,17 +41,14 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
             tcpstream tcp_orig(local_host);
             tcpstream tcp(std::move(tcp_orig));
             assert(tcp.is_open() == true);
-            assert(tcp_orig.is_open() == false);    // NOLINT
+            assert(tcp_orig.is_open() == false); // NOLINT
             print(tcp, "HERE");
             assert(tcp.out_pending() == 4);
             assert(tcp.in_avail() == 0);
-        }
-        catch(...) {
+        } catch (...) {
             ::exit(1);
         }
         ::exit(0);
     }
     ::exit(1);
 }
-
-

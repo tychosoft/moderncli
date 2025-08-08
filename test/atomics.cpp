@@ -1,8 +1,8 @@
 // Copyright (C) 2023 Tycho Softworks.
 // This code is licensed under MIT license.
 
-#undef  NDEBUG
-#include "compiler.hpp"     // IWYU pragma: keep
+#undef NDEBUG
+#include "compiler.hpp" // IWYU pragma: keep
 #include "atomics.hpp"
 #include "templates.hpp"
 
@@ -22,7 +22,7 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     atomic::dictionary_t<int, std::string> dict;
     dict.insert_or_assign(1, "one");
     dict.insert_or_assign(2, "two");
-    assert(dict.find(1).value() == "one");  // NOLINT
+    assert(dict.find(1).value() == "one"); // NOLINT
     assert(dict.size() == 2);
     assert(dict.contains(2));
     dict.remove(1);
@@ -52,5 +52,3 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     assert(ref.compare_exchange_strong(expected, 99));
     assert(ref == 99);
 }
-
-

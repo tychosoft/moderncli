@@ -23,8 +23,8 @@ using ssize_t = SSIZE_T;
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__) || defined(WIN32)
 #if _WIN32_WINNT < 0x0600 && !defined(_MSC_VER)
-#undef  _WIN32_WINNT
-#define _WIN32_WINNT    0x0600  // NOLINT
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600 // NOLINT
 #endif
 #define USE_CLOSESOCKET
 #define WIN32_LEAN_AND_MEAN
@@ -49,19 +49,19 @@ using ssize_t = SSIZE_T;
 #endif
 
 #ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL    0   // NOLINT
+#define MSG_NOSIGNAL 0 // NOLINT
 #endif
 
 #ifndef MSG_DONTWAIT
-#define MSG_DONTWAIT    0   // NOLINT
+#define MSG_DONTWAIT 0 // NOLINT
 #endif
 
 #ifndef IPV6_ADD_MEMBERSHIP
-#define IPV6_ADD_MEMBERSHIP     IP_ADD_MEMBERSHIP
+#define IPV6_ADD_MEMBERSHIP IP_ADD_MEMBERSHIP
 #endif
 
 #ifndef IPV6_DROP_MEMBERSHIP
-#define IPV6_DROP_MEMBERSHIP    IP_DROP_MEMBERSHIP
+#define IPV6_DROP_MEMBERSHIP IP_DROP_MEMBERSHIP
 #endif
 
 namespace tycho {
@@ -169,17 +169,17 @@ public:
     }
 
     void port_if(uint16_t value) {
-        if(!port())
+        if (!port())
             port(value);
     }
 
     void port(uint16_t value) {
-        switch(store_.ss_family) {
+        switch (store_.ss_family) {
         case AF_INET:
             (reinterpret_cast<struct sockaddr_in *>(&store_))->sin_port = htons(value);
             break;
         case AF_INET6:
-             (reinterpret_cast<struct sockaddr_in6 *>(&store_))->sin6_port = htons(value);
+            (reinterpret_cast<struct sockaddr_in6 *>(&store_))->sin6_port = htons(value);
             break;
         default:
             break;
@@ -191,7 +191,7 @@ public:
     }
 
     auto port() const noexcept -> uint16_t {
-        switch(store_.ss_family) {
+        switch (store_.ss_family) {
         case AF_INET:
             return ntohs((reinterpret_cast<const struct sockaddr_in *>(&store_))->sin_port);
         case AF_INET6:
@@ -218,12 +218,12 @@ public:
     }
 
     void assign_any() noexcept {
-        switch(store_.ss_family) {
+        switch (store_.ss_family) {
         case AF_INET:
-            memset(&(reinterpret_cast<struct sockaddr_in*>(&store_))->sin_addr.s_addr, 0, 4);
+            memset(&(reinterpret_cast<struct sockaddr_in *>(&store_))->sin_addr.s_addr, 0, 4);
             break;
         case AF_INET6:
-            memset(&(reinterpret_cast<struct sockaddr_in6*>(&store_))->sin6_addr.s6_addr, 0, 16);
+            memset(&(reinterpret_cast<struct sockaddr_in6 *>(&store_))->sin6_addr.s6_addr, 0, 16);
             break;
         default:
             break;
@@ -231,33 +231,33 @@ public:
     }
 
     auto is_any() const noexcept {
-        switch(store_.ss_family) {
+        switch (store_.ss_family) {
         case AF_INET:
-            return zero_(&(reinterpret_cast<const struct sockaddr_in*>(&store_))->sin_addr.s_addr, 4);
+            return zero_(&(reinterpret_cast<const struct sockaddr_in *>(&store_))->sin_addr.s_addr, 4);
         case AF_INET6:
-            return zero_(&(reinterpret_cast<const struct sockaddr_in6*>(&store_))->sin6_addr.s6_addr, 16);
+            return zero_(&(reinterpret_cast<const struct sockaddr_in6 *>(&store_))->sin6_addr.s6_addr, 16);
         default:
             return false;
         }
     }
 
-#ifdef  AF_UNIX
+#ifdef AF_UNIX
     auto un() const noexcept {
-        return store_.ss_family == AF_UNIX ? reinterpret_cast<const struct sockaddr_un*>(&store_) : nullptr;
+        return store_.ss_family == AF_UNIX ? reinterpret_cast<const struct sockaddr_un *>(&store_) : nullptr;
     }
 #endif
 
     auto in() const noexcept {
-        return store_.ss_family == AF_INET ? reinterpret_cast<const struct sockaddr_in*>(&store_) : nullptr;
+        return store_.ss_family == AF_INET ? reinterpret_cast<const struct sockaddr_in *>(&store_) : nullptr;
     }
 
     auto in6() const noexcept {
-        return store_.ss_family == AF_INET6 ? reinterpret_cast<const struct sockaddr_in6*>(&store_) : nullptr;
+        return store_.ss_family == AF_INET6 ? reinterpret_cast<const struct sockaddr_in6 *>(&store_) : nullptr;
     }
 
     auto assign_in6(const struct sockaddr *addr) noexcept {
-        if(!addr || (addr->sa_family != AF_INET && addr->sa_family != AF_INET6)) return false;
-        if(addr->sa_family == AF_INET6) {
+        if (!addr || (addr->sa_family != AF_INET && addr->sa_family != AF_INET6)) return false;
+        if (addr->sa_family == AF_INET6) {
             set(addr);
             return true;
         }
@@ -280,36 +280,36 @@ public:
     void set(const std::string& str, uint16_t in_port = 0, int any = AF_INET) noexcept {
         memset(&store_, 0, sizeof(store_));
         auto cp = str.c_str();
-        if(str == "*" && any == AF_INET6) {
-            auto ipv6 = reinterpret_cast<struct sockaddr_in6*>(&store_);
+        if (str == "*" && any == AF_INET6) {
+            auto ipv6 = reinterpret_cast<struct sockaddr_in6 *>(&store_);
             make_any(AF_INET6);
             ipv6->sin6_family = AF_INET6;
             ipv6->sin6_port = htons(in_port);
         }
-#ifdef  AF_UNIX
-        else if(strchr(cp, '/') != nullptr) {
+#ifdef AF_UNIX
+        else if (strchr(cp, '/') != nullptr) {
             auto sun = reinterpret_cast<struct sockaddr_un *>(&store_);
             sun->sun_family = AF_UNIX;
             auto tp = sun->sun_path;
             auto ep = tp + sizeof(sun->sun_path) - 1;
-            while(*cp && tp < ep)
+            while (*cp && tp < ep)
                 *(tp++) = *(cp++);
             *tp = 0;
         }
 #endif
-        else if(strchr(cp, ':') != nullptr) {
-            auto ipv6 = reinterpret_cast<struct sockaddr_in6*>(&store_);
-            if(str == "::*" || str == "::" || str == "[::]")
+        else if (strchr(cp, ':') != nullptr) {
+            auto ipv6 = reinterpret_cast<struct sockaddr_in6 *>(&store_);
+            if (str == "::*" || str == "::" || str == "[::]")
                 make_any(AF_INET6);
-            else if(inet_pton(AF_INET6, cp, &(ipv6->sin6_addr)) < 1)
+            else if (inet_pton(AF_INET6, cp, &(ipv6->sin6_addr)) < 1)
                 return;
             ipv6->sin6_family = AF_INET6;
             ipv6->sin6_port = htons(in_port);
-        } else if((str == "*") || (strchr(cp, '.') != nullptr)) {
-            auto ipv4 = reinterpret_cast<struct sockaddr_in*>(&store_);
-            if(str == "*")
+        } else if ((str == "*") || (strchr(cp, '.') != nullptr)) {
+            auto ipv4 = reinterpret_cast<struct sockaddr_in *>(&store_);
+            if (str == "*")
                 make_any(AF_INET);
-            else if(inet_pton(AF_INET, cp, &(ipv4->sin_addr)) < 1)
+            else if (inet_pton(AF_INET, cp, &(ipv4->sin_addr)) < 1)
                 return;
             ipv4->sin_family = AF_INET;
             ipv4->sin_port = htons(in_port);
@@ -317,12 +317,12 @@ public:
     }
 
     auto to_format() const -> std::string {
-        if(family() == AF_UNSPEC && port() == 0) return "none";
-        if(is_any() && port() == 0) return "*";
-        if(is_any() && family() == AF_INET6) return "[*]" + std::to_string(port());
-        if(is_any()) return "*:" + std::to_string(port());
-        if(port() == 0) return to_string();
-        if(family() == AF_INET6) return "[" + to_string() + "]" + ":" + std::to_string(port());
+        if (family() == AF_UNSPEC && port() == 0) return "none";
+        if (is_any() && port() == 0) return "*";
+        if (is_any() && family() == AF_INET6) return "[*]" + std::to_string(port());
+        if (is_any()) return "*:" + std::to_string(port());
+        if (port() == 0) return to_string();
+        if (family() == AF_INET6) return "[" + to_string() + "]" + ":" + std::to_string(port());
         return to_string() + ":" + std::to_string(port());
     }
 
@@ -330,20 +330,20 @@ public:
         char buf[256];
         const struct sockaddr_in *ipv4{nullptr};
         const struct sockaddr_in6 *ipv6{nullptr};
-        switch(store_.ss_family) {
+        switch (store_.ss_family) {
         case AF_INET:
-            if(is_any()) return {"*"};
-            ipv4 = reinterpret_cast<const struct sockaddr_in*>(&store_);
-            if(::inet_ntop(AF_INET, &(ipv4->sin_addr), buf, sizeof(buf))) return {buf};
+            if (is_any()) return {"*"};
+            ipv4 = reinterpret_cast<const struct sockaddr_in *>(&store_);
+            if (::inet_ntop(AF_INET, &(ipv4->sin_addr), buf, sizeof(buf))) return {buf};
             break;
         case AF_INET6:
-            if(is_any()) return {"::"};
-            ipv6 = reinterpret_cast<const struct sockaddr_in6*>(&store_);
-            if(::inet_ntop(AF_INET6, &(ipv6->sin6_addr), buf, sizeof(buf))) return {buf};
+            if (is_any()) return {"::"};
+            ipv6 = reinterpret_cast<const struct sockaddr_in6 *>(&store_);
+            if (::inet_ntop(AF_INET6, &(ipv6->sin6_addr), buf, sizeof(buf))) return {buf};
             break;
-#ifdef  AF_UNIX
+#ifdef AF_UNIX
         case AF_UNIX: {
-            auto sun = reinterpret_cast<const struct sockaddr_un*>(&store_);
+            auto sun = reinterpret_cast<const struct sockaddr_un *>(&store_);
             return {sun->sun_path};
         }
 #endif
@@ -362,14 +362,14 @@ public:
     }
 
     void set(const struct addrinfo *addr) noexcept {
-        if(!addr)
+        if (!addr)
             memset(&store_, 0, sizeof(store_));
         else
             memcpy(&store_, addr->ai_addr, addr->ai_addrlen);
     }
 
     void set(const struct sockaddr *addr) noexcept {
-        if(!addr || !size_(addr->sa_family))
+        if (!addr || !size_(addr->sa_family))
             memset(&store_, 0, sizeof(store_));
         else
             memcpy(&store_, addr, size_(addr->sa_family));
@@ -379,13 +379,13 @@ private:
     struct sockaddr_storage store_{AF_UNSPEC};
 
     void make_any(int family) noexcept {
-        switch(family) {
+        switch (family) {
         case AF_INET:
-            memset(&(reinterpret_cast<struct sockaddr_in*>(&store_))->sin_addr.s_addr, 0, 4);
+            memset(&(reinterpret_cast<struct sockaddr_in *>(&store_))->sin_addr.s_addr, 0, 4);
             store_.ss_family = AF_INET;
             break;
         case AF_INET6:
-            memset(&(reinterpret_cast<struct sockaddr_in6*>(&store_))->sin6_addr.s6_addr, 0, 16);
+            memset(&(reinterpret_cast<struct sockaddr_in6 *>(&store_))->sin6_addr.s6_addr, 0, 16);
             store_.ss_family = AF_INET6;
             break;
         default:
@@ -394,12 +394,12 @@ private:
     }
 
     auto size_(int family) const noexcept -> socklen_t {
-        switch(family) {
+        switch (family) {
         case AF_INET:
             return sizeof(struct sockaddr_in);
         case AF_INET6:
             return sizeof(struct sockaddr_in6);
-#ifdef  AF_UNIX
+#ifdef AF_UNIX
         case AF_UNIX: {
             const auto sun = reinterpret_cast<const struct sockaddr_un *>(&store_);
             return offsetof(struct sockaddr_un, sun_path) + strlen(sun->sun_path);
@@ -416,8 +416,8 @@ private:
 
     static auto zero_(const void *addr, std::size_t size) -> bool {
         auto ptr = static_cast<const std::byte *>(addr);
-        while(size--) {
-            if(*ptr != std::byte(0)) return false;
+        while (size--) {
+            if (*ptr != std::byte(0)) return false;
             ++ptr;
         }
         return true;
@@ -425,11 +425,11 @@ private:
 };
 
 #ifndef EAI_ADDRFAMILY
-#define EAI_ADDRFAMILY EAI_NODATA + 2000    // NOLINT
+#define EAI_ADDRFAMILY EAI_NODATA + 2000 // NOLINT
 #endif
 
 #ifndef EAI_SYSTEM
-#define EAI_SYSTEM EAI_NODATA + 2001        // NOLINT
+#define EAI_SYSTEM EAI_NODATA + 2001 // NOLINT
 #endif
 
 class Socket {
@@ -453,7 +453,7 @@ public:
         }
 
         auto operator=(service&& from) noexcept -> auto& {
-            if(this != &from) {
+            if (this != &from) {
                 release();
                 list_ = from.list_;
                 from.list_ = nullptr;
@@ -480,8 +480,8 @@ public:
         auto operator[](unsigned index) const noexcept {
             auto size{0U};
             auto addr = list_;
-            while(addr) {
-                if(size == index) return addr;
+            while (addr) {
+                if (size == index) return addr;
                 ++size;
                 addr = addr->ai_next;
             }
@@ -499,7 +499,7 @@ public:
         auto count() const noexcept {
             auto size{0U};
             const auto *addr = list_;
-            while(addr) {
+            while (addr) {
                 ++size;
                 addr = addr->ai_next;
             }
@@ -507,7 +507,7 @@ public:
         }
 
         void release() noexcept {
-            if(list_) {
+            if (list_) {
                 ::freeaddrinfo(list_);
                 list_ = nullptr;
             }
@@ -517,7 +517,7 @@ public:
         void set(const std::string& host = "*", const std::string& service = "", int family = AF_UNSPEC, int type = SOCK_STREAM, int protocol = 0) noexcept {
             release();
             auto svc = service.c_str();
-            if(service.empty() || service == "0")
+            if (service.empty() || service == "0")
                 svc = nullptr;
 
             struct addrinfo hint{};
@@ -526,16 +526,16 @@ public:
             hint.ai_socktype = type;
             hint.ai_protocol = protocol;
 
-            if(svc && atoi(svc) > 0)    // NOLINT
+            if (svc && atoi(svc) > 0) // NOLINT
                 hint.ai_flags |= NI_NUMERICSERV;
 
             auto addr = host.c_str();
-            if(host.empty() || host == "*")
+            if (host.empty() || host == "*")
                 addr = nullptr;
-            else if(strchr(addr, ':'))
+            else if (strchr(addr, ':'))
                 hint.ai_flags |= AI_NUMERICHOST;
 
-            if(protocol)
+            if (protocol)
                 hint.ai_flags |= AI_PASSIVE;
 
             err_ = getaddrinfo(addr, svc, &hint, &list_);
@@ -546,8 +546,8 @@ public:
             auto size{0U};
             const auto *addr = list_;
             memset(&data, 0, sizeof(data));
-            while(addr) {
-                if(size == index) {
+            while (addr) {
+                if (size == index) {
                     memcpy(&data, addr->ai_addr, addr->ai_addrlen);
                     return data;
                 }
@@ -559,11 +559,11 @@ public:
 
         template <typename Func>
         auto each(Func func) const {
-            static_assert(std::is_invocable_v<Func, addrinfo*>, "Func must be callable");
-            static_assert(std::is_convertible_v<std::invoke_result_t<Func, addrinfo*>, bool>, "Func must return  bool");
+            static_assert(std::is_invocable_v<Func, addrinfo *>, "Func must be callable");
+            static_assert(std::is_convertible_v<std::invoke_result_t<Func, addrinfo *>, bool>, "Func must return  bool");
             auto list = list_;
-            while(list) {
-                if(!func(list))
+            while (list) {
+                if (!func(list))
                     return false;
                 list = list->ai_next;
             }
@@ -573,14 +573,14 @@ public:
     private:
         auto last_() const noexcept {
             auto addr = list_;
-            while(addr && addr->ai_next)
+            while (addr && addr->ai_next)
                 addr = addr->ai_next;
             return addr;
         }
 
         void join_(struct addrinfo *from) noexcept {
             auto addr = last_();
-            if(addr)
+            if (addr)
                 addr->ai_next = from;
             else
                 list_ = from;
@@ -618,9 +618,9 @@ public:
         }
 
         auto operator=(interfaces&& from) noexcept -> auto& {
-            if(this != &from) {
-                if(list_)
-                    free(list_);    // NOLINT
+            if (this != &from) {
+                if (list_)
+                    free(list_); // NOLINT
                 list_ = from.list_;
                 count_ = from.count_;
                 from.list_ = nullptr;
@@ -629,16 +629,16 @@ public:
             return *this;
         }
 
-        auto operator[](std::size_t index) const noexcept -> const struct sockaddr *{
-            if(index >= count_) return nullptr;
+        auto operator[](std::size_t index) const noexcept -> const struct sockaddr * {
+            if (index >= count_) return nullptr;
             auto entry = list_;
-            while(entry && index) {
+            while (entry && index) {
                 auto unicast = entry->FirstUnicastAddress;
-                while(unicast && index) {
+                while (unicast && index) {
                     --index;
                     unicast = unicast->Next;
                 }
-                if(unicast && !index && unicast->Address.lpSockaddr) return unicast->Address.lpSockaddr;
+                if (unicast && !index && unicast->Address.lpSockaddr) return unicast->Address.lpSockaddr;
             }
             return nullptr;
         }
@@ -649,8 +649,8 @@ public:
         }
 
         void release() noexcept {
-            if(list_)
-                free(list_);    // NOLINT
+            if (list_)
+                free(list_); // NOLINT
             list_ = nullptr;
             count_ = 0;
         }
@@ -659,24 +659,24 @@ public:
             release();
             ULONG bufsize{8192};
             // cppcheck-suppress useInitializationList
-            list_ = static_cast<PIP_ADAPTER_ADDRESSES>(malloc(bufsize));    // NOLINT
-            if(list_ == nullptr) return;
+            list_ = static_cast<PIP_ADAPTER_ADDRESSES>(malloc(bufsize)); // NOLINT
+            if (list_ == nullptr) return;
 
             auto result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr, list_, &bufsize);
             if (result == ERROR_BUFFER_OVERFLOW) {
-                free(list_); // NOLINT
-                list_ = static_cast<PIP_ADAPTER_ADDRESSES>(malloc(bufsize));    // NOLINT
+                free(list_);                                                 // NOLINT
+                list_ = static_cast<PIP_ADAPTER_ADDRESSES>(malloc(bufsize)); // NOLINT
                 result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr, list_, &bufsize);
             };
 
-            if(result != NO_ERROR) {
-                free(list_);    // NOLINT
+            if (result != NO_ERROR) {
+                free(list_); // NOLINT
                 list_ = nullptr;
                 return;
             }
 
-            for(auto entry = list_; entry != nullptr; entry = entry->Next) {
-                for(auto unicast = entry->FirstUnicastAddress; unicast != nullptr; unicast = unicast->Next) {
+            for (auto entry = list_; entry != nullptr; entry = entry->Next) {
+                for (auto unicast = entry->FirstUnicastAddress; unicast != nullptr; unicast = unicast->Next) {
                     ++count_;
                 }
             }
@@ -690,34 +690,34 @@ public:
             return count_;
         }
 
-        auto find(const sockaddr* from) const noexcept -> std::string {
+        auto find(const sockaddr *from) const noexcept -> std::string {
             auto family = from->sa_family;
-            for(auto entry = list_; entry != nullptr; entry = entry->Next) {
+            for (auto entry = list_; entry != nullptr; entry = entry->Next) {
                 for (auto unicast = entry->FirstUnicastAddress; unicast != nullptr; unicast = unicast->Next) {
-                    const sockaddr* sa = unicast->Address.lpSockaddr;
-                    if(!sa || sa->sa_family != family) continue;
-                    if(family == AF_INET) {
-                        const auto* t = reinterpret_cast<const sockaddr_in*>(from);
-                        const auto* a = reinterpret_cast<const sockaddr_in*>(sa);
+                    const sockaddr *sa = unicast->Address.lpSockaddr;
+                    if (!sa || sa->sa_family != family) continue;
+                    if (family == AF_INET) {
+                        const auto *t = reinterpret_cast<const sockaddr_in *>(from);
+                        const auto *a = reinterpret_cast<const sockaddr_in *>(sa);
                         const auto prefix = unicast->OnLinkPrefixLength;
                         uint32_t mask = prefix ? htonl(~((1u << (32 - prefix)) - 1)) : 0;
 
-                        if((a->sin_addr.s_addr & mask) == (t->sin_addr.s_addr & mask)) return entry->AdapterName;
-                    } else if(family == AF_INET6) {
-                        const auto* t6 = reinterpret_cast<const sockaddr_in6*>(from);
-                        const auto* a6 = reinterpret_cast<const sockaddr_in6*>(sa);
+                        if ((a->sin_addr.s_addr & mask) == (t->sin_addr.s_addr & mask)) return entry->AdapterName;
+                    } else if (family == AF_INET6) {
+                        const auto *t6 = reinterpret_cast<const sockaddr_in6 *>(from);
+                        const auto *a6 = reinterpret_cast<const sockaddr_in6 *>(sa);
                         const auto prefix = unicast->OnLinkPrefixLength;
                         bool match = true;
                         int bits = static_cast<int>(prefix);
-                        for(int i = 0; i < 16; ++i) {
+                        for (int i = 0; i < 16; ++i) {
                             uint8_t mask = bits >= 8 ? 0xFF : (bits > 0 ? ~(0xFF >> bits) : 0);
                             bits -= 8;
-                            if((a6->sin6_addr.s6_addr[i] & mask) != (t6->sin6_addr.s6_addr[i] & mask)) {
+                            if ((a6->sin6_addr.s6_addr[i] & mask) != (t6->sin6_addr.s6_addr[i] & mask)) {
                                 match = false;
                                 break;
                             }
                         }
-                        if(match) return entry->AdapterName;
+                        if (match) return entry->AdapterName;
                     }
                 }
             }
@@ -725,49 +725,50 @@ public:
         }
 
         auto find(const std::string_view& id, int family, bool mcast = false) const noexcept -> const sockaddr * {
-            for(auto entry = list_; entry != nullptr; entry = entry->Next) {
-                if(!entry->AdapterName || id != entry->AdapterName) continue;
-                if(mcast && (entry->Flags & IP_ADAPTER_NO_MULTICAST)) continue;
-                for(auto unicast = entry->FirstUnicastAddress; unicast; unicast = unicast->Next) {
-                    if(unicast->Address.lpSockaddr && unicast->Address.lpSockaddr->sa_family == family) return unicast->Address.lpSockaddr;
+            for (auto entry = list_; entry != nullptr; entry = entry->Next) {
+                if (!entry->AdapterName || id != entry->AdapterName) continue;
+                if (mcast && (entry->Flags & IP_ADAPTER_NO_MULTICAST)) continue;
+                for (auto unicast = entry->FirstUnicastAddress; unicast; unicast = unicast->Next) {
+                    if (unicast->Address.lpSockaddr && unicast->Address.lpSockaddr->sa_family == family) return unicast->Address.lpSockaddr;
                 }
             }
             return nullptr;
         }
 
         auto mask(std::size_t index) const noexcept {
-            if(index >= count_) return 0;
+            if (index >= count_) return 0;
             auto entry = list_;
-            while(entry && index) {
+            while (entry && index) {
                 auto unicast = entry->FirstUnicastAddress;
-                while(unicast && index) {
+                while (unicast && index) {
                     --index;
                     unicast = unicast->Next;
                 }
-                if(unicast && !index) return int(unicast->OnLinkPrefixLength);
+                if (unicast && !index) return int(unicast->OnLinkPrefixLength);
             }
             return 0;
         }
 
         auto name(std::size_t index) const noexcept -> std::string {
-            if(index >= count_) return {};
+            if (index >= count_) return {};
             auto entry = list_;
-            while(entry && index) {
+            while (entry && index) {
                 auto unicast = entry->FirstUnicastAddress;
-                while(unicast && index) {
+                while (unicast && index) {
                     --index;
                     unicast = unicast->Next;
                 }
-                if(unicast && !index) return {entry->AdapterName};
+                if (unicast && !index) return {entry->AdapterName};
             }
             return {};
         }
 
-        auto ifaddr(const std::string_view& id, int family) const noexcept -> const struct sockaddr *{
-            for(auto entry = list_; entry != nullptr; entry = entry->Next) {
+        auto ifaddr(const std::string_view& id, int family) const noexcept -> const struct sockaddr * {
+            for (auto entry = list_; entry != nullptr; entry = entry->Next) {
                 auto unicast = entry->FirstUnicastAddress;
-                while(unicast) {
-                    if(entry->AdapterName && id == entry->AdapterName && unicast->Address.lpSockaddr && unicast->Address.lpSockaddr->sa_family == family) return unicast->Address.lpSockaddr;;
+                while (unicast) {
+                    if (entry->AdapterName && id == entry->AdapterName && unicast->Address.lpSockaddr && unicast->Address.lpSockaddr->sa_family == family) return unicast->Address.lpSockaddr;
+                    ;
                     unicast = unicast->Next;
                 }
             }
@@ -811,8 +812,8 @@ public:
         }
 
         auto operator=(interfaces&& from) noexcept -> auto& {
-            if(this != &from) {
-                if(list_)
+            if (this != &from) {
+                if (list_)
                     freeifaddrs(list_);
                 count_ = from.count_;
                 list_ = from.list_;
@@ -822,12 +823,12 @@ public:
             return *this;
         }
 
-        auto operator[](std::size_t index) const noexcept -> const struct sockaddr *{
-            if(index >= count_) return nullptr;
+        auto operator[](std::size_t index) const noexcept -> const struct sockaddr * {
+            if (index >= count_) return nullptr;
             auto entry = list_;
-            while(entry && index--)
+            while (entry && index--)
                 entry = entry->ifa_next;
-            if(!entry|| !entry->ifa_addr) return nullptr;
+            if (!entry || !entry->ifa_addr) return nullptr;
             return entry->ifa_addr;
         }
 
@@ -837,7 +838,7 @@ public:
         }
 
         void release() noexcept {
-            if(list_)
+            if (list_)
                 freeifaddrs(list_);
             list_ = nullptr;
             count_ = 0;
@@ -845,7 +846,7 @@ public:
 
         void update() noexcept {
             getifaddrs(&list_);
-            for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
+            for (auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
                 ++count_;
             }
         }
@@ -859,66 +860,65 @@ public:
         }
 
         auto find(const struct sockaddr *from) const noexcept -> std::string {
-            for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
+            for (auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
                 auto family = entry->ifa_addr->sa_family;
-                if(!entry->ifa_addr || !entry->ifa_netmask) continue;
-                if(family != from->sa_family) continue;
-                if(family == AF_INET) {
+                if (!entry->ifa_addr || !entry->ifa_netmask) continue;
+                if (family != from->sa_family) continue;
+                if (family == AF_INET) {
                     auto *t = reinterpret_cast<const sockaddr_in *>(from);
                     auto *a = reinterpret_cast<sockaddr_in *>(entry->ifa_addr);
                     auto *m = reinterpret_cast<sockaddr_in *>(entry->ifa_netmask);
-                    if((a->sin_addr.s_addr & m->sin_addr.s_addr) == (t->sin_addr.s_addr & m->sin_addr.s_addr)) return {entry->ifa_name};
-                }
-                else if(family == AF_INET6) {
+                    if ((a->sin_addr.s_addr & m->sin_addr.s_addr) == (t->sin_addr.s_addr & m->sin_addr.s_addr)) return {entry->ifa_name};
+                } else if (family == AF_INET6) {
                     auto *a6 = reinterpret_cast<sockaddr_in6 *>(entry->ifa_addr);
                     auto *m6 = reinterpret_cast<sockaddr_in6 *>(entry->ifa_netmask);
                     auto *t6 = reinterpret_cast<const sockaddr_in6 *>(from);
                     auto match = true;
-                    for(int i = 0; i < 16; ++i) {
-                        if((a6->sin6_addr.s6_addr[i] & m6->sin6_addr.s6_addr[i]) != (t6->sin6_addr.s6_addr[i] & m6->sin6_addr.s6_addr[i])) {
+                    for (int i = 0; i < 16; ++i) {
+                        if ((a6->sin6_addr.s6_addr[i] & m6->sin6_addr.s6_addr[i]) != (t6->sin6_addr.s6_addr[i] & m6->sin6_addr.s6_addr[i])) {
                             match = false;
                             break;
                         }
                     }
-                    if(match) return {entry->ifa_name};
+                    if (match) return {entry->ifa_name};
                 }
             }
             return {"default"};
         }
 
         auto find(const std::string_view& id, int family, bool mcast = false) const noexcept -> const sockaddr * {
-            for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
-                if(mcast && !(entry->ifa_flags & IFF_MULTICAST)) continue;
-                if(entry->ifa_name && id == entry->ifa_name && entry->ifa_addr->sa_family == family) return entry->ifa_addr;
+            for (auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
+                if (mcast && !(entry->ifa_flags & IFF_MULTICAST)) continue;
+                if (entry->ifa_name && id == entry->ifa_name && entry->ifa_addr->sa_family == family) return entry->ifa_addr;
             }
             return nullptr;
         }
 
         auto mcast(const std::string_view& id, int family) const noexcept {
-            for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
-                if(!(entry->ifa_flags & IFF_MULTICAST)) continue;
-                if(!entry->ifa_name || id != entry->ifa_name) continue;
-                if(entry->ifa_addr->sa_family != family) continue;
-                if(family == AF_INET) return ~0U;
+            for (auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
+                if (!(entry->ifa_flags & IFF_MULTICAST)) continue;
+                if (!entry->ifa_name || id != entry->ifa_name) continue;
+                if (entry->ifa_addr->sa_family != family) continue;
+                if (family == AF_INET) return ~0U;
                 return if_nametoindex(entry->ifa_name);
             }
             return 0U;
         }
 
         auto mask(std::size_t index) const noexcept {
-            if(index >= count_) return 0;
+            if (index >= count_) return 0;
             auto entry = list_;
-            while(entry && index--)
+            while (entry && index--)
                 entry = entry->ifa_next;
 
-            if(!entry|| !entry->ifa_addr || !entry->ifa_netmask) return 0;
-            switch(entry->ifa_netmask->sa_family) {
+            if (!entry || !entry->ifa_addr || !entry->ifa_netmask) return 0;
+            switch (entry->ifa_netmask->sa_family) {
             case AF_INET: {
-                auto ipv4 = reinterpret_cast<const struct sockaddr_in*>(entry->ifa_netmask);
+                auto ipv4 = reinterpret_cast<const struct sockaddr_in *>(entry->ifa_netmask);
                 return prefix_ipv4(ntohl(ipv4->sin_addr.s_addr));
             }
             case AF_INET6: {
-                auto ipv6 = reinterpret_cast<const struct sockaddr_in6*>(entry->ifa_netmask);
+                auto ipv6 = reinterpret_cast<const struct sockaddr_in6 *>(entry->ifa_netmask);
                 return prefix_ipv6(ipv6->sin6_addr.s6_addr);
             }
             default:
@@ -927,16 +927,16 @@ public:
         }
 
         auto name(std::size_t index) const noexcept -> std::string {
-            if(index >= count_) return {};
+            if (index >= count_) return {};
             auto entry = list_;
-            while(entry && index--)
+            while (entry && index--)
                 entry = entry->ifa_next;
             return {(entry && entry->ifa_name) ? entry->ifa_name : ""};
         }
 
-        auto ifaddr(const std::string_view& id, int family) const noexcept -> const sockaddr *{
-            for(auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
-                if(entry->ifa_name && id == entry->ifa_name && entry->ifa_addr->sa_family == family) return entry->ifa_addr;
+        auto ifaddr(const std::string_view& id, int family) const noexcept -> const sockaddr * {
+            for (auto entry = list_; entry != nullptr; entry = entry->ifa_next) {
+                if (entry->ifa_name && id == entry->ifa_name && entry->ifa_addr->sa_family == family) return entry->ifa_addr;
             }
             return nullptr;
         }
@@ -962,12 +962,11 @@ public:
             auto count = 0;
             for (int i = 0; i < 16; i++) {
                 std::uint8_t byte = addr[i];
-                for(int j = 0; j < 8; j++) {
+                for (int j = 0; j < 8; j++) {
                     if (byte & 0x80) {
                         count++;
                         byte <<= 1;
-                    }
-                    else
+                    } else
                         return count;
                 }
             }
@@ -978,8 +977,7 @@ public:
 
     Socket() = default;
 
-    explicit Socket(int family, int type = 0, int protocol = 0) :
-    so_(set_error(make_socket(::socket(family, type, protocol)))) {}
+    explicit Socket(int family, int type = 0, int protocol = 0) : so_(set_error(make_socket(::socket(family, type, protocol)))) {}
 
     Socket(const Socket& from) = delete;
     auto operator=(const Socket& from) = delete;
@@ -1014,7 +1012,7 @@ public:
     }
 
     auto operator=(Socket&& from) noexcept -> auto& {
-        if(this != &from) {
+        if (this != &from) {
             release();
             so_ = from.so_;
             err_ = from.err_;
@@ -1047,8 +1045,8 @@ public:
     void release() noexcept {
         auto so = so_;
         so_ = -1;
-        if(so != -1) {
-#ifdef  USE_CLOSESOCKET
+        if (so != -1) {
+#ifdef USE_CLOSESOCKET
             ::shutdown(so, SD_BOTH);
             ::closesocket(so);
 #else
@@ -1061,22 +1059,21 @@ public:
     void bind(const address_t& addr, int type = 0, int protocol = 0) noexcept {
         release();
         so_ = set_error(make_socket(::socket(addr.family(), type, protocol)));
-        if(so_ != -1) {
+        if (so_ != -1) {
             reuse(true);
-            if(set_error(::bind(so_, addr.data(), addr.size())) == -1)
+            if (set_error(::bind(so_, addr.data(), addr.size())) == -1)
                 release();
-        }
-        else
+        } else
             err_ = EBADF;
     }
 
     void bind(const Socket::service& list) noexcept {
         auto addr = *list;
         release();
-        while(addr) {
+        while (addr) {
             so_ = set_error(make_socket(::socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol)));
-            if(so_ == -1) continue;
-            if(set_error(::bind(so_, addr->ai_addr, make_socklen(addr->ai_addrlen)) == -1)) {
+            if (so_ == -1) continue;
+            if (set_error(::bind(so_, addr->ai_addr, make_socklen(addr->ai_addrlen)) == -1)) {
                 release();
                 continue;
             }
@@ -1084,17 +1081,17 @@ public:
     }
 
     auto connect(const address_t& addr) const noexcept {
-        if(so_ != -1) return set_error(::connect(so_, addr.data(), addr.size()));
+        if (so_ != -1) return set_error(::connect(so_, addr.data(), addr.size()));
         return -1;
     }
 
     void connect(const Socket::service& list) noexcept {
         auto addr = *list;
         release();
-        while(addr) {
+        while (addr) {
             so_ = set_error(make_socket(::socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol)));
-            if(so_ == -1) continue;
-            if(set_error(::connect(so_, addr->ai_addr, make_socklen(addr->ai_addrlen))) == -1) {
+            if (so_ == -1) continue;
+            if (set_error(::connect(so_, addr->ai_addr, make_socklen(addr->ai_addrlen))) == -1) {
                 release();
                 continue;
             }
@@ -1102,23 +1099,23 @@ public:
     }
 
     auto join(const address_t& member, unsigned ifindex = 0) {
-        if(so_ == -1) return EBADF;
+        if (so_ == -1) return EBADF;
         const address_t from = local();
-        if(from.family() != member.family()) return set_error(-EAI_FAMILY);
+        if (from.family() != member.family()) return set_error(-EAI_FAMILY);
         auto res = 0;
         multicast_t multicast;
         memset(&multicast, 0, sizeof(multicast));
-        switch(member.family()) {
+        switch (member.family()) {
         case AF_INET:
             multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
             multicast.ipv4.imr_multiaddr = member.in()->sin_addr;
-            if(setsockopt(so_, IPPROTO_IP, IP_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
+            if (setsockopt(so_, IPPROTO_IP, IP_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
                 res = errno;
             break;
         case AF_INET6:
             multicast.ipv6.ipv6mr_interface = ifindex;
             multicast.ipv6.ipv6mr_multiaddr = member.in6()->sin6_addr;
-            if(setsockopt(so_, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
+            if (setsockopt(so_, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
                 res = errno;
             break;
         default:
@@ -1132,29 +1129,29 @@ public:
         auto addr = *list;
         auto count = 0;
 
-        while(addr && join(address_t(addr->ai_addr), ifindex) == 0)
+        while (addr && join(address_t(addr->ai_addr), ifindex) == 0)
             ++count;
         return count;
     }
 
     auto drop(const address_t& member, unsigned ifindex = 0) {
-        if(so_ == -1) return EBADF;
+        if (so_ == -1) return EBADF;
         const address_t from = local();
-        if(from.family() != member.family()) return set_error(-EAI_FAMILY);
+        if (from.family() != member.family()) return set_error(-EAI_FAMILY);
         auto res = 0;
         multicast_t multicast;
         memset(&multicast, 0, sizeof(multicast));
-        switch(member.family()) {
+        switch (member.family()) {
         case AF_INET:
             multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
             multicast.ipv4.imr_multiaddr = member.in()->sin_addr;
-            if(setsockopt(so_, IPPROTO_IP, IP_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
+            if (setsockopt(so_, IPPROTO_IP, IP_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
                 res = errno;
             break;
         case AF_INET6:
             multicast.ipv6.ipv6mr_interface = ifindex;
             multicast.ipv6.ipv6mr_multiaddr = member.in6()->sin6_addr;
-            if(setsockopt(so_, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
+            if (setsockopt(so_, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
                 res = errno;
             break;
         default:
@@ -1168,7 +1165,7 @@ public:
         auto addr = *list;
         auto count = 0;
 
-        while(addr && drop(address_t(addr->ai_addr), ifindex) == 0)
+        while (addr && drop(address_t(addr->ai_addr), ifindex) == 0)
             ++count;
         return count;
     }
@@ -1184,7 +1181,7 @@ public:
 
     void reuse(bool flag) {
         int opt = flag ? 1 : 0;
-        set_error(setsockopt(so_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&opt), sizeof(opt)));
+        set_error(setsockopt(so_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&opt), sizeof(opt)));
 
 #ifdef SO_REUSEPORT
         set_error(setsockopt(so_, SOL_SOCKET, SO_REUSEPORT, reinterpret_cast<const char *>(&opt), sizeof(opt)));
@@ -1192,7 +1189,7 @@ public:
     }
 
     void listen(int backlog = 5) noexcept {
-        if(so_ != -1 && set_error(::listen(so_, backlog)) == -1)
+        if (so_ != -1 && set_error(::listen(so_, backlog)) == -1)
             release();
     }
 
@@ -1204,7 +1201,7 @@ public:
 
     auto accept() const noexcept {
         Socket from{};
-        if(so_ != -1) {
+        if (so_ != -1) {
             from.so_ = make_socket(::accept(so_, nullptr, nullptr));
             set_error(from.so_);
             from.set_error(from.so_);
@@ -1214,14 +1211,14 @@ public:
 
     template <typename Func>
     auto accept(Func acceptor) const {
-        static_assert(std::is_invocable_r_v<bool, Func, int, const struct sockaddr*>, "Acceptor must be callable as for socket and sockaddr");
-        if(so_ == -1) return false;
+        static_assert(std::is_invocable_r_v<bool, Func, int, const struct sockaddr *>, "Acceptor must be callable as for socket and sockaddr");
+        if (so_ == -1) return false;
         address_t remote;
         auto slen = address_t::maxsize;
         auto to = set_error(make_socket(::accept(so_, *remote, &slen)));
-        if(to < 0) return false;
-        if(!acceptor(to, *remote)) {
-#ifdef  USE_CLOSESOCKET
+        if (to < 0) return false;
+        if (!acceptor(to, *remote)) {
+#ifdef USE_CLOSESOCKET
             closesocket(to);
 #else
             ::close(to);
@@ -1235,7 +1232,7 @@ public:
     auto peer() const noexcept {
         address_t addr;
         socklen_t len = address_t::maxsize;
-        if(so_ != -1)
+        if (so_ != -1)
             set_error(::getpeername(so_, *addr, &len));
         return addr;
     }
@@ -1243,33 +1240,33 @@ public:
     auto local() const noexcept -> address_t {
         address_t addr;
         socklen_t len = address_t::maxsize;
-        if(so_ != -1)
+        if (so_ != -1)
             set_error(::getsockname(so_, *addr, &len));
         return addr;
     }
 
     auto send(const void *from, std::size_t size, int flags = 0) const noexcept {
-        if(so_ == -1) return io_error(-EBADF);
+        if (so_ == -1) return io_error(-EBADF);
         return io_error(::send(so_, static_cast<const char *>(from), int(size), flags));
     }
 
     auto recv(void *to, std::size_t size, int flags = 0) const noexcept {
-        if(so_ == -1) return io_error(-EBADF);
+        if (so_ == -1) return io_error(-EBADF);
         return io_error(::recv(so_, static_cast<char *>(to), int(size), flags));
     }
 
     auto send(const void *from, std::size_t size, const address_t& addr, int flags = 0) const noexcept {
-        if(so_ == -1) return io_error(-EBADF);
+        if (so_ == -1) return io_error(-EBADF);
         return io_error(::sendto(so_, static_cast<const char *>(from), int(size), flags, addr.data(), addr.size()));
     }
 
     auto recv(void *to, std::size_t size, address_t& addr, int flags = 0) const noexcept {
         auto len = address_t::maxsize;
-        if(so_ == -1) return io_error(-EBADF);
+        if (so_ == -1) return io_error(-EBADF);
         return io_error(::recvfrom(so_, static_cast<char *>(to), int(size), flags, addr.data(), &len));
     }
 
-#ifdef  AF_UNIX
+#ifdef AF_UNIX
     static auto un(const struct sockaddr *addr) {
         return addr->sa_family == AF_UNIX ? reinterpret_cast<const struct sockaddr_un *>(addr) : nullptr;
     }
@@ -1297,7 +1294,7 @@ public:
 
     // type converted send to for portable socket code
     static auto send_to(int so, const void *from, std::size_t size, int flags = 0, const struct sockaddr *addr = nullptr, socklen_t asize = sizeof(struct sockaddr_storage)) noexcept {
-     return ::sendto(so, static_cast<const char *>(from), int(size), flags, addr, asize);
+        return ::sendto(so, static_cast<const char *>(from), int(size), flags, addr, asize);
     }
 
     // type converted send to for portable socket code
@@ -1306,31 +1303,31 @@ public:
     }
 
     static auto bind_from(int so, struct addrinfo *addr) {
-        if(!addr) return -1;
+        if (!addr) return -1;
         return ::bind(so, addr->ai_addr, addr->ai_addrlen);
     }
 
     static auto connect_to(int so, struct addrinfo *addr) {
-        if(!addr) return -1;
+        if (!addr) return -1;
         return ::connect(so, addr->ai_addr, addr->ai_addrlen);
     }
 
     static auto join(int so, const struct sockaddr *member, unsigned ifindex = 0) {
-        if(so == -1) return EBADF;
+        if (so == -1) return EBADF;
         auto res = 0;
         multicast_t multicast;
         memset(&multicast, 0, sizeof(multicast));
-        switch(member->sa_family) {
+        switch (member->sa_family) {
         case AF_INET:
             multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
             multicast.ipv4.imr_multiaddr = in4(member)->sin_addr;
-            if(setsockopt(so, IPPROTO_IP, IP_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
+            if (setsockopt(so, IPPROTO_IP, IP_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
                 res = errno;
             break;
         case AF_INET6:
             multicast.ipv6.ipv6mr_interface = ifindex;
             multicast.ipv6.ipv6mr_multiaddr = in6(member)->sin6_addr;
-            if(setsockopt(so, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
+            if (setsockopt(so, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
                 res = errno;
             break;
         default:
@@ -1340,21 +1337,21 @@ public:
     }
 
     static auto drop(int so, const struct sockaddr *member, unsigned ifindex = 0) {
-        if(so == -1) return EBADF;
+        if (so == -1) return EBADF;
         auto res = 0;
         multicast_t multicast;
         memset(&multicast, 0, sizeof(multicast));
-        switch(member->sa_family) {
+        switch (member->sa_family) {
         case AF_INET:
             multicast.ipv4.imr_interface.s_addr = INADDR_ANY;
             multicast.ipv4.imr_multiaddr = in4(member)->sin_addr;
-            if(setsockopt(so, IPPROTO_IP, IP_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
+            if (setsockopt(so, IPPROTO_IP, IP_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv4)) == -1)
                 res = errno;
             break;
         case AF_INET6:
             multicast.ipv6.ipv6mr_interface = ifindex;
             multicast.ipv6.ipv6mr_multiaddr = in6(member)->sin6_addr;
-            if(setsockopt(so, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
+            if (setsockopt(so, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, to_option(&multicast), sizeof(multicast.ipv6)) == -1)
                 res = errno;
             break;
         default:
@@ -1375,9 +1372,9 @@ public:
 
     static auto if_index(const std::string& name) noexcept -> unsigned {
         NET_LUID uid;
-        if(ConvertInterfaceNameToLuidA(name.c_str(), &uid) != NO_ERROR) return 0;
+        if (ConvertInterfaceNameToLuidA(name.c_str(), &uid) != NO_ERROR) return 0;
         NET_IFINDEX idx{0};
-        if(ConvertInterfaceLuidToIndex(&uid, &idx) != NO_ERROR) return 0;
+        if (ConvertInterfaceLuidToIndex(&uid, &idx) != NO_ERROR) return 0;
         return idx;
     }
 
@@ -1417,21 +1414,19 @@ protected:
     mutable int err_{0};
 
     auto io_error(ssize_t size) const noexcept -> std::size_t {
-        if(size == -1) {
+        if (size == -1) {
             size = 0;
             err_ = errno;
-        }
-        else if(size < 0) {
+        } else if (size < 0) {
             err_ = int(-size);
             size = 0;
-        }
-        else
+        } else
             err_ = 0;
         return std::size_t(size);
     }
 
     auto set_error(int code) const noexcept -> int {
-        if(code == -1)
+        if (code == -1)
             err_ = errno;
         else
             err_ = 0;
@@ -1468,28 +1463,28 @@ private:
 using service_t = Socket::service;
 using interface_t = Socket::interfaces;
 
-template<typename T>
+template <typename T>
 inline auto send(const Socket& sock, const T& msg, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.send(&msg, sizeof(msg), flags);
 }
 
-template<typename T>
+template <typename T>
 inline auto recv(const Socket& sock, T& msg, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.recv(&msg, sizeof(msg), flags);
 }
 
-template<typename T>
+template <typename T>
 inline auto send(const Socket& sock, const T& msg, const address_t& addr, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
     return sock.send(&msg, sizeof(msg), addr, flags);
 }
 
-template<typename T>
+template <typename T>
 inline auto recv(const Socket& sock, T& msg, address_t& addr, int flags = 0) {
     static_assert(std::is_trivial_v<T>, "T must be Trivial type");
 
@@ -1499,13 +1494,13 @@ inline auto recv(const Socket& sock, T& msg, address_t& addr, int flags = 0) {
 // internet helper utils...
 
 inline auto inet_size(const struct sockaddr *addr) noexcept -> socklen_t {
-    if(!addr) return 0;
-    switch(addr->sa_family) {
+    if (!addr) return 0;
+    switch (addr->sa_family) {
     case AF_INET:
         return sizeof(struct sockaddr_in);
     case AF_INET6:
         return sizeof(struct sockaddr_in6);
-#ifdef  AF_UNIX
+#ifdef AF_UNIX
     case AF_UNIX: {
         const auto un = reinterpret_cast<const struct sockaddr_un *>(addr);
         return offsetof(struct sockaddr_un, sun_path) + strlen(un->sun_path);
@@ -1517,8 +1512,8 @@ inline auto inet_size(const struct sockaddr *addr) noexcept -> socklen_t {
 }
 
 inline auto inet_port(const struct sockaddr *addr) noexcept -> uint16_t {
-    if(!addr) return 0;
-    switch(addr->sa_family) {
+    if (!addr) return 0;
+    switch (addr->sa_family) {
     case AF_INET:
         return ntohs((reinterpret_cast<const struct sockaddr_in *>(addr))->sin_port);
     case AF_INET6:
@@ -1532,38 +1527,38 @@ inline auto system_hostname() noexcept -> std::string {
     char buf[256]{0};
     auto result = gethostname(buf, sizeof(buf));
 
-    if(result != 0) return {};
+    if (result != 0) return {};
     buf[sizeof(buf) - 1] = 0;
     return {buf};
 }
 
 inline auto inet_host(const struct sockaddr *addr) noexcept -> std::string {
-    if(!addr) return {};
+    if (!addr) return {};
     const address_t address(addr);
     return address.to_string();
 }
 
 inline auto inet_family(const std::string& host, int any = AF_UNSPEC) {
     int dots = 0;
-#ifdef  AF_UNIX
-    if(host.find('/') != std::string::npos) return AF_UNIX;
+#ifdef AF_UNIX
+    if (host.find('/') != std::string::npos) return AF_UNIX;
 #endif
-    if(host[0] == '[' || host.find(':') != std::string::npos) return AF_INET6;
-    for(const auto ch : host) {
-        if(ch == '.') {
+    if (host[0] == '[' || host.find(':') != std::string::npos) return AF_INET6;
+    for (const auto ch : host) {
+        if (ch == '.') {
             ++dots;
             continue;
         }
-        if(ch < '0' || ch > '9') return any;
+        if (ch < '0' || ch > '9') return any;
     }
-    if(dots == 3) return AF_INET;
+    if (dots == 3) return AF_INET;
     return AF_UNSPEC;
 }
 
 inline auto inet_any(const std::string& host, int any = AF_INET) {
-    if(host == "*") return any;
-    if(host == "0.0.0.0") return AF_INET;
-    if(host == "[*]" || host == "::" || host == "[::]") return AF_INET6;
+    if (host == "*") return any;
+    if (host == "0.0.0.0") return AF_INET;
+    if (host == "[*]" || host == "::" || host == "[::]") return AF_INET6;
     return AF_UNSPEC;
 }
 
@@ -1572,21 +1567,21 @@ inline auto inet_find(const std::string& host_id, const std::string& service = "
     uint16_t port = 0;
     try {
         port = std::stoi(service);
-    } catch(...) {
+    } catch (...) {
         port = 0;
     }
 
-    if(family != AF_INET6 && (host == "loopback" || host == "localhost"))
+    if (family != AF_INET6 && (host == "loopback" || host == "localhost"))
         host = "127.0.0.1";
-    else if(family != AF_INET && (host == "loopback6" || host == "localhost6" || host == "loopback" || host == "localhost"))
+    else if (family != AF_INET && (host == "loopback6" || host == "localhost6" || host == "loopback" || host == "localhost"))
         host = "::1";
-    else if(host.empty())
+    else if (host.empty())
         host = system_hostname();
 
     address_t address(host, port);
-    if(!address.empty()) return address;
+    if (!address.empty()) return address;
     const char *svc = service.c_str();
-    if(service.empty() || service == "0")
+    if (service.empty() || service == "0")
         svc = nullptr;
 
     struct addrinfo hints{};
@@ -1595,51 +1590,51 @@ inline auto inet_find(const std::string& host_id, const std::string& service = "
     hints.ai_socktype = type;
     hints.ai_protocol = protocol;
 
-    if(port > 0)
+    if (port > 0)
         hints.ai_flags |= AI_NUMERICSERV;
 
-    if(family != AF_UNSPEC)
+    if (family != AF_UNSPEC)
         hints.ai_flags |= AI_ADDRCONFIG;
 
     struct addrinfo *list{nullptr};
     auto result = getaddrinfo(host.c_str(), svc, &hints, &list);
-    if(list && !result)
+    if (list && !result)
         address = list;
-    if(list)
+    if (list)
         freeaddrinfo(list);
 
-    if(port && !address.empty())
+    if (port && !address.empty())
         address.port_if(port);
     return address;
 }
 
 inline auto inet_bind(const std::string& host, const std::string& service = "", int family = AF_UNSPEC, int type = 0, int protocol = 0) {
-    if(host.empty()) return inet_find(host, service, family, type, protocol);
+    if (host.empty()) return inet_find(host, service, family, type, protocol);
     uint16_t port = 0;
     try {
         port = std::stoi(service);
-    } catch(...) {
+    } catch (...) {
         port = 0;
     }
 
 #ifdef AF_UNIX
-    if((family == AF_UNIX || family == AF_UNSPEC) && host.find_first_of('/') != std::string::npos) {
+    if ((family == AF_UNIX || family == AF_UNSPEC) && host.find_first_of('/') != std::string::npos) {
         return address_t(host);
     }
 #endif
 
-    if((family != AF_INET6) && (host == "any" || host == "*")) return address_t(AF_INET, port);
-    if((family != AF_INET) && (host == "any6" || host == "[*]" || host == "::" || host == "::*" || host == "any" || host == "*")) return address_t(AF_INET6, port);
-    if(host.find_first_of(".") == std::string::npos) {
+    if ((family != AF_INET6) && (host == "any" || host == "*")) return address_t(AF_INET, port);
+    if ((family != AF_INET) && (host == "any6" || host == "[*]" || host == "::" || host == "::*" || host == "any" || host == "*")) return address_t(AF_INET6, port);
+    if (host.find_first_of(".") == std::string::npos) {
         const Socket::interfaces ifa;
         auto addr = ifa.find(host, AF_INET);
         auto addr6 = ifa.find(host, AF_INET6);
-        if(family == AF_INET)
+        if (family == AF_INET)
             addr6 = nullptr;
-        else if(family == AF_INET6)
+        else if (family == AF_INET6)
             addr = nullptr;
-        if((!addr && addr6) || (addr6 && family == AF_INET6)) return address_t(addr6);
-        if(addr) return address_t(addr);
+        if ((!addr && addr6) || (addr6 && family == AF_INET6)) return address_t(addr6);
+        if (addr) return address_t(addr);
     }
     return inet_find(host, service, family, type, protocol);
 }
@@ -1650,8 +1645,8 @@ inline auto inet_bind(const std::string& host, uint16_t port, int family = AF_UN
 
 inline auto is_ipv4(const std::string_view& addr) {
     // cppcheck-suppress useStlAlgorithm
-    for(const auto ch : addr) { // NOLINT
-        if(ch != '.' && !isdigit(ch)) return false;
+    for (const auto ch : addr) { // NOLINT
+        if (ch != '.' && !isdigit(ch)) return false;
     }
     return true;
 }
@@ -1668,17 +1663,17 @@ inline auto is_unix(const std::string_view& addr) {
 
 inline auto get_ipaddress(const std::string_view& from, uint16_t port = 0) {
     address_t address;
-    if(is_ipv4(from) || is_ipv6(from))
+    if (is_ipv4(from) || is_ipv6(from))
         address.set(std::string{from}, port);
-    if(address.empty()) throw std::out_of_range("Invalid ip address");
+    if (address.empty()) throw std::out_of_range("Invalid ip address");
     return address;
 }
 
 inline auto get_ipaddress_or(const std::string_view& from, address_t or_else = address_t(), uint16_t port = 0) {
     address_t address;
-    if(is_ipv4(from) || is_ipv6(from))
+    if (is_ipv4(from) || is_ipv6(from))
         address.set(std::string{from}, port);
-    if(address.empty()) return or_else;
+    if (address.empty()) return or_else;
     return address;
 }
 
@@ -1691,21 +1686,21 @@ inline auto send_to(int so, const void *from, std::size_t size, int flags = 0, c
 inline auto recv_from(int so, void *to, std::size_t size, int flags = 0, struct sockaddr *addr = nullptr, socklen_t *asize = nullptr) noexcept {
     return ::recvfrom(so, static_cast<char *>(to), int(size), flags, addr, asize);
 }
-} // end namespace
+} // namespace tycho
 
 namespace std {
-template<>
+template <>
 struct hash<tycho::address_t> {
     auto operator()(const tycho::address_t& obj) const {
         std::size_t result{0U};
         const auto data = reinterpret_cast<const char *>(obj.data());
-        for(socklen_t pos = 0; pos < obj.size(); ++pos) {
+        for (socklen_t pos = 0; pos < obj.size(); ++pos) {
             result = (result * 131) + data[pos];
         }
         return result;
     }
 };
-} // end namespace
+} // namespace std
 
 inline auto operator<<(std::ostream& out, const tycho::address_t& addr) -> std::ostream& {
     out << addr.to_string();

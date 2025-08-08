@@ -2,7 +2,7 @@
 // This code is licensed under MIT license.
 
 #define MODERN_TESTING
-#include "compiler.hpp"     // IWYU pragma: keep
+#include "compiler.hpp" // IWYU pragma: keep
 #include "templates.hpp"
 #include "socket.hpp"
 
@@ -10,7 +10,7 @@ namespace {
 const uint16_t port = 9789;
 address_t local_host("127.0.0.1", port);
 address_t local_bind("*", port);
-} // end anon namespace
+} // namespace
 
 auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     using raw_t = const struct sockaddr *;
@@ -40,4 +40,3 @@ auto main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) -> int {
     bind.set("127.0.0.1", 5060);
     assert(bind.to_format() == "127.0.0.1:5060");
 }
-
